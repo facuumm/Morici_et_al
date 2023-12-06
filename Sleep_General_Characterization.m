@@ -35,7 +35,12 @@ for tt = 1:length(path)
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
         
-        load([cd,'\lfp.mat'])
+        %load LFP
+        if isfile('lfp.mat')
+            load('lfp.mat')
+        elseif isfile('lfp1.mat')
+            load('lfp1.mat')
+        end
         
         % Detrend Signal
         [dHPC,p] = Detrend(dHPC);

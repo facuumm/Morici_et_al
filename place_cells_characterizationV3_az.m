@@ -314,7 +314,7 @@ for tt = 1:length(path)
                     
                     % --- Reward ---
                     spks_tmp = Restrict(spks , movement.reward); % Restrict to movement periods
-                    pos_tmp = Restrict(behavior.pos.reward(:,1:2) , movement.reward);
+                    pos_tmp = Restrict(behavior.pos.reward(:,1:2), movement.reward);
                     pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
                     
                     %Firing curve construction
@@ -760,7 +760,7 @@ label = {'Between', 'Within Ave', 'Within Rew'};
 ylabel('Fr change','FontSize',14);
 title('dHPC');
 
-%% PC plot
+%% Place cell plot
 
 tempA=[];
 tempR=[];
