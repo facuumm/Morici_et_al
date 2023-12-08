@@ -754,20 +754,68 @@ boxplot(data_box, 'Labels',{'Between', 'Within Ave', 'Within Rew'})
 ylabel('Spatial corr','FontSize',14);
 title('vHPC'); 
 
-% %Violin plot
-% figure(1);clf;
-% label = {'Between', 'Within Ave', 'Within Rew'}; 
-% [h,L,MX,MED,bw] = violin(data_box, 'xlabel', label,'facecolor',[0 0 0;1 0 0; 0 0 1]);
-% ylabel('Fr change','FontSize',14);
-% title('dHPC');
+%Violin plot
+figure(1);clf;
+label = {'Between', 'Within Ave', 'Within Rew'}; 
+[h,L,MX,MED,bw] = violin(data_box, 'xlabel', label,'facecolor',[0 0 0;1 0 0; 0 0 1]);
+ylabel('Fr change','FontSize',14);
+title('dHPC');
 
 
 %% Plot median + dots
-% Spatial correlation
+% ---> vHPC
+figure,
+subplot(131)
+id = 1; %1: Spatial Corr , 
+data = [pc_all.vHPC.between,ones(size(pc_all.vHPC.between,1),1);pc_all.vHPC.within.A,...
+ones(size(pc_all.vHPC.within.A,1),1)*2;pc_all.vHPC.within.R, ones(size(pc_all.vHPC.within.R,1),1)*3];
+scatter(data(:,4),data(:,id),'filled'),xlim([0 4]),hold on
+scatter([1 , 2 , 3],[nanmedian(pc_all.vHPC.between(:,id)) , nanmedian(pc_all.vHPC.within.A(:,id)) , nanmedian(pc_all.vHPC.within.R(:,id))],'filled','MarkerFaceColor','k'),xlim([0 4])
+ylim([-1 1.1])
+ylabel('Spatial Correlation')
 
+subplot(132)
+id = 2; %1: Spatial Corr , 
+scatter(data(:,4),data(:,id),'filled'),xlim([0 4]),hold on
+scatter([1 , 2 , 3],[nanmedian(pc_all.vHPC.between(:,id)) , nanmedian(pc_all.vHPC.within.A(:,id)) , nanmedian(pc_all.vHPC.within.R(:,id))],'filled','MarkerFaceColor','k'),xlim([0 4])
+ylim([0 1.1])
+ylabel('FR change')
 
+subplot(133)
+id = 3; %1: Spatial Corr , 
+scatter(data(:,4),data(:,id),'filled'),xlim([0 4]),hold on
+scatter([1 , 2 , 3],[nanmedian(pc_all.vHPC.between(:,id)) , nanmedian(pc_all.vHPC.within.A(:,id)) , nanmedian(pc_all.vHPC.within.R(:,id))],'filled','MarkerFaceColor','k'),xlim([0 4])
+ylim([0 1.1])
+ylabel('Overlap')
 
+sgtitle('vHPC')
 
+% ---> dHPC
+figure,
+subplot(131)
+id = 1; %1: Spatial Corr , 
+data = [pc_all.dHPC.between,ones(size(pc_all.dHPC.between,1),1);pc_all.dHPC.within.A,...
+ones(size(pc_all.dHPC.within.A,1),1)*2;pc_all.dHPC.within.R, ones(size(pc_all.dHPC.within.R,1),1)*3];
+scatter(data(:,4),data(:,id),'filled'),xlim([0 4]),hold on
+scatter([1 , 2 , 3],[nanmedian(pc_all.vHPC.between(:,id)) , nanmedian(pc_all.vHPC.within.A(:,id)) , nanmedian(pc_all.vHPC.within.R(:,id))],'filled','MarkerFaceColor','k'),xlim([0 4])
+ylim([-1 1.1])
+ylabel('Spatial Correlation')
+
+subplot(132)
+id = 2; %1: Spatial Corr , 
+scatter(data(:,4),data(:,id),'filled'),xlim([0 4]),hold on
+scatter([1 , 2 , 3],[nanmedian(pc_all.vHPC.between(:,id)) , nanmedian(pc_all.vHPC.within.A(:,id)) , nanmedian(pc_all.vHPC.within.R(:,id))],'filled','MarkerFaceColor','k'),xlim([0 4])
+ylim([0 1.1])
+ylabel('FR change')
+
+subplot(133)
+id = 3; %1: Spatial Corr , 
+scatter(data(:,4),data(:,id),'filled'),xlim([0 4]),hold on
+scatter([1 , 2 , 3],[nanmedian(pc_all.vHPC.between(:,id)) , nanmedian(pc_all.vHPC.within.A(:,id)) , nanmedian(pc_all.vHPC.within.R(:,id))],'filled','MarkerFaceColor','k'),xlim([0 4])
+ylim([0 1.1])
+ylabel('Overlap')
+
+sgtitle('dHPC')
 
 %% Place cell plot
 
