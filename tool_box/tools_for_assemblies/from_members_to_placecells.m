@@ -50,24 +50,19 @@ for t = 1 : length(subFolders)-2
     load(x(end).name)
     clear x
     TH.reward = Th;
-    clear Th criteria_fr criteria_n pat
+    clear Th criteria_fr criteria_n pat x
     
     x = dir([cd,'\dorsalventral_assemblies_aversive*.mat']);
     load(x(end).name)
     clear x
     TH.aversive = Th;
-    clear Th criteria_fr criteria_n pat
+    clear Th criteria_fr criteria_n pat x
     
     % encocntrar una forma de definir cuales son dorsales y ventrales.
     
-    x = dir([cd,'\*spikes.cellinfo.mat']);
-    load(x.name,'spikes')
+    if isfile('vHPC_pc.mat')
     
-    if ~exist('waveforms_figures', 'dir') %creation of folder to store waveforms
-        mkdir waveforms_figures
-    else % if it exist, delete files inside to overwrite
-        delete('waveforms_figures/*.*')
-    end
+    
     
     for i = 1 : size(spikes.filtWaveform,2)
         

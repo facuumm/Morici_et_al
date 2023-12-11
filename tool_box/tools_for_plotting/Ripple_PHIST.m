@@ -14,8 +14,13 @@ function output = Ripple_PHIST(path,type)
 % OUTPUT
 % output.dHPC: PHIST of dorsal neurons
 % output.vHPC: PHIST of ventral neurons
+% output.up.dHPC/vHPC: PHIST of dorsal/ventral ripple up-modulated neurons
+% output.down.dHPC/vHPC: PHIST of dorsal/ventral ripple down-modulated neurons
+% output.non.dHPC/vHPC: PHIST of dorsal/ventral ripple non-modulated neurons
 % output.time: time vector for plotting
 %
+% other functions: PHIST
+%                  CCG (FMA toolbox)
 % Morci Juan Facundo 12/2023
 
 output.dHPC = [];
