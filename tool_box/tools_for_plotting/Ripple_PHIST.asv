@@ -21,7 +21,10 @@ function output = Ripple_PHIST(path,type)
 output.dHPC = [];
 output.vHPC = [];
 output.time = [];
-
+output.up.dHPC = [];
+output.up.vHPC = [];
+output.down.dHPC = [];
+output.down.vHPC = [];
 
 for tt = 1:length(path)
     %List of folders from the path
@@ -135,6 +138,9 @@ for tt = 1:length(path)
         end
         
         
+        %% load file to separate data deppending on the type of response to the ripple
+        load('ripple_modulated_SU.mat')
+        
         %% Counting the Number f SU
         clusters.dHPC = [];
         for ii=1:size(group_dHPC,1)
@@ -156,25 +162,45 @@ for tt = 1:length(path)
             clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
         end
         
+        
+        %% CCG
         if not(isempty(spks_dHPC))
             baseline = SubtractIntervals(NREM.all,[ripplesD(:,1)-0.05 ripplesD(:,3)+0.05]);
             for i = 1:size(clusters.dHPC,1)
-                [p , time] = PHIST(ripplesD(:,2),spks_dHPC(spks_dHPC(:,1)==clusters.dHPC(i),2),baseline,4,0.05,0,'Gain');
+                [p , time] = PHIST(ripplesD(:,2),spks_dHPC(spks_dHPC(:,1)==clusters.dHPC(i),2),baseline,1,0.01,0,'NormGain');
                 output.dHPC = [output.dHPC , p];
-                clear p
+                
+                c = ripple_modulated.dHPC.all(clusters.dHPC(i) == ripple_modulated.dHPC.all(:,1),:);
+                [p , time] = PHIST(ripplesD(:,2),spks_dHPC(spks_dHPC(:,1)==clusters.dHPC(i),2),baseline,1,0.01,0,'Gain');
+                if logical(c(1,3))
+                    output.up.dHPC = [output.up.dHPC , p];
+                elseif logical(c(1,4))
+                    output.down.dHPC = [output.down.dHPC , p];
+                end
+                clear p c
             end
         end
         
         if not(isempty(spks_vHPC))
             baseline = SubtractIntervals(NREM.all,[ripplesV(:,1)-0.05 ripplesV(:,3)+0.05]);
             for i = 1:size(clusters.vHPC,1)
-                [p , time] = PHIST(ripplesV(:,2),spks_vHPC(spks_vHPC(:,1)==clusters.vHPC(i),2),baseline,4,0.05,0,'Gain');
+                [p , time] = PHIST(ripplesV(:,2),spks_vHPC(spks_vHPC(:,1)==clusters.vHPC(i),2),baseline,1,0.01,0,'NormGain');
                 output.vHPC = [output.vHPC , p];
-                clear p
+                
+                c = ripple_modulated.vHPC.all(clusters.vHPC(i) == ripple_modulated.vHPC.all(:,1),:);
+                [p , time] = PHIST(ripplesV(:,2),spks_vHPC(spks_vHPC(:,1)==clusters.vHPC(i),2),baseline,1,0.01,0,'Gain');
+                if logical(c(1,3))
+                    output.up.vHPC = [output.up.vHPC , p];
+                elseif logical(c(1,4))
+                    output.down.vHPC = [output.down.vHPC , p];
+                elseif andnot(logical(c(1,3)))
+
+                end
+                clear p c
             end
         end
-                disp(['-- Finishing --'])
-
+        
+        disp('-- Finishing --')
     end
    disp(['-- Finishing analysis from rat #',num2str(tt) , ' --'])
     disp('  ')
@@ -183,6 +209,25 @@ end
 
 output.time = time;
 
-[i ii] = min(abs(time - 0.1))
+[n i] = min(abs(output.time - (-0.05)));
+[n ii] = min(abs(output.time - 0.05)); clear n
+
+% sort dHPC
+% [i ii] = max(output.dHPC);
+n = nanmean(output.dHPC(i:ii,:));
+m = nanmean(output.dHPC(1:i,:));
+m = mean([m;nanmean(output.dHPC(ii:end,:))]);
+n = m-n;
+[n m] = sort(n,'ascend'); clear n
+output.dHPC = output.dHPC(:,m); clear m
+
+% sort vHPC
+% [i ii] = max(output.vHPC);
+n = nanmean(output.vHPC(i:ii,:));
+m = nanmean(output.vHPC(1:i,:));
+m = mean([m;nanmean(output.vHPC(ii:end,:))]);
+n = m-n;
+[n m] = sort(n,'ascend'); clear n
+output.vHPC = output.vHPC(:,m); clear m i ii
 
 end

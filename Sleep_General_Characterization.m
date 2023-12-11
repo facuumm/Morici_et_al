@@ -294,6 +294,38 @@ plot(EDGES(2:end),Smooth(N,1),'b','LineWidth',1),hold on
 [N,EDGES] = histcounts(durations_NREM_A,30,'BinLimits',[0 350],'Normalization','probability');
 plot(EDGES(2:end),Smooth(N,1),'r','LineWidth',1)
 
+
+[m mm] = min(abs(f-6));
+[m mmm] = min(abs(f-10));
+
+tmpB = [];
+tmpR = [];
+tmpA = [];
+
+for i = 1 : size(REM_SpectrumDB,2)
+    tmpB = [tmpB ; max(REM_SpectrumDB(mm:mmm , i)) max(REM_SpectrumVB(mm:mmm , i))];
+    tmpR = [tmpR ; max(REM_SpectrumDR(mm:mmm , i)) max(REM_SpectrumVR(mm:mmm , i))];
+    tmpA = [tmpA ; max(REM_SpectrumDA(mm:mmm , i)) max(REM_SpectrumVA(mm:mmm , i))];
+end
+
+
+data = [tmpB(:,1) , ones(length(tmpB(:,1)),1) ; tmpR(:,1) , ones(length(tmpR(:,1)),1)*2 ; tmpA(:,1) , ones(length(tmpA(:,1)),1)*3] ; 
+
+kruskalwallis(data(:,1) , data(:,2))
+figure,
+boxplot(data(:,1),data(:,2)),ylim([0 10])
+% scatter(data(:,2) , data(:,1),'filled'),xlim([0 4]),hold on
+% scatter([1 2 3] , [median(tmpB(:,1)) median(tmpR(:,1)) median(tmpA(:,1))],'filled','MarkerFaceColor','k'),xlim([0 4]),hold on
+
+
+data = [tmpB(:,2) , ones(length(tmpB(:,1)),1) ; tmpR(:,2) , ones(length(tmpR(:,1)),1)*2 ; tmpA(:,2) , ones(length(tmpA(:,1)),1)*3] ; 
+kruskalwallis(data(:,1) , data(:,2))
+figure,
+boxplot(data(:,1) , data(:,2)),ylim([0 10])
+% scatter(data(:,2) , data(:,1),'filled'),xlim([0 4]),hold on
+% scatter([1 2 3] , [median(tmpB(:,2)) median(tmpR(:,2)) median(tmpA(:,2))],'filled','MarkerFaceColor','k'),xlim([0 4]),hold on
+
+
 % ----- REM FIGURE -----
 figure,
 x = REM_SpectrumD;  
