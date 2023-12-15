@@ -10,15 +10,15 @@ time_criteria = 1; % minimal time to include a NREM epoch (in min)
 
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
-MUAselection = logical(1); % to select ripples by their MUA
-W = 'E'; % to select what kind of ripples I want to check
+MUAselection = logical(0); % to select ripples by their MUA
+W = 'N'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % CB = cooridnated bursts
 % N= NREM, R= REM
 TA =  logical(0); % Trigger Reactivation Strength
 REC = logical(0); % Assemblie Recruitment during cooridnated events
 C = logical(0);   % Check if coordinated ripples are ocurring in a manner
-SRC = logical(1); % If I want to calculate the tuning curve for shocks
+SRC = logical(0); % If I want to calculate the tuning curve for shocks
 
 % for SU
 criteria_fr = 0; %criteria to include or not a SU into the analysis
@@ -47,7 +47,9 @@ reactivation.reward.dHPC = [];
 reactivation.aversive.vHPC = [];
 reactivation.reward.vHPC = [];
 
-th = 10;
+normalization = logical(1); % to define if normalization over Reactivation Strength is applied or not
+th = 5; % threshold for peak detection
+
 for_scatter.aversive = [];
 for_scatter.reward = [];
 Rsquared.aversive = [];
@@ -398,23 +400,16 @@ for tt = 1:length(path)
         clear camara shock rightvalve leftvalve
         clear ejeX ejeY dX dY dX_int dY_int
         
-        
         %% Shock responsive cells
         if SRC
             [curve , binsS , responsive] = SU_responsivness(spks,clusters.all,Shocks_filt,aversiveTS_run./1000,[0 1],6,0.1,1,'gain',2);
             curveShock = [curveShock , curve];
             i = [ones(size(clusters.dHPC,1),1) ; ones(size(clusters.vHPC,1),1)*2];
             ResponsiveS = [ResponsiveS ; i , responsive'];
-%             if sum(cond.both.aversive)>=1
-%                 for i = 1 : size(cond.both.aversive,2)
-%                     if (cond.both.aversive(i))
-%                         weigths.up = [weigths.up ; patterns.all.aversive(responsive==1,i)];
-%                         weigths.down = [weigths.down ; patterns.all.aversive(responsive==-1,i)];
-%                     end
-%                 end
-%             end
             clear curve responsive i
         end
+        
+        criteria_n = [3 3];
         
         %% Assemblies detection
         if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
@@ -474,7 +469,7 @@ for tt = 1:length(path)
 %                 events = movement.aversive;
 %                 [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
 %                 [Th , pat] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
-%                 save([cd,'\dorsalventral_assemblies_aversive.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
+%                 save([cd,'\dorsalventral_assemblies_aversive3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
 %             end
                 
                 Thresholded.aversive.all = Th;
@@ -489,7 +484,6 @@ for tt = 1:length(path)
                 cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
                 
                 num_assembliesA = [num_assembliesA ; sum(cond.both.aversive) sum(cond.dHPC.aversive) sum(cond.vHPC.aversive)];
-                
             end
             
             % --- Reward ---
@@ -504,7 +498,7 @@ for tt = 1:length(path)
 %                 events = movement.reward;
 %                 [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
 %                 [Th , pat] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
-%                 save([cd,'\dorsalventral_assemblies_reward.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
+%                 save([cd,'\dorsalventral_assemblies_reward3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
 %             end
                 
                 Thresholded.reward.all = Th;
@@ -579,40 +573,41 @@ for tt = 1:length(path)
                 %% Reactivation Strenght
                 % --- for joint assemblies ---
                 if sum(cond.both.aversive)>=1
-                    [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config);
+                    [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
                     reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R]; clear R
                 end
                 
                 if sum(cond.both.reward)>=1
-                    [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config);
+                    [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
                     reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R]; clear R
                 end
                 
                 % --- for dHPC assemblies ---
                 % Aversive
                 if sum(cond.dHPC.aversive)>=1
-                    [R] = reactivation_strength(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config);
+                    [R] = reactivation_strength(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
                     reactivation.aversive.dHPC = [reactivation.aversive.dHPC ; R]; clear R
                 end
                 
                 % Reward
                 if sum(cond.dHPC.reward)>=1
-                    [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config);
+                    [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
                     reactivation.reward.dHPC = [reactivation.reward.dHPC ; R]; clear R
                 end
                 
                 % --- for vHPC assemblies ---
                 % Aversive
                 if sum(cond.vHPC.aversive)>=1
-                    [R] = reactivation_strength(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config);
+                    [R] = reactivation_strength(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
                     reactivation.aversive.vHPC = [reactivation.aversive.vHPC ; R]; clear R
                 end
                 
                 % Reward
                 if sum(cond.vHPC.reward)>=1
-                    [R] = reactivation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config);
+                    [R] = reactivation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
                     reactivation.reward.vHPC = [reactivation.reward.vHPC ; R]; clear R
                 end
+                
             end
             
             %             %% CCG
@@ -929,7 +924,7 @@ for tt = 1:length(path)
         clear A aversiveTS aversiveTS_run baselineTS rewardTS rewardTS_run
         clear behavior bins Cell_type_classification cellulartype cond
         clear is K Kinfo group_dHPC group_vHPC matrixC matrixD matrixV
-        clear NREM REM WAKE segmentation tmp cond
+        clear NREM REM WAKE segmentation tmp cond config
         clear spiketrains_dHPC spiketrains_vHPC opts MUA
         clear patterns Thresholded i  ii numberD numberV movement cross crossN
         clear Spikes bins Clusters Shocks_filt Rewards_filt config n_SU_D n_SU_V
@@ -943,13 +938,44 @@ for tt = 1:length(path)
     
 end
 
+
+%% cleaning data
+% joint
+x = or(isnan(reactivation.reward.dvHPC(:,2)) , isnan(reactivation.reward.dvHPC(:,3)));
+reactivation.reward.dvHPC(x,:) = [];
+
+x = or(isnan(reactivation.aversive.dvHPC(:,2)) , isnan(reactivation.aversive.dvHPC(:,3)));
+reactivation.aversive.dvHPC(x,:) = [];
+
+% dHPC
+x = or(isnan(reactivation.reward.dHPC(:,2)) , isnan(reactivation.reward.dHPC(:,3)));
+reactivation.reward.dHPC(x,:) = [];
+
+x = or(isnan(reactivation.aversive.dHPC(:,2)) , isnan(reactivation.aversive.dHPC(:,3)));
+reactivation.aversive.dHPC(x,:) = [];
+
+% vHPC
+x = or(isnan(reactivation.reward.vHPC(:,2)) , isnan(reactivation.reward.vHPC(:,3)));
+reactivation.reward.vHPC(x,:) = [];
+
+x = or(isnan(reactivation.aversive.vHPC(:,2)) , isnan(reactivation.aversive.vHPC(:,3)));
+reactivation.aversive.vHPC(x,:) = [];
+
 %% Plot Strenght Reactivation
 % for joint assemblies
+
+figure
 reactivation.reward.dvHPC(isnan(reactivation.reward.dvHPC(:,1)),:) = [];
 reactivation.aversive.dvHPC(isnan(reactivation.aversive.dvHPC(:,1)),:) = [];
 x = reactivation.reward.dvHPC(:,1);
 y = reactivation.aversive.dvHPC(:,1);
-[h, p] = ttest2(x,y)             
+
+kstest(x)
+kstest(y)
+[h, p] = ttest2(x,y)  
+[h, p] = ttest(y)
+[h, p] = ttest(x)
+
 
 xx = [1 2];
 yy = [mean(x) mean(y)];
@@ -957,7 +983,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(131),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-1 3.5])
+er = errorbar(xx,yy,err);ylim([-0.06 0.06])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -967,7 +993,11 @@ reactivation.reward.dHPC(isnan(reactivation.reward.dHPC(:,1)),:) = [];
 reactivation.aversive.dHPC(isnan(reactivation.aversive.dHPC(:,1)),:) = [];
 x = reactivation.reward.dHPC(:,1);
 y = reactivation.aversive.dHPC(:,1);
-[h, p] = ttest2(x,y)             
+kstest(x)
+kstest(y)
+[h, p] = ttest2(x,y)  
+[h, p] = ttest(y)
+[h, p] = ttest(x)
 
 xx = [1 2];
 yy = [mean(x) mean(y)];
@@ -975,7 +1005,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(132),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-1 3.5])
+er = errorbar(xx,yy,err);ylim([-0.06 0.06])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -985,7 +1015,11 @@ reactivation.reward.vHPC(isnan(reactivation.reward.vHPC(:,1)),:) = [];
 reactivation.aversive.vHPC(isnan(reactivation.aversive.vHPC(:,1)),:) = [];
 x = reactivation.reward.vHPC(:,1);
 y = reactivation.aversive.vHPC(:,1);
-[h, p] = ttest2(x,y)             
+kstest(x)
+kstest(y)
+[h, p] = ttest2(x,y)  
+[h, p] = ttest(y)
+[h, p] = ttest(x)
 
 xx = [1 2];
 yy = [mean(x) mean(y)];
@@ -993,10 +1027,141 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(133),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-1 2])
+er = errorbar(xx,yy,err);ylim([-0.06 0.06])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
+
+%%
+percentage.dvHPC.aversive = sum(reactivation.aversive.dvHPC(:,4))/length(reactivation.aversive.dvHPC(:,4));
+percentage.dvHPC.reward = sum(reactivation.reward.dvHPC(:,4))/length(reactivation.reward.dvHPC(:,4));
+
+percentage.dvHPC.aversive = sum(reactivation.aversive.dvHPC(:,4))/length(reactivation.aversive.dvHPC(:,4));
+percentage.dvHPC.reward = sum(reactivation.reward.dvHPC(:,4))/length(reactivation.reward.dvHPC(:,4));
+
+
+%% boxplot
+figure
+reactivation.reward.dvHPC(isnan(reactivation.reward.dvHPC(:,1)),:) = [];
+reactivation.aversive.dvHPC(isnan(reactivation.aversive.dvHPC(:,1)),:) = [];
+x = reactivation.reward.dvHPC(:,1);
+y = reactivation.aversive.dvHPC(:,1);
+
+[h, p] = ttest2(x,y)  
+[h, p] = ttest(y)
+[h, p] = ttest(x)
+kstest(x)
+kstest(y)
+
+
+subplot(131),
+scatter([ones(length(x),1) ; ones(length(y),1)*2],[x;y],'filled'),xlim([0 3])%,ylim([-0.5 0.5])
+hold on
+scatter([1 2],[mean(x);mean(y)],'filled'),xlim([0 3])%,ylim([-0.5 0.5])
+yline(0,'--')
+% boxplot([x;y],[ones(length(x),1) ; ones(length(y),1)*2]),xlim([0 3]),ylim([-0.5 0.5])
+
+% for dHPC assemblies
+reactivation.reward.dHPC(isnan(reactivation.reward.dHPC(:,1)),:) = [];
+reactivation.aversive.dHPC(isnan(reactivation.aversive.dHPC(:,1)),:) = [];
+x = reactivation.reward.dHPC(:,1);
+y = reactivation.aversive.dHPC(:,1);
+[h, p] = ttest2(x,y)             
+[h, p] = ttest(x)
+[h, p] = ttest(y)
+
+subplot(132),
+scatter([ones(length(x),1) ; ones(length(y),1)*2],[x;y],'filled'),xlim([0 3]),ylim([-10 10])
+hold on
+scatter([1 2],[mean(x);mean(y)],'filled'),xlim([0 3]),ylim([-0.5 0.5])
+% boxplot([x;y],[ones(length(x),1) ; ones(length(y),1)*2]),xlim([0 3]),ylim([-0.5 0.5])
+hold on
+yline(0,'--')
+
+% for vHPC assemblies
+reactivation.reward.vHPC(isnan(reactivation.reward.vHPC(:,1)),:) = [];
+reactivation.aversive.vHPC(isnan(reactivation.aversive.vHPC(:,1)),:) = [];
+x = reactivation.reward.vHPC(:,1);
+y = reactivation.aversive.vHPC(:,1);
+[h, p] = ttest2(x,y)             
+[h, p] = ttest(x)
+[h, p] = ttest(y)
+
+subplot(133),
+scatter([ones(length(x),1) ; ones(length(y),1)*2],[x;y],'filled'),xlim([0 3]),ylim([-10 10])
+hold on
+scatter([1 2],[mean(x);mean(y)],'filled'),xlim([0 3]),ylim([-0.5 0.5])
+yline(0,'--')
+% boxplot([x;y],[ones(length(x),1) ; ones(length(y),1)*2]),xlim([0 3]),ylim([-0.5 0.5])
+
+
+%% violin plot
+reactivation.reward.dvHPC(isnan(reactivation.reward.dvHPC(:,1)),:) = [];
+reactivation.aversive.dvHPC(isnan(reactivation.aversive.dvHPC(:,1)),:) = [];
+x = reactivation.reward.dvHPC(:,1);
+y = reactivation.aversive.dvHPC(:,1);
+
+m = max(size(x,1),size(y,1));
+data_box = nan(m,2);
+data_box(1:size(x,1),1) = x;
+data_box(1:size(y,1),2) = y;
+
+figure
+subplot(131)
+label = {'Reward', 'Aversive'}; 
+[h,L,MX,MED,bw] = violin(data_box, 'xlabel', label,'facecolor',[0 0 0;1 0 0]);
+ylabel('Reactivation Strength','FontSize',14);
+title('Joint');
+
+
+reactivation.reward.dHPC(isnan(reactivation.reward.dHPC(:,1)),:) = [];
+reactivation.aversive.dHPC(isnan(reactivation.aversive.dHPC(:,1)),:) = [];
+x = reactivation.reward.dHPC(:,1);
+y = reactivation.aversive.dHPC(:,1);
+
+m = max(size(x,1),size(y,1));
+data_box = nan(m,2);
+data_box(1:size(x,1),1) = x;
+data_box(1:size(y,1),2) = y;
+
+subplot(132)
+label = {'Reward', 'Aversive'}; 
+[h,L,MX,MED,bw] = violin(data_box, 'xlabel', label,'facecolor',[0 0 0;1 0 0]);
+ylabel('Reactivation Strength','FontSize',14);
+title('dHPC');
+
+
+reactivation.reward.vHPC(isnan(reactivation.reward.vHPC(:,1)),:) = [];
+reactivation.aversive.vHPC(isnan(reactivation.aversive.vHPC(:,1)),:) = [];
+x = reactivation.reward.vHPC(:,1);
+y = reactivation.aversive.vHPC(:,1);
+
+m = max(size(x,1),size(y,1));
+data_box = nan(m,2);
+data_box(1:size(x,1),1) = x;
+data_box(1:size(y,1),2) = y;
+
+subplot(133)
+label = {'Reward', 'Aversive'}; 
+[h,L,MX,MED,bw] = violin(data_box, 'xlabel', label,'facecolor',[0 0 0;1 0 0]);
+ylabel('Reactivation Strength','FontSize',14);
+title('vHPC');
+
+%%
+
+figure
+scatter(reactivation.reward.dvHPC(:,2) , reactivation.reward.dvHPC(:,1),'filled','MarkerFaceAlpha',0.5),hold on
+scatter(reactivation.aversive.dvHPC(:,2) , reactivation.aversive.dvHPC(:,1),'filled','MarkerFaceAlpha',0.5,'MarkerFaceColor','r'),hold on
+
+xx = or(isnan(reactivation.aversive.dvHPC(:,2)) , isnan(reactivation.aversive.dvHPC(:,1)));
+x = reactivation.aversive.dvHPC(not(xx),2);
+y = reactivation.aversive.dvHPC(not(xx),1);
+
+xx = or(isnan(reactivation.reward.dvHPC(:,2)) , isnan(reactivation.reward.dvHPC(:,1)));
+x = reactivation.reward.dvHPC(not(xx),2);
+y = reactivation.reward.dvHPC(not(xx),1);
+corr(x,y)
+
 
 %% Plotting the number of peaks
 x = reactivation.reward.dvHPC(:,2)./reactivation.reward.dvHPC(:,3);
@@ -1004,8 +1169,8 @@ y = reactivation.aversive.dvHPC(:,2)./reactivation.aversive.dvHPC(:,3);
 [h, p] = ttest2(x,y)             
 
 xx = [1 2];
-yy = [mean(x) mean(y)];
-err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
+yy = [nanmean(x) nanmean(y)];
+err = [(nanstd(x)/sqrt(sum(not(isnan(x))))) (nanstd(y)/sqrt(sum(not(isnan(y)))))];
 
 subplot(131),
 bar(xx,yy),hold on
@@ -1021,8 +1186,8 @@ y = reactivation.aversive.dHPC(:,2)./reactivation.aversive.dHPC(:,3);
 [h, p] = ttest2(x,y)             
 
 xx = [1 2];
-yy = [mean(x) mean(y)];
-err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
+yy = [nanmean(x) nanmean(y)];
+err = [(nanstd(x)/sqrt(sum(not(isnan(x))))) (nanstd(y)/sqrt(sum(not(isnan(y)))))];
 
 subplot(132),
 bar(xx,yy),hold on
@@ -1037,8 +1202,8 @@ y = reactivation.aversive.vHPC(:,2)./reactivation.aversive.vHPC(:,3);
 [h, p] = ttest2(x,y)             
 
 xx = [1 2];
-yy = [mean(x) mean(y)];
-err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
+yy = [nanmean(x) nanmean(y)];
+err = [(nanstd(x)/sqrt(sum(not(isnan(x))))) (nanstd(y)/sqrt(sum(not(isnan(y)))))];
 
 subplot(133),
 bar(xx,yy),hold on
@@ -1048,13 +1213,13 @@ er.LineStyle = 'none';
 hold off
 
 %% Plotting the mean of the activity strengtht
-x = reactivation.reward.dvHPC(:,4)-reactivation.reward.dvHPC(:,5);
-y = reactivation.aversive.dvHPC(:,4)-reactivation.aversive.dvHPC(:,5);
+x = reactivation.reward.dvHPC(:,2)-reactivation.reward.dvHPC(:,3);
+y = reactivation.aversive.dvHPC(:,2)-reactivation.aversive.dvHPC(:,3);
 [h, p] = ttest2(x,y)             
 
 xx = [1 2];
-yy = [mean(x) mean(y)];
-err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
+yy = [nanmean(x) nanmean(y)];
+err = [(nanstd(x)/sqrt(sum(not(isnan(x))))) (nanstd(y)/sqrt(sum(not(isnan(y)))))];
 
 subplot(131),
 bar(xx,yy),hold on

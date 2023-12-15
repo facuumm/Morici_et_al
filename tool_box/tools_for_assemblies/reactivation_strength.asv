@@ -74,7 +74,7 @@ function [R] = reactivation_strength(patterns , cond , SpikeTrain , Is , th , ty
 bins = SpikeTrain(:,1);
 spks = SpikeTrain(:,2:end);
 prc = 95; % percentile to check if the Strenght is higher 
-iterations = 100; % iterations to create the surrogated distribution
+iterations = 200; % iterations to create the surrogated distribution
 
 a = assembly_activity(patterns(:,cond) , spks');
 a = zscore(a,1,2);
