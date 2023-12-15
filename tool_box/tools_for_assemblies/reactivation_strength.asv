@@ -74,20 +74,20 @@ function [R] = reactivation_strength(patterns , cond , SpikeTrain , Is , th , ty
 bins = SpikeTrain(:,1);
 spks = SpikeTrain(:,2:end);
 prc = 95; % percentile to check if the Strenght is higher 
-iterations = 200; % iterations to create the surrogated distribution
+iterations = 100; % iterations to create the surrogated distribution
 
 a = assembly_activity(patterns(:,cond) , spks');
-a = zscore(a,1,2);
+% a = zscore(a,1,2);
 R = [];
 
 for i = 1:size(a,1)
     
-    %     st = nanstd(a(i,:));
-    %     m = nanmean(a(i,:));
+     st = nanstd(a(i,:));
+     m = nanmean(a(i,:));
     
     % using the time vector for plotting
-    [pks.baseline,loc.baseline] = findpeaks(a(i,Is.baseline),bins(Is.baseline),'MinPeakHeight',th);
-    [pks.reward,loc.reward] = findpeaks(a(i,Is.reward),bins(Is.reward),'MinPeakHeight',th);
+    [pks.baseline,loc.baseline] = findpeaks(a(i,Is.baseline),bins(Is.baseline),'MinPeakHeight',m + (th*st));
+    [pks.reward,loc.reward] = findpeaks(a(i,Is.reward),bins(Is.reward),'MinPeakHeight',m + (th*st));
     [pks.aversive,loc.aversive] = findpeaks(a(i,Is.aversive),bins(Is.aversive),'MinPeakHeight',th);
     
     [pks.runreward,loc.reward] = findpeaks(a(i,Is.runreward),bins(Is.runreward),'MinPeakHeight',th);
@@ -96,7 +96,7 @@ for i = 1:size(a,1)
     [pks.all,loc.all] = findpeaks(a(i,:),bins,'MinPeakHeight',th);
     
     
-    % shuffle peaks 500 times to create surrogated
+    % shuffle peaks to create surrogated
     surrogated = [];
     for ii = 1 : iterations
         tmp = [loc.all , pks.all'];
