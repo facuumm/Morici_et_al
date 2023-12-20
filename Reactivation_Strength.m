@@ -11,7 +11,7 @@ time_criteria = 1; % minimal time to include a NREM epoch (in min)
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
 MUAselection = logical(0); % to select ripples by their MUA
-W = 'N'; % to select what kind of ripples I want to check
+W = 'R'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % CB = cooridnated bursts
 % N= NREM, R= REM
@@ -47,7 +47,7 @@ reactivation.reward.dHPC = [];
 reactivation.aversive.vHPC = [];
 reactivation.reward.vHPC = [];
 
-normalization = logical(1); % to define if normalization over Reactivation Strength is applied or not
+normalization = true; % to define if normalization over Reactivation Strength is applied or not
 th = 5; % threshold for peak detection
 
 for_scatter.aversive = [];
@@ -229,7 +229,7 @@ for tt = 1:length(path)
         disp('Uploading sleep scoring')
         x = dir([cd,'\*-states.mat']);    states = load([cd,'\',x.name]);    states = states.states;
         REM.all = ToIntervals(states==5);    NREM.all = ToIntervals(states==3);    WAKE.all = ToIntervals(states==1);
-        REM.all(REM.all(:,2)-REM.all(:,1)<60,:) = [];
+%         REM.all(REM.all(:,2)-REM.all(:,1)<60,:) = [];
         clear x states
         
         NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
@@ -571,42 +571,41 @@ for tt = 1:length(path)
                 is.reward = InIntervals(bins,rewardTS_run./1000);
                 
                 %% Reactivation Strenght
-                % --- for joint assemblies ---
-                if sum(cond.both.aversive)>=1
-                    [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
-                    reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R]; clear R
-                end
                 
-                if sum(cond.both.reward)>=1
-                    [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
-                    reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R]; clear R
-                end
+%                 if aversiveTS_run(1) < rewardTS_run(1)
+                    if sum(cond.both.aversive)>=1
+                        [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
+                        reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R]; clear R
+                    end
+                    
+                    if sum(cond.dHPC.aversive)>=1
+                        [R] = reactivation_strength(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
+                        reactivation.aversive.dHPC = [reactivation.aversive.dHPC ; R]; clear R
+                    end
+                    
+                    if sum(cond.vHPC.aversive)>=1
+                        [R] = reactivation_strength(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
+                        reactivation.aversive.vHPC = [reactivation.aversive.vHPC ; R]; clear R
+                    end
+%                 end
                 
-                % --- for dHPC assemblies ---
-                % Aversive
-                if sum(cond.dHPC.aversive)>=1
-                    [R] = reactivation_strength(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
-                    reactivation.aversive.dHPC = [reactivation.aversive.dHPC ; R]; clear R
-                end
                 
-                % Reward
-                if sum(cond.dHPC.reward)>=1
-                    [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
-                    reactivation.reward.dHPC = [reactivation.reward.dHPC ; R]; clear R
-                end
-                
-                % --- for vHPC assemblies ---
-                % Aversive
-                if sum(cond.vHPC.aversive)>=1
-                    [R] = reactivation_strength(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
-                    reactivation.aversive.vHPC = [reactivation.aversive.vHPC ; R]; clear R
-                end
-                
-                % Reward
-                if sum(cond.vHPC.reward)>=1
-                    [R] = reactivation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
-                    reactivation.reward.vHPC = [reactivation.reward.vHPC ; R]; clear R
-                end
+%                 if aversiveTS_run(1) > rewardTS_run(1)
+                    if sum(cond.both.reward)>=1
+                        [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
+                        reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R]; clear R
+                    end
+                    
+                    if sum(cond.dHPC.reward)>=1
+                        [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
+                        reactivation.reward.dHPC = [reactivation.reward.dHPC ; R]; clear R
+                    end
+                    
+                    if sum(cond.vHPC.reward)>=1
+                        [R] = reactivation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
+                        reactivation.reward.vHPC = [reactivation.reward.vHPC ; R]; clear R
+                    end
+%                 end
                 
             end
             
@@ -965,6 +964,9 @@ reactivation.aversive.vHPC(x,:) = [];
 % for joint assemblies
 
 figure
+x = logical(reactivation.reward.dvHPC(:,6));
+y = logical(reactivation.aversive.dvHPC(:,6));
+
 reactivation.reward.dvHPC(isnan(reactivation.reward.dvHPC(:,1)),:) = [];
 reactivation.aversive.dvHPC(isnan(reactivation.aversive.dvHPC(:,1)),:) = [];
 x = reactivation.reward.dvHPC(:,1);
@@ -983,12 +985,14 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(131),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.06 0.06])
+er = errorbar(xx,yy,err);ylim([-0.08 0.06])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
 
 % for dHPC assemblies
+x = logical(reactivation.reward.dHPC(:,6));
+y = logical(reactivation.aversive.dHPC(:,6));
 reactivation.reward.dHPC(isnan(reactivation.reward.dHPC(:,1)),:) = [];
 reactivation.aversive.dHPC(isnan(reactivation.aversive.dHPC(:,1)),:) = [];
 x = reactivation.reward.dHPC(:,1);
@@ -1005,12 +1009,14 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(132),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.06 0.06])
+er = errorbar(xx,yy,err);ylim([-0.08 0.06])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
 
 % for vHPC assemblies
+x = logical(reactivation.reward.vHPC(:,6));
+y = logical(reactivation.aversive.vHPC(:,6));
 reactivation.reward.vHPC(isnan(reactivation.reward.vHPC(:,1)),:) = [];
 reactivation.aversive.vHPC(isnan(reactivation.aversive.vHPC(:,1)),:) = [];
 x = reactivation.reward.vHPC(:,1);
@@ -1027,17 +1033,20 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(133),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.06 0.06])
+er = errorbar(xx,yy,err);ylim([-0.08 0.06])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
 
 %%
-percentage.dvHPC.aversive = sum(reactivation.aversive.dvHPC(:,4))/length(reactivation.aversive.dvHPC(:,4));
-percentage.dvHPC.reward = sum(reactivation.reward.dvHPC(:,4))/length(reactivation.reward.dvHPC(:,4));
+percentage.dvHPC.aversive = sum(reactivation.aversive.dvHPC(:,6))/length(reactivation.aversive.dvHPC(:,4));
+percentage.dvHPC.reward = sum(reactivation.reward.dvHPC(:,6))/length(reactivation.reward.dvHPC(:,4));
 
-percentage.dvHPC.aversive = sum(reactivation.aversive.dvHPC(:,4))/length(reactivation.aversive.dvHPC(:,4));
-percentage.dvHPC.reward = sum(reactivation.reward.dvHPC(:,4))/length(reactivation.reward.dvHPC(:,4));
+percentage.dHPC.aversive = sum(reactivation.aversive.dHPC(:,6))/length(reactivation.aversive.dHPC(:,4));
+percentage.dHPC.reward = sum(reactivation.reward.dHPC(:,6))/length(reactivation.reward.dHPC(:,4));
+
+percentage.vHPC.aversive = sum(reactivation.aversive.vHPC(:,6))/length(reactivation.aversive.vHPC(:,4));
+percentage.vHPC.reward = sum(reactivation.reward.vHPC(:,6))/length(reactivation.reward.vHPC(:,4));
 
 
 %% boxplot

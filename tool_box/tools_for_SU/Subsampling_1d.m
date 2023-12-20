@@ -8,7 +8,7 @@ function [pos_sub, spikes_sub] = Subsampling_1d(pos_ave, spks_ave,pos_rew, spks_
 
      %Assigne positions to bins for each condition (rew/ave)
      [N_ave,Xedges,binX]  = histcounts(pos_ave(:,2),Xedges);
-     [N_rew,Xedgesr,binXr]  = histcounts(pos_rew(:,2),Xedges);
+     [N_rew,Xedgesr,binXr] = histcounts(pos_rew(:,2),Xedges);
 
      % Create matrices with bin info 
       pos_ave = [pos_ave,binX];  

@@ -46,7 +46,7 @@ for ii=1:length(clusters)
         [tmp,bins]=binspikes(spks,freq,limits);
         
         if smooth
-           tmp = gaussfilt(bins,tmp,(binSize)/sqrt(12));
+           tmp = gaussfilt(bins,tmp,binSize/sqrt(12));
         end
         
         SpksTrains = [SpksTrains , tmp];
