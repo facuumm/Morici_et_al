@@ -11,11 +11,12 @@ time_criteria = 1; % minimal time to include a NREM epoch (in min)
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
 MUAselection = logical(0); % to select ripples by their MUA
-W = 'N'; % to select what kind of ripples I want to check
+W = 'E'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % CB = cooridnated bursts
 % N= NREM, R= REM
 TA =  logical(0); % Trigger Reactivation Strength
+TPks = logical(1); %trigger CCG assemblies peaks to events
 REC = logical(0); % Assemblie Recruitment during cooridnated events
 C = logical(0);   % Check if coordinated ripples are ocurring in a manner
 SRC = logical(0); % If I want to calculate the tuning curve for shocks
@@ -229,7 +230,7 @@ for tt = 1:length(path)
         disp('Uploading sleep scoring')
         x = dir([cd,'\*-states.mat']);    states = load([cd,'\',x.name]);    states = states.states;
         REM.all = ToIntervals(states==5);    NREM.all = ToIntervals(states==3);    WAKE.all = ToIntervals(states==1);
-        REM.all(REM.all(:,2)-REM.all(:,1)<60,:) = [];
+        %         REM.all(REM.all(:,2)-REM.all(:,1)<60,:) = [];
         clear x states
         
         NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
@@ -321,9 +322,9 @@ for tt = 1:length(path)
         % coordinated event when vRipple was first
         ripple_event.VD.baseline = Restrict(cooridnated_eventVD,baselineTS./1000);
         ripple_event.VD.reward = Restrict(cooridnated_eventVD,rewardTS./1000);
-        ripple_event.VD.aversive = Restrict(cooridnated_eventVD,aversiveTS./1000);        
+        ripple_event.VD.aversive = Restrict(cooridnated_eventVD,aversiveTS./1000);
         ripple_event.VD.all = cooridnated_eventVD;
-
+        
         %% Spikes
         % Load Units
         disp('Uploading Spiking activity')
@@ -444,6 +445,14 @@ for tt = 1:length(path)
                 ripple_event.filtered.reward = Restrict(a,NREM.reward); % store reward events
                 ripple_event.filtered.aversive = Restrict(a,NREM.aversive); % store aversive events
                 clear a b  spks
+                
+            else
+                a = ripplesD(:,1:3); % center of the event
+                ripple_event.filtered.all = Restrict(a,NREM.all); % store all events
+                ripple_event.filtered.baseline = Restrict(a,NREM.baseline); % store baseline events
+                ripple_event.filtered.reward = Restrict(a,NREM.reward); % store reward events
+                ripple_event.filtered.aversive = Restrict(a,NREM.aversive); % store aversive events
+                clear a b  spks
             end
             
             %%
@@ -462,15 +471,15 @@ for tt = 1:length(path)
             if isfile('dorsalventral_assemblies_aversive.mat')
                 load('dorsalventral_assemblies_aversive.mat')
                 
-%             if not(exist('Th','var'))
-%                 disp('Detection of assemblies using Aversive template')
-%                 limits = aversiveTS_run./1000;
-%                 events = [];
-%                 events = movement.aversive;
-%                 [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
-%                 [Th , pat] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
-%                 save([cd,'\dorsalventral_assemblies_aversive3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
-%             end
+                %             if not(exist('Th','var'))
+                %                 disp('Detection of assemblies using Aversive template')
+                %                 limits = aversiveTS_run./1000;
+                %                 events = [];
+                %                 events = movement.aversive;
+                %                 [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
+                %                 [Th , pat] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
+                %                 save([cd,'\dorsalventral_assemblies_aversive3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
+                %             end
                 
                 Thresholded.aversive.all = Th;
                 patterns.all.aversive = pat;
@@ -491,15 +500,15 @@ for tt = 1:length(path)
             if isfile('dorsalventral_assemblies_reward.mat')
                 load('dorsalventral_assemblies_reward.mat')
                 
-%             if not(exist('Th','var'))
-%                 disp('Detection of assemblies using Rewarded template')
-%                 limits = rewardTS_run./1000;
-%                 events = [];
-%                 events = movement.reward;
-%                 [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
-%                 [Th , pat] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
-%                 save([cd,'\dorsalventral_assemblies_reward3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
-%             end
+                %             if not(exist('Th','var'))
+                %                 disp('Detection of assemblies using Rewarded template')
+                %                 limits = rewardTS_run./1000;
+                %                 events = [];
+                %                 events = movement.reward;
+                %                 [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
+                %                 [Th , pat] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
+                %                 save([cd,'\dorsalventral_assemblies_reward3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
+                %             end
                 
                 Thresholded.reward.all = Th;
                 patterns.all.reward = pat;
@@ -533,7 +542,9 @@ for tt = 1:length(path)
             clear A R r p
             
             % to save the clusters I used for further analysis
-%             save([cd,'\clusters_included_in_assemblies.mat'],'clusters')
+            %             save([cd,'\clusters_included_in_assemblies.mat'],'clusters')
+            
+            
             %% SpikeTrains construction
             limits = [0 segments.Var1(end)/1000];
             events = [];
@@ -572,256 +583,189 @@ for tt = 1:length(path)
                 
                 %% Reactivation Strenght
                 
-%                 if aversiveTS_run(1) < rewardTS_run(1)
-                    if sum(cond.both.aversive)>=1
-                        [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
-                        reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R]; clear R
-                    end
-                    
-                    if sum(cond.dHPC.aversive)>=1
-                        [R] = reactivation_strength(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
-                        reactivation.aversive.dHPC = [reactivation.aversive.dHPC ; R]; clear R
-                    end
-                    
-                    if sum(cond.vHPC.aversive)>=1
-                        [R] = reactivation_strength(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
-                        reactivation.aversive.vHPC = [reactivation.aversive.vHPC ; R]; clear R
-                    end
-%                 end
+                %                 if aversiveTS_run(1) < rewardTS_run(1)
+                if sum(cond.both.aversive)>=1
+                    [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
+                    reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
+                    RBA = R; clear R
+                end
+                
+                if sum(cond.dHPC.aversive)>=1
+                    [R] = reactivation_strength(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
+                    reactivation.aversive.dHPC = [reactivation.aversive.dHPC ; R];
+                    RDA = R; clear R
+                end
+                
+                if sum(cond.vHPC.aversive)>=1
+                    [R] = reactivation_strength(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
+                    reactivation.aversive.vHPC = [reactivation.aversive.vHPC ; R];
+                    RVA = R; clear R
+                end
+                %                 end
                 
                 
-%                 if aversiveTS_run(1) > rewardTS_run(1)
-                    if sum(cond.both.reward)>=1
-                        [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
-                        reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R]; clear R
-                    end
-                    
-                    if sum(cond.dHPC.reward)>=1
-                        [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
-                        reactivation.reward.dHPC = [reactivation.reward.dHPC ; R]; clear R
-                    end
-                    
-                    if sum(cond.vHPC.reward)>=1
-                        [R] = reactivation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
-                        reactivation.reward.vHPC = [reactivation.reward.vHPC ; R]; clear R
-                    end
-%                 end
+                %                 if aversiveTS_run(1) > rewardTS_run(1)
+                if sum(cond.both.reward)>=1
+                    [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
+                    reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
+                    RBR = R; clear R
+                end
                 
+                if sum(cond.dHPC.reward)>=1
+                    [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
+                    reactivation.reward.dHPC = [reactivation.reward.dHPC ; R];
+                    RDR = R; clear R
+                end
+                
+                if sum(cond.vHPC.reward)>=1
+                    [R] = reactivation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
+                    reactivation.reward.vHPC = [reactivation.reward.vHPC ; R];
+                    RVR = R; clear R
+                end
+                %                 end
             end
             
-            %             %% CCG
-            %             %  Only members
-            %             load([cd,'\assemblies_members.mat'])
-            %
-            %             % --- Aversive ---
-            %             disp('Cross-CCG between members during coordinated events')
-            %             if sum(cond.both.aversive)>=1
-            %                 cross.aversive.both.pre= [];
-            %                 cross.aversive.both.post= [];
-            %                 for i = 1:size(members.both.aversive,2)
-            %                     x = members.both.aversive{i}(ismember(members.both.aversive{i},group_dHPC(:,1)));
-            %                     y = members.both.aversive{i}(ismember(members.both.aversive{i},group_vHPC(:,1)));
-            %
-            %                     for ii = 1 : size(x,1)
-            %                         event.baseline = [ripple_event.filtered.baseline - 0.5 ripple_event.filtered.baseline + 0.5];
-            %                         event.reward = [ripple_event.filtered.reward - 0.5 ripple_event.filtered.reward + 0.5];
-            %                         event.aversive = [ripple_event.filtered.aversive - 0.5 ripple_event.filtered.aversive + 0.5];
-            %
-            %                         xx.baseline = Restrict(spks_dHPC(ismember(spks_dHPC(:,1),x(ii)),2),event.baseline);
-            %                         xx.reward = Restrict(spks_dHPC(ismember(spks_dHPC(:,1),x(ii)),2),event.reward);
-            %                         xx.aversive = Restrict(spks_dHPC(ismember(spks_dHPC(:,1),x(ii)),2),event.aversive);
-            %                         for iii = 1 : size(y,1)
-            %                             yy.baseline = Restrict(spks_vHPC(ismember(spks_vHPC(:,1),y(iii)),2),event.baseline);
-            %                             yy.reward = Restrict(spks_vHPC(ismember(spks_vHPC(:,1),y(iii)),2),event.reward);
-            %                             yy.aversive = Restrict(spks_vHPC(ismember(spks_vHPC(:,1),y(iii)),2),event.aversive);
-            %
-            %                             if and(and(length(xx.baseline)>10 , length(xx.reward)>10),length(xx.aversive)>10)
-            %                                 if and(and(length(yy.baseline)>10 , length(yy.reward)>10),length(yy.aversive)>10)
-            %                                     if aversiveTS_run(1) < rewardTS_run(1)
-            %                                         [s,ids,groups] = CCGParameters(xx.baseline,ones(length(xx.baseline),1),yy.baseline,ones(length(yy.baseline),1)*2);
-            %                                         [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',0.4,'smooth',0,'mode','ccg'); %ccg calculation
-            %                                         cross.aversive.both.pre= [cross.aversive.both.pre , zscore(ccg(:,1,2)./sum(ccg(:,1,2)))];
-            %                                         %                                 figure, plot(tttt , ccg(:,1,2)./sum(ccg(:,1,2))),xlim([-0.3 0.3]), hold on
-            %                                         clear s ids groups ccg tttt
-            %
-            %                                         [s,ids,groups] = CCGParameters(xx.aversive,ones(length(xx.aversive),1),yy.aversive,ones(length(yy.aversive),1)*2);
-            %                                         [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',0.4,'smooth',0,'mode','ccg'); %ccg calculation
-            %                                         cross.aversive.both.post= [cross.aversive.both.post , zscore(ccg(:,1,2)./sum(ccg(:,1,2)))];
-            %                                         %                                 plot(tttt , ccg(:,1,2)./sum(ccg(:,1,2))),xlim([-0.3 0.3]), hold on
-            %                                         clear s ids groups ccg tttt
-            %                                     else
-            %                                         [s,ids,groups] = CCGParameters(xx.reward,ones(length(xx.reward),1),yy.reward,ones(length(yy.reward),1)*2);
-            %                                         [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',0.4,'smooth',0,'mode','ccg'); %ccg calculation
-            %                                         cross.aversive.both.pre= [cross.aversive.both.pre , zscore(ccg(:,1,2)./sum(ccg(:,1,2)))];
-            %                                         %                                 figure, plot(tttt , ccg(:,1,2)./sum(ccg(:,1,2))),xlim([-0.3 0.3]), hold on
-            %                                         clear s ids groups ccg tttt
-            %
-            %                                         [s,ids,groups] = CCGParameters(xx.aversive,ones(length(xx.aversive),1),yy.aversive,ones(length(yy.aversive),1)*2);
-            %                                         [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',0.4,'smooth',0,'mode','ccg'); %ccg calculation
-            %                                         cross.aversive.both.post= [cross.aversive.both.post , zscore(ccg(:,1,2)./sum(ccg(:,1,2)))];
-            %                                         %                                 plot(tttt , ccg(:,1,2)./sum(ccg(:,1,2))),xlim([-0.3 0.3]), hold on
-            %                                         clear s ids groups ccg tttt
-            %                                     end
-            %                                 end
-            %                             end
-            %                         end
-            %                     end
-            %                     clear x y
-            %                 end
-            %             end
-            %
-            %             % --- Reward ---
-            %             if sum(cond.both.reward)>=1
-            %                 cross.reward.both.pre= [];
-            %                 cross.reward.both.post= [];
-            %                 for i = 1:size(members.both.reward,2)
-            %                     x = members.both.reward{i}(ismember(members.both.reward{i},group_dHPC(:,1)));
-            %                     y = members.both.reward{i}(ismember(members.both.reward{i},group_vHPC(:,1)));
-            %
-            %                     for ii = 1 : size(x,1)
-            %                         event.baseline = [ripple_event.filtered.baseline - 0.5 ripple_event.filtered.baseline + 0.5];
-            %                         event.reward = [ripple_event.filtered.reward - 0.5 ripple_event.filtered.reward + 0.5];
-            %                         event.aversive = [ripple_event.filtered.aversive - 0.5 ripple_event.filtered.aversive + 0.5];
-            %
-            %                         xx.baseline = Restrict(spks_dHPC(ismember(spks_dHPC(:,1),x(ii)),2),event.baseline);
-            %                         xx.reward = Restrict(spks_dHPC(ismember(spks_dHPC(:,1),x(ii)),2),event.reward);
-            %                         xx.aversive = Restrict(spks_dHPC(ismember(spks_dHPC(:,1),x(ii)),2),event.aversive);
-            %                         for iii = 1 : size(y,1)
-            %                             yy.baseline = Restrict(spks_vHPC(ismember(spks_vHPC(:,1),y(iii)),2),event.baseline);
-            %                             yy.reward = Restrict(spks_vHPC(ismember(spks_vHPC(:,1),y(iii)),2),event.reward);
-            %                             yy.aversive = Restrict(spks_vHPC(ismember(spks_vHPC(:,1),y(iii)),2),event.aversive);
-            %                             if and(and(length(xx.baseline)>10 , length(xx.reward)>10),length(xx.aversive)>10)
-            %                                 if and(and(length(yy.baseline)>10 , length(yy.reward)>10),length(yy.aversive)>10)
-            %                                     if aversiveTS_run(1) > rewardTS_run(1)
-            %                                         [s,ids,groups] = CCGParameters(xx.baseline,ones(length(xx.baseline),1),yy.baseline,ones(length(yy.baseline),1)*2);
-            %                                         [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',0.4,'smooth',0,'mode','ccg'); %ccg calculation
-            %                                         cross.reward.both.pre= [cross.reward.both.pre , zscore(ccg(:,1,2)./sum(ccg(:,1,2)))];
-            %                                         %                                 figure, plot(tttt , ccg(:,1,2)./sum(ccg(:,1,2))),xlim([-0.3 0.3]), hold on
-            %                                         clear s ids groups ccg
-            %
-            %                                         [s,ids,groups] = CCGParameters(xx.reward,ones(length(xx.reward),1),yy.reward,ones(length(yy.reward),1)*2);
-            %                                         [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',0.4,'smooth',0,'mode','ccg'); %ccg calculation
-            %                                         cross.reward.both.post= [cross.reward.both.post , zscore(ccg(:,1,2)./sum(ccg(:,1,2)))];
-            %                                         %                                 plot(tttt , ccg(:,1,2)./sum(ccg(:,1,2))),xlim([-0.3 0.3]), hold on
-            %                                         clear s ids groups ccg
-            %                                     else
-            %                                         [s,ids,groups] = CCGParameters(xx.aversive,ones(length(xx.aversive),1),yy.aversive,ones(length(yy.aversive),1)*2);
-            %                                         [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',0.4,'smooth',0,'mode','ccg'); %ccg calculation
-            %                                         cross.reward.both.pre= [cross.reward.both.pre , zscore(ccg(:,1,2)./sum(ccg(:,1,2)))];
-            %                                         %                                 figure, plot(tttt , ccg(:,1,2)./sum(ccg(:,1,2))),xlim([-0.3 0.3]), hold on
-            %                                         clear s ids groups ccg
-            %
-            %                                         [s,ids,groups] = CCGParameters(xx.reward,ones(length(xx.reward),1),yy.reward,ones(length(yy.reward),1)*2);
-            %                                         [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',0.4,'smooth',0,'mode','ccg'); %ccg calculation
-            %                                         cross.reward.both.post= [cross.reward.both.post , zscore(ccg(:,1,2)./sum(ccg(:,1,2)))];
-            %                                         %                                 plot(tttt , ccg(:,1,2)./sum(ccg(:,1,2))),xlim([-0.3 0.3]), hold on
-            %                                         clear s ids groups ccg
-            %                                     end
-            %                                 end
-            %                             end
-            %                         end
-            %                     end
-            %                     clear x y
-            %                 end
-            %             end
-            %
-            %             % Save data from this block
-            %             if exist('cross','var')
-            %                 if not(exist('CrossCCG_Aversive_pre'))
-            %                     if isfield(cross,'aversive')
-            %                         if not(isempty(cross.aversive.both.pre))
-            %                             CrossCCG_Aversive_pre = cross.aversive.both.pre;
-            %                             CrossCCG_Aversive_post = cross.aversive.both.post;
-            %                             time = tttt;
-            %                         end
-            %                     end
-            %                     if isfield(cross,'reward')
-            %                         if not(isempty(cross.reward.both.pre))
-            %                             CrossCCG_Reward_pre = cross.reward.both.pre;
-            %                             CrossCCG_Reward_post = cross.reward.both.post;
-            %                         end
-            %                     end
-            %                     clear cross
-            %                 else
-            %                     if isfield(cross,'aversive')
-            %                         if not(isempty(cross.aversive.both.pre))
-            %                             CrossCCG_Aversive_pre = [CrossCCG_Aversive_pre , cross.aversive.both.pre];
-            %                             CrossCCG_Aversive_post = [CrossCCG_Aversive_post , cross.aversive.both.post];
-            %                         end
-            %                     end
-            %                     if isfield(cross,'reward')
-            %                         if not(isempty(cross.reward.both.pre))
-            %                             CrossCCG_Reward_pre = [CrossCCG_Reward_pre , cross.reward.both.pre];
-            %                             CrossCCG_Reward_post = [CrossCCG_Reward_post , cross.reward.both.post];
-            %                         end
-            %                     end
-            %                     clear cross
-            %                 end
-            %             end
-            
-            
             %% Coordinated events triggered Assemblies activity
-            if TA
+            if TPks
                 disp('Triggered assemblies activity sourrounding cooridnated events')
                 % Aversive
-                if sum(cond.both.aversive) >= 1
-                    if aversiveTS_run(1) < rewardTS_run(1)
-                        [R.baseline] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 0.5 , ripple_event.filtered.baseline , 0 , 0);
-                        [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 0.5 , ripple_event.filtered.aversive , 0 , 0);
-                        
-                        if isempty(gain.both.aversive.pre)
-                            gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline];
-                            gain.both.aversive.post = [gain.both.aversive.post ; R.aversive];
+                if sum(RBA(:,end))>=1
+                    condd = logical(RBA(:,end));
+                    if sum(cond.both.aversive) >= 1
+                        if aversiveTS_run(1) < rewardTS_run(1)
+                            [R.baseline , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.baseline , 5 , NREM.baseline);
+                            [R.aversive , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 5 , NREM.aversive);
+                            
+                            if isempty(gain.both.aversive.pre)
+                                gain.both.aversive.pre = [gain.both.aversive.pre , R.baseline(:,condd)];
+                                gain.both.aversive.post = [gain.both.aversive.post , R.aversive(:,condd)];
+                            else
+                                gain.both.aversive.pre = [gain.both.aversive.pre , R.baseline(:,condd)];
+                                gain.both.aversive.post = [gain.both.aversive.post , R.aversive(:,condd)];
+                            end
+                            
+                            clear R
                         else
-                            gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline(:,1:size(gain.both.aversive.pre,2))];
-                            gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(:,1:size(gain.both.aversive.pre,2))];
+                            [R.reward , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.reward , 5 , NREM.reward);
+                            [R.aversive , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 5 , NREM.aversive);
+                            
+                            if isempty(gain.both.aversive.pre)
+                                gain.both.aversive.pre = [gain.both.aversive.pre , R.reward(:,condd)];
+                                gain.both.aversive.post = [gain.both.aversive.post , R.aversive(:,condd)];
+                            else
+                                gain.both.aversive.pre = [gain.both.aversive.pre , R.reward(:,condd)];
+                                gain.both.aversive.post = [gain.both.aversive.post , R.aversive(:,condd)];
+                            end
+                            clear R
                         end
-                        
-                        clear R
-                    else
-                        [R.reward] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 0.5 , ripple_event.filtered.reward , 0 , 0);
-                        [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 0.5 , ripple_event.filtered.aversive , 0 , 0);
-                        
-                        if isempty(gain.both.aversive.pre)
-                            gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward];
-                            gain.both.aversive.post = [gain.both.aversive.post ; R.aversive];
-                        else
-                            gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward(:,1:size(gain.both.aversive.pre,2))];
-                            gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(:,1:size(gain.both.aversive.pre,2))];
-                        end
-                        clear R
                     end
+                    clear condd
                 end
                 
                 % Reward
-                if sum(cond.both.reward) >= 1
-                    if aversiveTS_run(1) > rewardTS_run(1)
-                        [R.baseline] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 0.5 , ripple_event.filtered.baseline , 0 , 0);
-                        [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 0.5 , ripple_event.filtered.reward , 0 , 0);
-                        
-                        if isempty(gain.both.reward.pre)
-                            gain.both.reward.pre = [gain.both.reward.pre ; R.baseline];
-                            gain.both.reward.post = [gain.both.reward.post ; R.reward];
+                if RBR(:,end)>=1
+                    condd = logical(RBR(:,end));
+                    if sum(cond.both.reward) >= 1
+                        if aversiveTS_run(1) > rewardTS_run(1)
+                            [R.baseline , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.baseline , 5 , NREM.baseline);
+                            [R.reward , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.reward , 5 , NREM.reward);
+                            
+                            if isempty(gain.both.reward.pre)
+                                gain.both.reward.pre = [gain.both.reward.pre , R.baseline(:,condd)];
+                                gain.both.reward.post = [gain.both.reward.post , R.reward(:,condd)];
+                            else
+                                gain.both.reward.pre = [gain.both.reward.pre , R.baseline(:,condd)];
+                                gain.both.reward.post = [gain.both.reward.post , R.reward(:,condd)];
+                            end
+                            clear R
                         else
-                            gain.both.reward.pre = [gain.both.reward.pre ; R.baseline(:,1:size(gain.both.reward.pre,2))];
-                            gain.both.reward.post = [gain.both.reward.post ; R.reward(:,1:size(gain.both.reward.pre,2))];
+                            [R.aversive , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 5 , NREM.aversive);
+                            [R.reward , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.reward , 5 , NREM.reward);
+                            
+                            if isempty(gain.both.reward.pre)
+                                gain.both.reward.pre = [gain.both.reward.pre , R.aversive(:,condd)];
+                                gain.both.reward.post = [gain.both.reward.post , R.reward(:,condd)];
+                            else
+                                gain.both.reward.pre = [gain.both.reward.pre , R.aversive(:,condd)];
+                                gain.both.reward.post = [gain.both.reward.post , R.reward(:,condd)];
+                            end
+                            clear R
                         end
-                        clear R
-                    else
-                        [R.aversive] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 0.5 , ripple_event.filtered.aversive , 0 , 0);
-                        [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 0.5 , ripple_event.filtered.reward , 0 , 0);
-                        
-                        if isempty(gain.both.reward.pre)
-                            gain.both.reward.pre = [gain.both.reward.pre ; R.aversive];
-                            gain.both.reward.post = [gain.both.reward.post ; R.reward];
-                        else
-                            gain.both.reward.pre = [gain.both.reward.pre ; R.aversive(:,1:size(gain.both.reward.pre,2))];
-                            gain.both.reward.post = [gain.both.reward.post ; R.reward(:,1:size(gain.both.reward.pre,2))];
-                        end
-                        clear R
                     end
+                    clear cond
                 end
             end
+            
+            if TA
+                disp('Triggered assemblies activity sourrounding cooridnated events')
+                % Aversive
+                if RBA(:,end)>=1
+                    condd = logical(RBA(:,end));
+                    if sum(cond.both.aversive) >= 1
+                        if aversiveTS_run(1) < rewardTS_run(1)
+                            [R.baseline] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.baseline , 0 , 1);
+                            [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 0 , 1);
+                            
+                            if isempty(gain.both.aversive.pre)
+                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline(condd,:)];
+                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(condd,:)];
+                            else
+                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline(condd,1:size(gain.both.aversive.pre,2))];
+                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(condd,1:size(gain.both.aversive.pre,2))];
+                            end
+                            
+                            clear R
+                        else
+                            [R.reward] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 1);
+                            [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 0 , 1);
+                            
+                            if isempty(gain.both.aversive.pre)
+                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward(condd,:)];
+                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(condd,:)];
+                            else
+                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward(condd,1:size(gain.both.aversive.pre,2))];
+                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(condd,1:size(gain.both.aversive.pre,2))];
+                            end
+                            clear R
+                        end
+                    end
+                    clear condd
+                end
+                
+                % Reward
+                if RBR(:,end)>=1
+                    condd = logical(RBR(:,end));
+                    if sum(cond.both.reward) >= 1
+                        if aversiveTS_run(1) > rewardTS_run(1)
+                            [R.baseline] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.baseline , 0 , 1);
+                            [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 1);
+                            
+                            if isempty(gain.both.reward.pre)
+                                gain.both.reward.pre = [gain.both.reward.pre ; R.baseline(condd,:)];
+                                gain.both.reward.post = [gain.both.reward.post ; R.reward(condd,:)];
+                            else
+                                gain.both.reward.pre = [gain.both.reward.pre ; R.baseline(condd,1:size(gain.both.reward.pre,2))];
+                                gain.both.reward.post = [gain.both.reward.post ; R.reward(condd,1:size(gain.both.reward.pre,2))];
+                            end
+                            clear R
+                        else
+                            [R.aversive] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 0 , 1);
+                            [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 1);
+                            
+                            if isempty(gain.both.reward.pre)
+                                gain.both.reward.pre = [gain.both.reward.pre ; R.aversive(condd,:)];
+                                gain.both.reward.post = [gain.both.reward.post ; R.reward(condd,:)];
+                            else
+                                gain.both.reward.pre = [gain.both.reward.pre ; R.aversive(condd,1:size(gain.both.reward.pre,2))];
+                                gain.both.reward.post = [gain.both.reward.post ; R.reward(condd,1:size(gain.both.reward.pre,2))];
+                            end
+                            clear R
+                        end
+                    end
+                    clear cond
+                end
+            end
+            
             
             %% Recruitment of Assemblies during coordinated Events
             if REC
@@ -864,7 +808,7 @@ for tt = 1:length(path)
                         gain.both.aversive.post = [gain.both.reward.post ; R.reward];
                         clear R
                     end
-                end  
+                end
             end
             
             %% Temporality of the cooridnated events
@@ -985,7 +929,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(131),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err)%;ylim([-0.06 0.08])
+er = errorbar(xx,yy,err);ylim([-0.08 0.06])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -1009,7 +953,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(132),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);%ylim([-0.06 0.08])
+er = errorbar(xx,yy,err);ylim([-0.08 0.06])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -1033,7 +977,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(133),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err)%;ylim([-0.06 0.08])
+er = errorbar(xx,yy,err);ylim([-0.08 0.06])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -1275,34 +1219,34 @@ hold off
 [i , iii] = sort(ii,'descend');
 
 figure,
-subplot(131),imagesc([-2 : binSize : 2],[1:1:size(gain.both.aversive.pre,2)],gain.both.aversive.pre(:,iii)'),xlim([-2 2]),caxis([-2 2]),colormap 'jet'
-subplot(132),imagesc([-2 : binSize : 2],[1:1:size(gain.both.aversive.post,2)],gain.both.aversive.post(:,iii)'),xlim([-2 2]),caxis([-2 2]),colormap 'jet'
+subplot(131),imagesc(ttttt,[1:1:size(gain.both.aversive.pre,2)],gain.both.aversive.pre(:,iii)'),xlim([-2 2]),caxis([-2 2]),colormap 'jet'
+subplot(132),imagesc(ttttt,[1:1:size(gain.both.aversive.post,2)],gain.both.aversive.post(:,iii)'),xlim([-2 2]),caxis([-2 2]),colormap 'jet'
 clear i ii iii
 
-subplot(133),plot([-2 : binSize : 2],mean(gain.both.aversive.pre,1,'omitnan'),'k','LineWidth',2),hold on
+subplot(133),plot(ttttt,mean(gain.both.aversive.pre,1,'omitnan'),'k','LineWidth',2),hold on
 sem = std(gain.both.aversive.pre,0,1,'omitnan')/sqrt(size(gain.both.aversive.pre,1));
-ciplot(mean(gain.both.aversive.pre,1,'omitnan')-sem , mean(gain.both.aversive.pre,1,'omitnan')+sem,[-2 : binSize : 2],'k'),alpha 0.5
-plot([-2 : binSize : 2],mean(gain.both.aversive.post,1,'omitnan'),'r','LineWidth',1),hold on
+ciplot(mean(gain.both.aversive.pre,1,'omitnan')-sem , mean(gain.both.aversive.pre,1,'omitnan')+sem,ttttt,'k'),alpha 0.5
+plot(ttttt,mean(gain.both.aversive.post,1,'omitnan'),'r','LineWidth',1),hold on
 sem = std(gain.both.aversive.post,0,1,'omitnan')/sqrt(size(gain.both.aversive.post,1));
-ciplot(mean(gain.both.aversive.post,1,'omitnan')-sem , mean(gain.both.aversive.post,1,'omitnan')+sem,[-2 : binSize : 2],'r'),alpha 0.5,xlim([-0.5 0.5])
+ciplot(mean(gain.both.aversive.post,1,'omitnan')-sem , mean(gain.both.aversive.post,1,'omitnan')+sem,ttttt,'r'),alpha 0.5,xlim([-0.5 0.5])
 
 
 % 
-[i ii] = max(CrossCCG_Reward_pre);
+[i ii] = max(gain.both.reward.post);
 [i , iii] = sort(ii,'descend');
 figure,
-subplot(131),imagesc(time,[1:1:size(CrossCCG_Reward_pre,2)],CrossCCG_Reward_pre(:,iii)'),xlim([-0.2 0.2]),caxis([-3 3]),colormap 'jet'
-subplot(132),imagesc(time,[1:1:size(CrossCCG_Reward_post,2)],CrossCCG_Reward_post(:,iii)'),xlim([-0.2 0.2]),caxis([-3 3]),colormap 'jet'
+subplot(131),imagesc(ttttt,[1:1:size(gain.both.reward.post,2)],gain.both.reward.pre(:,iii)'),xlim([-0.2 0.2]),caxis([-3 3]),colormap 'jet'
+subplot(132),imagesc(ttttt,[1:1:size(gain.both.reward.post,2)],gain.both.reward.post(:,iii)'),xlim([-0.2 0.2]),caxis([-3 3]),colormap 'jet'
 clear i ii iii
 
 
 
-subplot(133),plot(time,mean(CrossCCG_Reward_pre,2,'omitnan'),'k','LineWidth',2),hold on
-sem = std(CrossCCG_Reward_pre,0,2,'omitnan')/sqrt(size(CrossCCG_Reward_pre,2));
-ciplot(mean(CrossCCG_Reward_pre,2,'omitnan')-sem , mean(CrossCCG_Reward_pre,2,'omitnan')+sem,time,'k'),alpha 0.5
-plot(time,mean(CrossCCG_Reward_post,2,'omitnan'),'r','LineWidth',2),hold on
-sem = std(CrossCCG_Reward_post,0,2,'omitnan')/sqrt(size(CrossCCG_Reward_post,2));
-ciplot(mean(CrossCCG_Reward_post,2,'omitnan')-sem , mean(CrossCCG_Reward_post,2,'omitnan')+sem,time,'r'),alpha 0.5,ylim([-0.3 0.6]),xlim([-0.2 0.2])
+subplot(133),plot(ttttt,mean(gain.both.reward.pre,1,'omitnan'),'k','LineWidth',2),hold on
+sem = std(gain.both.reward.pre,0,1,'omitnan')/sqrt(size(gain.both.reward.pre,1));
+ciplot(mean(gain.both.reward.pre,1,'omitnan')-sem , mean(gain.both.reward.pre,1,'omitnan')+sem,ttttt,'k'),alpha 0.5
+plot(ttttt,mean(gain.both.reward.post,1,'omitnan'),'r','LineWidth',2),hold on
+sem = std(gain.both.reward.post,0,1,'omitnan')/sqrt(size(gain.both.reward.post,1));
+ciplot(mean(gain.both.reward.post,1,'omitnan')-sem , mean(gain.both.reward.post,1,'omitnan')+sem,[-2 : binSize : 2],'r'),alpha 0.5,%ylim([-0.3 0.6]),xlim([-0.2 0.2])
 
 %% PHIST sourrounding the shock
 d = ResponsiveS(:,1)==1;
