@@ -16,7 +16,7 @@ W = 'E'; % to select what kind of ripples I want to check
 % CB = cooridnated bursts
 % N= NREM, R= REM
 TA =  logical(0); % Trigger Reactivation Strength
-TPks = logical(1); %trigger CCG assemblies peaks to events
+TPks = logical(0); %trigger CCG assemblies peaks to events
 REC = logical(0); % Assemblie Recruitment during cooridnated events
 C = logical(0);   % Check if coordinated ripples are ocurring in a manner
 SRC = logical(0); % If I want to calculate the tuning curve for shocks
@@ -468,8 +468,8 @@ for tt = 1:length(path)
             
             % --- Aversive ---
             disp('Loading Aversive template')
-            if isfile('dorsalventral_assemblies_aversive.mat')
-                load('dorsalventral_assemblies_aversive.mat')
+            if isfile('dorsalventral_assemblies_aversive3.mat')
+                load('dorsalventral_assemblies_aversive3.mat')
                 
                 %             if not(exist('Th','var'))
                 %                 disp('Detection of assemblies using Aversive template')
@@ -497,8 +497,8 @@ for tt = 1:length(path)
             
             % --- Reward ---
             disp('Loading Reward template')
-            if isfile('dorsalventral_assemblies_reward.mat')
-                load('dorsalventral_assemblies_reward.mat')
+            if isfile('dorsalventral_assemblies_reward3.mat')
+                load('dorsalventral_assemblies_reward3.mat')
                 
                 %             if not(exist('Th','var'))
                 %                 disp('Detection of assemblies using Rewarded template')
@@ -929,7 +929,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(131),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.08 0.06])
+er = errorbar(xx,yy,err);ylim([-0.07 0.07])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -953,7 +953,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(132),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.08 0.06])
+er = errorbar(xx,yy,err);ylim([-0.07 0.07])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -977,7 +977,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(133),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.08 0.06])
+er = errorbar(xx,yy,err);ylim([-0.07 0.07])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off

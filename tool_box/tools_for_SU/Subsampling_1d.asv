@@ -4,27 +4,46 @@
 %azul
 %
 
-function [pos_sub, tspk_sub] = Subsampling_1d(pos, tspks,dt,Xedges,sigma)
+function [sub_ratemap_ave, sub_ratemap_rew] = Subsampling_1d(pos_ave, spks_ave,pos_rew, spks_rew,dt,Xedges,sigma)
 
      %Assigne positions to bins for each condition (rew/ave)
-     [N,~,binX]  = histcounts(pos(:,2),Xedges);
-     
+     [N_ave,~,binX]  = histcounts(pos_ave(:,2),Xedges);
+     [N_rew,~,binXr] = histcounts(pos_rew(:,2),Xedges);
+
      % Create matrices with bin info 
-      pos_ave = [pos,binX];  
-      
+      pos_ave = [pos_ave,binX];  
+      pos_rew = [pos_rew,binXr];
+
      %Assigne spikes to bins 
      %Create time serie matrix for spikes: 
-      bspks = [pos(:,1),zeros(size(pos(:,1),1),1)]; 
-      for i= 1:size(bspks,1)-1
+      bspks_ave = [pos_ave(:,1),zeros(size(pos_ave(:,1),1),1)]; 
+      for i= 1:size(bspks_ave,1)-1
           %Define interval time window: 
-           ini = bspks(i,1);
-           fin = bspks(i+1,1);
+           ini = bspks_ave(i,1);
+           fin = bspks_ave(i+1,1);
           %Select time_spk within that interval
            in= spks_ave(spks_ave>=ini & spks_ave<fin); 
           %Save results 
           bspks_ave(i,2)= length(in);
       end
       
+      bspks_rew = [pos_rew(:,1),zeros(size(pos_rew(:,1),1),1)]; 
+      for i= 1:size(bspks_rew,1)-1
+          %Define interval time window: 
+           ini = bspks_rew(i,1);
+           fin = bspks_rew(i+1,1);
+          %Select time_spk within that interval
+           in= spks_rew(spks_rew>=ini & spks_rew<fin); 
+          %Save results 
+          bspks_rew(i,2)= length(in);
+      end
+     
+    %Create spk matrix 
+     Xs = interp1(pos_ave(:,1),pos_ave(:,2),spks_ave);
+     Nspk_ave = histcounts(Xs,Xedges);
+     
+     Xs = interp1(pos_rew(:,1),pos_rew(:,2),spks_rew);
+     Nspk_rew = histcounts(Xs,Xedges);
      
      %Compute differences between occup maps 
      d = N_ave - N_rew;

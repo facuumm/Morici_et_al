@@ -301,7 +301,10 @@ for tt = 1:length(path)
                     % --- Aversive ---
                     spks_tmp = Restrict(spks , movement.aversive); % Restrict spikes to movement periods
                     pos_tmp = Restrict(behavior.pos.aversive(:,1:2) , movement.aversive); % Restrict pos to movement periods
-                    pos_tmp = pos_tmp(and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170),:); % eliminating the extrems of the maze
+%                     pos_tmp = pos_tmp(and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170),:); % eliminating the extrems of the maze
+                    in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
+                    spks_tmp = Restrict(spks_tmp,in_maze);
+                    pos_tmp = Restrict(pos_tmp,in_maze); 
                     pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
                     
                     %Firing curve construction
@@ -318,6 +321,9 @@ for tt = 1:length(path)
                     % --- Reward ---
                     spks_tmp = Restrict(spks , movement.reward); % Restrict to movement periods
                     pos_tmp = Restrict(behavior.pos.reward(:,1:2), movement.reward);
+                    in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
+                    spks_tmp = Restrict(spks_tmp,in_maze);
+                    pos_tmp = Restrict(pos_tmp,in_maze); 
                     pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
                     
                     %Firing curve construction
@@ -342,6 +348,11 @@ for tt = 1:length(path)
                     end 
                     
                     if or(sum(statsA.field(:,:,1))>= 4 , sum(statsR.field(:,:,1))>= 4) 
+                        %Calculate subsampled ratemaps
+                        [sub_ratemap_ave, sub_ratemap_rew] = Subsampling_1d(pos_ave, spks_ave,pos_rew, spks_rew,dt,Xedges,sigma); 
+                         s = corrcoef(curveA.rate, curveR.rate);
+                        spatial = s(1,2);
+                        
                         
                         %Store pc info 
                         n.id = cluster; 
@@ -454,7 +465,10 @@ for tt = 1:length(path)
                     % --- Aversive ---
                     spks_tmp = Restrict(spks , movement.aversive);
                     pos_tmp = Restrict(behavior.pos.aversive(:,1:2) , movement.aversive); % Restrict pos to movement periods
-                    pos_tmp = pos_tmp(and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170),:); % eliminating the extrems of the maze
+%                     pos_tmp = pos_tmp(and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170),:); % eliminating the extrems of the maze
+                    in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
+                    spks_tmp = Restrict(spks_tmp,in_maze);
+                    pos_tmp = Restrict(pos_tmp,in_maze); 
                     pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
                     
                     %Firing curve construction
@@ -470,6 +484,9 @@ for tt = 1:length(path)
                     % --- Reward ---
                     spks_tmp = Restrict(spks , movement.reward); % Restrict to movement periods
                     pos_tmp = Restrict(behavior.pos.reward(:,1:2) , movement.reward);
+                    in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
+                    spks_tmp = Restrict(spks_tmp,in_maze);
+                    pos_tmp = Restrict(pos_tmp,in_maze); 
                     pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
                     
                     %Firing curve construction
@@ -565,7 +582,7 @@ for tt = 1:length(path)
     end
         
 
-    % Save output session
+    %% Save PC INFO 
     if ~isempty(dHPC)
         dHPC = dHPC(~cellfun('isempty',dHPC));
         save([cd,'\dHPC_pc.mat'],'dHPC'); 

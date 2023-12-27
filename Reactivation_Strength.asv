@@ -11,12 +11,13 @@ time_criteria = 1; % minimal time to include a NREM epoch (in min)
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
 MUAselection = logical(0); % to select ripples by their MUA
-W = 'E'; % to select what kind of ripples I want to check
+W = 'DVn'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
+% DVn non-coordinated ripples
 % CB = cooridnated bursts
 % N= NREM, R= REM
 TA =  logical(0); % Trigger Reactivation Strength
-TPks = logical(1); %trigger CCG assemblies peaks to events
+TPks = logical(0); %trigger CCG assemblies peaks to events
 REC = logical(0); % Assemblie Recruitment during cooridnated events
 C = logical(0);   % Check if coordinated ripples are ocurring in a manner
 SRC = logical(0); % If I want to calculate the tuning curve for shocks
@@ -468,8 +469,8 @@ for tt = 1:length(path)
             
             % --- Aversive ---
             disp('Loading Aversive template')
-            if isfile('dorsalventral_assemblies_aversive.mat')
-                load('dorsalventral_assemblies_aversive.mat')
+            if isfile('dorsalventral_assemblies_aversive3.mat')
+                load('dorsalventral_assemblies_aversive3.mat')
                 
                 %             if not(exist('Th','var'))
                 %                 disp('Detection of assemblies using Aversive template')
@@ -497,8 +498,8 @@ for tt = 1:length(path)
             
             % --- Reward ---
             disp('Loading Reward template')
-            if isfile('dorsalventral_assemblies_reward.mat')
-                load('dorsalventral_assemblies_reward.mat')
+            if isfile('dorsalventral_assemblies_reward3.mat')
+                load('dorsalventral_assemblies_reward3.mat')
                 
                 %             if not(exist('Th','var'))
                 %                 disp('Detection of assemblies using Rewarded template')
@@ -929,7 +930,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(131),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.08 0.06])
+er = errorbar(xx,yy,err);ylim([-0.07 0.07])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -953,7 +954,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(132),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.08 0.06])
+er = errorbar(xx,yy,err);ylim([-0.07 0.07])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -977,7 +978,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(133),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.08 0.06])
+er = errorbar(xx,yy,err);ylim([-0.07 0.07])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -1219,34 +1220,34 @@ hold off
 [i , iii] = sort(ii,'descend');
 
 figure,
-subplot(131),imagesc(ttttt,[1:1:size(gain.both.aversive.pre,2)],gain.both.aversive.pre(:,iii)'),xlim([-2 2]),caxis([-2 2]),colormap 'jet'
-subplot(132),imagesc(ttttt,[1:1:size(gain.both.aversive.post,2)],gain.both.aversive.post(:,iii)'),xlim([-2 2]),caxis([-2 2]),colormap 'jet'
+subplot(131),imagesc(ttttt,[1:1:size(gain.both.aversive.pre,2)],gain.both.aversive.pre(:,iii)')%,xlim([-2 2]),caxis([-2 2]),colormap 'jet'
+subplot(132),imagesc(ttttt,[1:1:size(gain.both.aversive.post,2)],gain.both.aversive.post(:,iii)')%,xlim([-2 2]),caxis([-2 2]),colormap 'jet'
 clear i ii iii
 
-subplot(133),plot(ttttt,mean(gain.both.aversive.pre,1,'omitnan'),'k','LineWidth',2),hold on
-sem = std(gain.both.aversive.pre,0,1,'omitnan')/sqrt(size(gain.both.aversive.pre,1));
-ciplot(mean(gain.both.aversive.pre,1,'omitnan')-sem , mean(gain.both.aversive.pre,1,'omitnan')+sem,ttttt,'k'),alpha 0.5
-plot(ttttt,mean(gain.both.aversive.post,1,'omitnan'),'r','LineWidth',1),hold on
-sem = std(gain.both.aversive.post,0,1,'omitnan')/sqrt(size(gain.both.aversive.post,1));
-ciplot(mean(gain.both.aversive.post,1,'omitnan')-sem , mean(gain.both.aversive.post,1,'omitnan')+sem,ttttt,'r'),alpha 0.5,xlim([-0.5 0.5])
+subplot(133),plot(ttttt,mean(gain.both.aversive.pre,2,'omitnan'),'k','LineWidth',2),hold on
+sem = std(gain.both.aversive.pre,0,2,'omitnan')/sqrt(size(gain.both.aversive.pre,2));
+ciplot(mean(gain.both.aversive.pre,2,'omitnan')-sem , mean(gain.both.aversive.pre,2,'omitnan')+sem,ttttt,'k'),alpha 0.5
+plot(ttttt,mean(gain.both.aversive.post,2,'omitnan'),'r','LineWidth',1),hold on
+sem = std(gain.both.aversive.post,0,2,'omitnan')/sqrt(size(gain.both.aversive.post,2));
+ciplot(mean(gain.both.aversive.post,2,'omitnan')-sem , mean(gain.both.aversive.post,2,'omitnan')+sem,ttttt,'r'),alpha 0.5,xlim([-0.5 0.5])
 
 
 % 
 [i ii] = max(gain.both.reward.post);
 [i , iii] = sort(ii,'descend');
 figure,
-subplot(131),imagesc(ttttt,[1:1:size(gain.both.reward.post,2)],gain.both.reward.pre(:,iii)'),xlim([-0.2 0.2]),caxis([-3 3]),colormap 'jet'
-subplot(132),imagesc(ttttt,[1:1:size(gain.both.reward.post,2)],gain.both.reward.post(:,iii)'),xlim([-0.2 0.2]),caxis([-3 3]),colormap 'jet'
+subplot(131),imagesc(ttttt,[1:1:size(gain.both.reward.post,2)],gain.both.reward.pre(:,iii)')%,xlim([-0.2 0.2]),caxis([-3 3]),colormap 'jet'
+subplot(132),imagesc(ttttt,[1:1:size(gain.both.reward.post,2)],gain.both.reward.post(:,iii)')%,xlim([-0.2 0.2]),caxis([-3 3]),colormap 'jet'
 clear i ii iii
 
 
 
-subplot(133),plot(ttttt,mean(gain.both.reward.pre,1,'omitnan'),'k','LineWidth',2),hold on
-sem = std(gain.both.reward.pre,0,1,'omitnan')/sqrt(size(gain.both.reward.pre,1));
-ciplot(mean(gain.both.reward.pre,1,'omitnan')-sem , mean(gain.both.reward.pre,1,'omitnan')+sem,ttttt,'k'),alpha 0.5
-plot(ttttt,mean(gain.both.reward.post,1,'omitnan'),'r','LineWidth',2),hold on
-sem = std(gain.both.reward.post,0,1,'omitnan')/sqrt(size(gain.both.reward.post,1));
-ciplot(mean(gain.both.reward.post,1,'omitnan')-sem , mean(gain.both.reward.post,1,'omitnan')+sem,[-2 : binSize : 2],'r'),alpha 0.5,%ylim([-0.3 0.6]),xlim([-0.2 0.2])
+subplot(133),plot(ttttt,mean(gain.both.reward.pre,2,'omitnan'),'k','LineWidth',2),hold on
+sem = std(gain.both.reward.pre,0,2,'omitnan')/sqrt(size(gain.both.reward.pre,2));
+ciplot(mean(gain.both.reward.pre,2,'omitnan')-sem , mean(gain.both.reward.pre,2,'omitnan')+sem,ttttt,'k'),alpha 0.5
+plot(ttttt,mean(gain.both.reward.post,2,'omitnan'),'r','LineWidth',2),hold on
+sem = std(gain.both.reward.post,0,2,'omitnan')/sqrt(size(gain.both.reward.post,2));
+ciplot(mean(gain.both.reward.post,2,'omitnan')-sem , mean(gain.both.reward.post,2,'omitnan')+sem,ttttt,'r'),alpha 0.5,%ylim([-0.3 0.6]),xlim([-0.2 0.2])
 
 %% PHIST sourrounding the shock
 d = ResponsiveS(:,1)==1;
