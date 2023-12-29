@@ -1127,20 +1127,31 @@ ylabel('Reactivation Strength','FontSize',14);
 title('vHPC');
 
 %%
+figure
+scatter(reactivation.reward.vHPC(:,4) , reactivation.reward.vHPC(:,1),'filled'),hold on
+xlim([0 60]),ylim([-0.6 0.6])
 
 figure
-scatter(reactivation.reward.dvHPC(:,2) , reactivation.reward.dvHPC(:,1),'filled','MarkerFaceAlpha',0.5),hold on
-scatter(reactivation.aversive.dvHPC(:,2) , reactivation.aversive.dvHPC(:,1),'filled','MarkerFaceAlpha',0.5,'MarkerFaceColor','r'),hold on
+scatter(reactivation.aversive.vHPC(:,4) , reactivation.aversive.vHPC(:,1),'filled','MarkerFaceColor','r'),hold on
+xlim([0 60]),ylim([-0.6 0.6])
 
-xx = or(isnan(reactivation.aversive.dvHPC(:,2)) , isnan(reactivation.aversive.dvHPC(:,1)));
-x = reactivation.aversive.dvHPC(not(xx),2);
-y = reactivation.aversive.dvHPC(not(xx),1);
+xx = or(isnan(reactivation.aversive.vHPC(:,4)) , isnan(reactivation.aversive.vHPC(:,1)));
+x = reactivation.aversive.vHPC(not(xx),4);
+y = reactivation.aversive.vHPC(not(xx),1);
+figure
+fitlm(x,y)
+plot(ans)
+xlim([0 60]),ylim([-0.6 0.6])
 
-xx = or(isnan(reactivation.reward.dvHPC(:,2)) , isnan(reactivation.reward.dvHPC(:,1)));
-x = reactivation.reward.dvHPC(not(xx),2);
-y = reactivation.reward.dvHPC(not(xx),1);
+
+xx = or(isnan(reactivation.reward.vHPC(:,4)) , isnan(reactivation.reward.vHPC(:,1)));
+x = reactivation.reward.vHPC(not(xx),4);
+y = reactivation.reward.vHPC(not(xx),1);
 corr(x,y)
-
+figure
+fitlm(x,y)
+plot(ans)
+xlim([0 60]),ylim([-0.6 0.6])
 
 %% Plotting the number of peaks
 x = reactivation.reward.dvHPC(:,2)./reactivation.reward.dvHPC(:,3);
