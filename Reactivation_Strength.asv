@@ -10,10 +10,10 @@ time_criteria = 1; % minimal time to include a NREM epoch (in min)
 
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
-MUAselection = logical(0); % to select ripples by their MUA
-W = 'DVn'; % to select what kind of ripples I want to check
+MUAselection = logical(1); % to select ripples by their MUA
+W = 'E'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
-% DVn non-coordinated ripples
+% D= uncoordinated dorsal, V= uncoordinated ventral
 % CB = cooridnated bursts
 % N= NREM, R= REM
 TA =  logical(0); % Trigger Reactivation Strength
@@ -574,6 +574,15 @@ for tt = 1:length(path)
                     is.sws.baseline = InIntervals(bins,ripple_bursts.baseline);
                     is.sws.reward = InIntervals(bins,ripple_bursts.reward);
                     is.sws.aversive = InIntervals(bins,ripple_bursts.aversive);
+                elseif strcmp(W,'D')
+                    tmp = not(ismember(ripples.dHPC.baseline(:,2) , ripples.dHPC.coordinated.baseline(:,2)));
+                    tmp = [ripples.dHPC.baseline(tmp,2)-0.2 ripples.dHPC.baseline(tmp,2)+0.2];
+                    is.sws.baseline = InIntervals(bins,tmp); clear tmp
+                    
+                    tmp = not(ismember(ripples.dHPC.baseline(:,2) , ripples.dHPC.coordinated.baseline(:,2)));
+                    tmp = [ripples.dHPC.baseline(tmp,2)-0.2 ripples.dHPC.baseline(tmp,2)+0.2];
+                    is.sws.reward = InIntervals(bins,[ripple_event.filtered.reward(:,1)-0.2 ripple_event.filtered.reward(:,1)+0.2]);
+                    is.sws.aversive = InIntervals(bins,[ripple_event.filtered.aversive(:,1)-0.2 ripple_event.filtered.aversive(:,1)+0.2]);
                 end
                 
                 is.sws.runaversive = InIntervals(bins,movement.aversive);

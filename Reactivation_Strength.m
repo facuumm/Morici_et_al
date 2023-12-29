@@ -11,8 +11,9 @@ time_criteria = 1; % minimal time to include a NREM epoch (in min)
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
 MUAselection = logical(0); % to select ripples by their MUA
-W = 'E'; % to select what kind of ripples I want to check
+W = 'D'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
+% D= uncoordinated dorsal, V= uncoordinated ventral
 % CB = cooridnated bursts
 % N= NREM, R= REM
 TA =  logical(0); % Trigger Reactivation Strength
@@ -573,6 +574,31 @@ for tt = 1:length(path)
                     is.sws.baseline = InIntervals(bins,ripple_bursts.baseline);
                     is.sws.reward = InIntervals(bins,ripple_bursts.reward);
                     is.sws.aversive = InIntervals(bins,ripple_bursts.aversive);
+                elseif strcmp(W,'D')
+                    tmp = not(ismember(ripples.dHPC.baseline(:,2) , ripples.dHPC.coordinated.baseline(:,2)));
+                    tmp = [ripples.dHPC.baseline(tmp,2)-0.2 ripples.dHPC.baseline(tmp,2)+0.2];
+                    is.sws.baseline = InIntervals(bins,tmp); clear tmp
+                    
+                    tmp = not(ismember(ripples.dHPC.reward(:,2) , ripples.dHPC.coordinated.reward(:,2)));
+                    tmp = [ripples.dHPC.reward(tmp,2)-0.2 ripples.dHPC.reward(tmp,2)+0.2];
+                    is.sws.reward = InIntervals(bins,tmp); clear tmp
+                    
+                    tmp = not(ismember(ripples.dHPC.aversive(:,2) , ripples.dHPC.coordinated.aversive(:,2)));
+                    tmp = [ripples.dHPC.aversive(tmp,2)-0.2 ripples.dHPC.aversive(tmp,2)+0.2];
+                    is.sws.aversive = InIntervals(bins,tmp); clear tmp
+                    
+                elseif strcmp(W,'V')
+                    tmp = not(ismember(ripples.vHPC.baseline(:,2) , ripples.vHPC.coordinated.baseline(:,2)));
+                    tmp = [ripples.vHPC.baseline(tmp,2)-0.2 ripples.vHPC.baseline(tmp,2)+0.2];
+                    is.sws.baseline = InIntervals(bins,tmp); clear tmp
+                    
+                    tmp = not(ismember(ripples.vHPC.reward(:,2) , ripples.vHPC.coordinated.reward(:,2)));
+                    tmp = [ripples.vHPC.reward(tmp,2)-0.2 ripples.vHPC.reward(tmp,2)+0.2];
+                    is.sws.reward = InIntervals(bins,tmp); clear tmp
+                    
+                    tmp = not(ismember(ripples.vHPC.aversive(:,2) , ripples.vHPC.coordinated.aversive(:,2)));
+                    tmp = [ripples.vHPC.aversive(tmp,2)-0.2 ripples.vHPC.aversive(tmp,2)+0.2];
+                    is.sws.aversive = InIntervals(bins,tmp); clear tmp
                 end
                 
                 is.sws.runaversive = InIntervals(bins,movement.aversive);
@@ -929,7 +955,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(131),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.07 0.07])
+er = errorbar(xx,yy,err);ylim([-0.25 0.25])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -953,7 +979,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(132),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.07 0.07])
+er = errorbar(xx,yy,err);ylim([-0.25 0.25])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -977,7 +1003,7 @@ err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 
 subplot(133),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.07 0.07])
+er = errorbar(xx,yy,err);ylim([-0.25 0.25])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off

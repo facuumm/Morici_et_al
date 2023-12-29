@@ -266,7 +266,7 @@ for tt = 1:length(path)
         
         pc_dHPC_par.within.ave = []; pc_dHPC_par.within.rew = []; 
         pc_dHPC_par.within.ave_tresh = []; pc_dHPC_par.within.rew_tresh = []; 
-        pc_dHPC_par.between = []; 
+        pc_dHPC_par.between = [];  pc_dHPC_par.between_sub = []; 
         
         pc_dHPC_par.firingMap.ave = []; 
         pc_dHPC_par.firingMap.rew = [];
@@ -348,12 +348,7 @@ for tt = 1:length(path)
                     end 
                     
                     if or(sum(statsA.field(:,:,1))>= 4 , sum(statsR.field(:,:,1))>= 4) 
-                        %Calculate subsampled ratemaps
-                        [sub_ratemap_ave, sub_ratemap_rew] = Subsampling_1d(pos_ave, spks_ave,pos_rew, spks_rew,dt,Xedges,sigma); 
-                         s = corrcoef(curveA.rate, curveR.rate);
-                        spatial = s(1,2);
-                        
-                        
+               
                         %Store pc info 
                         n.id = cluster; 
                         n.frMap_ave = curveA.rate;
@@ -361,6 +356,10 @@ for tt = 1:length(path)
                         n.stats_ave = statsA;
                         n.stats_rew = statsR;
                         dHPC{ii}= n;
+                        
+                        %Subsampling 
+                        [sub_pos_ave,sub_spk_ave,sub_pos_rew,sub_spk_rew] = Subsampling_1d(pos_ave, spks_ave,pos_rew, spks_rew,dt,Xedges,sigma); 
+                        [between_sub] = Between_pc(sub_pos_ave,sub_spk_ave,sub_pos_rew,sub_spk_rew,bin_size,sigma,Xedges);
                         
                         %Store firing maps
                         pc_dHPC_par.firingMap.ave = [pc_dHPC_par.firingMap.ave;curveA_dhpc]; 
@@ -413,6 +412,7 @@ for tt = 1:length(path)
 
                         %Save between pc parameters 
                         pc_dHPC_par.between = [pc_dHPC_par.between; between];
+                        pc_dHPC_par.between_sub = [pc_dHPC_par.between_sub; between_sub];
                     end
                     clear s q curve OccMap Nspikes spks_tmp pos_tmp m curve stats sp curve1
                     clear curveA curveR qA qR curveSA curveSR statsSA statsSR
@@ -432,7 +432,7 @@ for tt = 1:length(path)
         
         pc_vHPC_par.within.ave = []; pc_vHPC_par.within.rew = []; 
         pc_vHPC_par.within.ave_tresh = []; pc_vHPC_par.within.rew_tresh = []; 
-        pc_vHPC_par.between = []; 
+        pc_vHPC_par.between = []; pc_vHPC_par.between_sub = [];
         pc_vHPC_par.firingMap.ave = []; 
         pc_vHPC_par.firingMap.rew = [];
         
@@ -518,6 +518,11 @@ for tt = 1:length(path)
                         n.stats_ave = statsA;
                         n.stats_rew = statsR;
                         vHPC{ii} = n; 
+                        
+                        %Subsampling 
+                        [sub_pos_ave,sub_spk_ave,sub_pos_rew,sub_spk_rew] = Subsampling_1d(pos_ave, spks_ave,pos_rew, spks_rew,dt,Xedges,sigma); 
+                        [between_sub] = Between_pc(sub_pos_ave,sub_spk_ave,sub_pos_rew,sub_spk_rew,bin_size,sigma,Xedges);
+                        
                         %Store firing maps
                         pc_vHPC_par.firingMap.ave = [pc_vHPC_par.firingMap.ave;curveA_vhpc]; 
                         pc_vHPC_par.firingMap.rew = [pc_vHPC_par.firingMap.rew;curveR_vhpc];
@@ -568,6 +573,7 @@ for tt = 1:length(path)
                         
                         %Save between pc parameters 
                         pc_vHPC_par.between = [pc_vHPC_par.between; between];
+                        pc_vHPC_par.between_sub = [pc_vHPC_par.between_sub; between_sub];
                         
                         clear fr_ave fr_rew map_ave map_rew
                         
@@ -693,7 +699,7 @@ for tt = 1:length(path)
     disp(' ')
 end
 
-save('W:\Remapping-analysis-Facu\pc_all_within_between_v3.mat', 'pc_all');
+save('W:\Remapping-analysis-Facu\pc_all_within_between_v4.mat', 'pc_all');
 
 %% Total number of recorded neurons - next time put this inseide the main loop
 % c1: rat c2: session c3: #dHPC neurons c4: dHPC #pyr c5: #vHPCneurons  c6:VHPC#pyr 
