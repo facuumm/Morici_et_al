@@ -1,21 +1,21 @@
 function [within_mean,within_percentil ] = Within_pc(pos_tmp,spks_tmp,bin_size,sigma,Xedges)
 %
 % Within_pc - Randomly splits spike and position data in two and calcualtes remapping parameters
-%(spatial correlation, firing rate change and rate overlap) within them. Repeat 500 times  
+% (spatial correlation, firing rate change and rate overlap) within them. Repeat 500 times  
 %
-%INPUTS
-%pos_tmp = position timestamps in sec
-%spks_tmp = spike time in sec
-%bin_size = bin size in sec (1 recommended). Time window to binnarized pos
-%and spike data
-%sigma = FiringCurve parameter for smoothing rate maps
-%Xedges = FiringCurve parameter to define the nBins of the rate map
+% ---> INPUTS
+% pos_tmp: matrix, position timestamps in sec
+% spks_tmp: vector, spike time in sec
+% bin_size: bin size in sec (1 recommended). Time window to binnarized pos
+%           and spike data
+% sigma: int,FiringCurve parameter for smoothing rate maps
+% Xedges: int,FiringCurve parameter to define the nBins of the rate map
 %
-%OUTPUTS
-%within_mean = vector with the mean value of the 500 iterations for the 3
-%remapping parameters
-%within_percentil = vector with the percentil value of the 500 iterations for the 3
-%remapping parameters - to caluclate remappings tresholds;
+% ---> OUTPUTS
+% within_mean: vector with the mean value of the 500 iterations for the 3
+%              remapping parameters
+% within_percentil: vector with the percentil value of the 500 iterations for the 3
+%                   remapping parameters - to caluclate remappings tresholds;
 %
 %other functions:FiringCurve (FMAtoolbox)
 %
