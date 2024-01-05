@@ -1,7 +1,7 @@
 function [within_mean,within_percentil ] = Within_pc(pos_tmp,spks_tmp,bin_size,sigma,Xedges)
 %
 % Within_pc - Randomly splits spike and position data in two and calcualtes remapping parameters
-% (spatial correlation, firing rate change and rate overlap) within them. Repeat 500 times  
+% (spatial correlation, firing rate change, rate overlap and peak shift) within them. Repeat 500 times  
 %
 % ---> INPUTS
 % pos_tmp: matrix, position timestamps in sec
@@ -12,15 +12,15 @@ function [within_mean,within_percentil ] = Within_pc(pos_tmp,spks_tmp,bin_size,s
 % Xedges: int,FiringCurve parameter to define the nBins of the rate map
 %
 % ---> OUTPUTS
-% within_mean: vector with the mean value of the 500 iterations for the 3
+% within_mean: vector with the mean value of the 500 iterations for the 4
 %              remapping parameters
-% within_percentil: vector with the percentil value of the 500 iterations for the 3
+% within_percentil: vector with the percentil value of the 500 iterations for the 4
 %                   remapping parameters - to caluclate remappings tresholds;
 %
 %other functions:FiringCurve (FMAtoolbox)
 %
 %Azul Silva, 2023
-within = nan(500,3);
+within = nan(500,4);
 
 for c=1:500
 
@@ -84,8 +84,8 @@ for c=1:500
     time_x_y_2= sortrows([time_2,x_pos_2],1);
 
     %Calculate remapping parameters 
-    [curve1] = FiringCurve(time_x_y_1, tspk_1' , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
-    [curve2] = FiringCurve(time_x_y_2, tspk_2' , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
+    [curve1,stats1] = FiringCurve(time_x_y_1, tspk_1' , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
+    [curve2,stats2] = FiringCurve(time_x_y_2, tspk_2' , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
                     
     fr_1= nanmean(curve1.rate);
     fr_2= nanmean(curve2.rate);
@@ -104,19 +104,24 @@ for c=1:500
     s = corrcoef(curve1.rate, curve2.rate);
     spatial = s(1,2);
     
+    %Peak shift 
+    shift = abs(stats1.x(1) - stats2.x(1)); 
+    
     %Save 
     within(c,1)=spatial;
     within(c,2)=fr_change;
     within(c,3)=overlap;
+    within(c,4)=shift;
     
    
 end 
 
-within_mean = mean(within);
+within_mean = nanmean(within);
 
 spatial = quantile(within(:,1), 0.1);
 fr = quantile(within(:,2), 0.9);
 overlap = quantile(within(:,3), 0.1);
+shift = quantile(within(:,4), 0.9);
+within_percentil = [spatial, fr, overlap,shift]; 
 
-within_percentil = [spatial, fr, overlap]; 
 end

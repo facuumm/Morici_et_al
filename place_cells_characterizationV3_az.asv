@@ -799,22 +799,22 @@ sum(n_total(n_total(:,1)==165,6))
 %c4:  1 = between 2 = within aversive 3= within reward
 % c1 = spatial c2= fr_change c3=  overlap
 
-data = [pc_all.dHPC.between,ones(size(pc_all.dHPC.between,1),1);pc_all.dHPC.within.A,...
-ones(size(pc_all.dHPC.within.A,1),1)*2;pc_all.dHPC.within.R, ones(size(pc_all.dHPC.within.R,1),1)*3];
+% data = [pc_all.dHPC.between,ones(size(pc_all.dHPC.between,1),1);pc_all.dHPC.within.A,...
+% ones(size(pc_all.dHPC.within.A,1),1)*2;pc_all.dHPC.within.R, ones(size(pc_all.dHPC.within.R,1),1)*3];
 
 % data = [pc_all.vHPC.between,ones(size(pc_all.vHPC.between,1),1);pc_all.vHPC.within.A,...
 % ones(size(pc_all.vHPC.within.A,1),1)*2;pc_all.vHPC.within.R, ones(size(pc_all.vHPC.within.R,1),1)*3];
 
-% Stats
-[P,ANOVATAB,STATS] = kruskalwallis(data(:,2),data(:,5));
-c = multcompare(STATS)
+%Stats
+% [P,ANOVATAB,STATS] = kruskalwallis(data(:,2),data(:,4));
+% c = multcompare(STATS)
 
 tbl = array2table(c,"VariableNames", ...
     ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
 
 %Boxplot
 id= 1; % 1 = spatial 2= fr_change 3=  overlap
-data_box = [data(data(:,5)==1,id),pc_all.vHPC.within.A(:,id),pc_all.vHPC.within.R(:,id)];
+data_box = [pc_all.vHPC.between(:,id),pc_all.vHPC.within.A(:,id),pc_all.vHPC.within.R(:,id)];
 
 figure(2);clf;
 boxplot(data_box, 'Labels',{'Between', 'Within Ave', 'Within Rew'})

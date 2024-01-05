@@ -23,7 +23,7 @@ minimal_speed = 7; % minimal speed to detect quite periods
 minimal_speed_time = 2; % minimal time to detect quite periods
 
 th = 5; % threshold for peak detection
-
+s = true; % true if I wanna save maps at each folder
 
 Number_of_assemblies.aversive = [];
 Number_of_assemblies.reward = [];
@@ -391,6 +391,10 @@ for tt = 1:length(path)
                 [Maps pc between within] = FiringMap_Assemblies(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , th , pos , events , 60 , true , true);
                 clear pos x xx
                 
+                if s
+                    save([cd,'\Joint_Aversive_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+                end
+                
                 pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
                 
                 map.bothA.aversive = [map.bothA.aversive ; Maps.cond1(pc,:)];
@@ -415,6 +419,10 @@ for tt = 1:length(path)
                 [Maps pc between within] = FiringMap_Assemblies(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , th , pos , events , 60 , true , true);
                 clear pos x xx
                 
+                if s
+                    save([cd,'\dHPC_Aversive_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+                end
+                
                 pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
                 
                 map.dHPCA.aversive = [map.dHPCA.aversive ; Maps.cond1(pc,:)];
@@ -438,6 +446,10 @@ for tt = 1:length(path)
                 
                 [Maps pc between within] = FiringMap_Assemblies(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , th , pos , events , 60 , true , true);
                 clear pos x xx
+                
+                if s
+                    save([cd,'\vHPC_Aversive_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+                end
                 
                 pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
                 
@@ -464,6 +476,10 @@ for tt = 1:length(path)
                 [Maps pc between within] = FiringMap_Assemblies(patterns.all.reward , cond.both.reward , [bins' , Spikes] , th , pos , events , 60 , true , true);
                 clear pos x xx
                 
+                if s
+                    save([cd,'\Joint_Reward_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+                end
+                
                 pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
                 
                 map.bothR.reward = [map.bothR.reward ; Maps.cond1(pc,:)];
@@ -488,6 +504,10 @@ for tt = 1:length(path)
                 [Maps pc between within] = FiringMap_Assemblies(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , th , pos , events , 60 , true , true);
                 clear pos x xx
                 
+                if s
+                    save([cd,'\dHPC_Reward_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+                end
+                
                 pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
                 
                 map.dHPCR.reward = [map.dHPCR.reward ; Maps.cond1(pc,:)];
@@ -511,6 +531,10 @@ for tt = 1:length(path)
                 
                 [Maps pc between within] = FiringMap_Assemblies(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , th , pos , events , 60 , true , true);
                 clear pos x xx
+                
+                if s
+                    save([cd,'\vHPC_Reward_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+                end
                 
                 pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
                 
@@ -542,6 +566,11 @@ for tt = 1:length(path)
     clear num_assembliesA num_assembliesR
     
 end
+
+%% Plotting section
+% The following section is used to plot the outputs of the script
+% Please, be sure that you undersand the structure of the matrix you are
+% intending to plot.
 
 %% Both
 figure
@@ -626,3 +655,91 @@ y = y./max(y,[],2);
 
 subplot(121),imagesc(x(i,:))
 subplot(122),imagesc(y(i,:))
+
+
+%% Plot parameters
+% Spatial Correlation
+figure
+subplot(3,2,1)
+y = [Between.bothA(:,1) ; Within.bothA.reward(:,1) ; Within.bothA.aversive(:,1)];
+x = [ones(length(Between.bothA(:,1)),1) ; ones(length(Within.bothA.reward(:,1)),1)*2 ; ones(length(Within.bothA.aversive(:,1)),1)*3];
+scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter([1 2 3],[nanmedian(Between.bothA(:,1)) , nanmedian( Within.bothA.reward(:,1)), nanmedian( Within.bothA.aversive(:,1))],'filled')
+% boxplot(y,x),ylim([-0.55 1.05])
+
+[p,tbl,stats] = kruskalwallis(y,x);
+c = multcompare(stats)
+
+
+subplot(3,2,2)
+y = [Between.bothR(:,1) ; Within.bothR.reward(:,1) ; Within.bothR.aversive(:,1)];
+x = [ones(length(Between.bothR(:,1)),1) ; ones(length(Within.bothR.reward(:,1)),1)*2 ; ones(length(Within.bothR.aversive(:,1)),1)*3];
+scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter([1 2 3],[nanmedian(Between.bothR(:,1)) , nanmedian( Within.bothR.reward(:,1)), nanmedian( Within.bothR.aversive(:,1))],'filled')
+% boxplot(y,x),ylim([-0.55 1.05])
+
+[p,tbl,stats] = kruskalwallis(y,x);
+c = multcompare(stats)
+
+
+subplot(3,2,3)
+y = [Between.dHPCA(:,1) ; Within.dHPCA.reward(:,1) ; Within.dHPCA.aversive(:,1)];
+x = [ones(length(Between.dHPCA(:,1)),1) ; ones(length(Within.dHPCA.reward(:,1)),1)*2 ; ones(length(Within.dHPCA.aversive(:,1)),1)*3];
+scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter([1 2 3],[nanmedian(Between.dHPCA(:,1)) , nanmedian( Within.dHPCA.reward(:,1)), nanmedian( Within.dHPCA.aversive(:,1))],'filled')
+% boxplot(y,x),ylim([-0.55 1.05])
+
+[p,tbl,stats] = kruskalwallis(y,x);
+c = multcompare(stats)
+
+subplot(3,2,4)
+y = [Between.dHPCR(:,1) ; Within.dHPCR.reward(:,1) ; Within.dHPCR.aversive(:,1)];
+x = [ones(length(Between.dHPCR(:,1)),1) ; ones(length(Within.dHPCR.reward(:,1)),1)*2 ; ones(length(Within.dHPCR.aversive(:,1)),1)*3];
+scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter([1 2 3],[nanmedian(Between.dHPCR(:,1)) , nanmedian( Within.dHPCR.reward(:,1)), nanmedian( Within.dHPCR.aversive(:,1))],'filled')
+% boxplot(y,x),ylim([-0.55 1.05])
+
+[p,tbl,stats] = kruskalwallis(y,x);
+c = multcompare(stats)
+
+subplot(3,2,5)
+y = [Between.vHPCA(:,1) ; Within.vHPCA.reward(:,1) ; Within.vHPCA.aversive(:,1)];
+x = [ones(length(Between.vHPCA(:,1)),1) ; ones(length(Within.vHPCA.reward(:,1)),1)*2 ; ones(length(Within.vHPCA.aversive(:,1)),1)*3];
+scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter([1 2 3],[nanmedian(Between.vHPCA(:,1)) , nanmedian( Within.vHPCA.reward(:,1)), nanmedian( Within.vHPCA.aversive(:,1))],'filled')
+% boxplot(y,x),ylim([-0.55 1.05])
+
+[p,tbl,stats] = kruskalwallis(y,x);
+c = multcompare(stats)
+
+subplot(3,2,6)
+y = [Between.vHPCR(:,1) ; Within.vHPCR.reward(:,1) ; Within.vHPCR.aversive(:,1)];
+x = [ones(length(Between.vHPCR(:,1)),1) ; ones(length(Within.vHPCR.reward(:,1)),1)*2 ; ones(length(Within.vHPCR.aversive(:,1)),1)*3];
+scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter([1 2 3],[nanmedian(Between.vHPCR(:,1)) , nanmedian( Within.vHPCR.reward(:,1)), nanmedian( Within.vHPCR.aversive(:,1))],'filled')
+% boxplot(y,x),ylim([-0.55 1.05])
+
+[p,tbl,stats] = kruskalwallis(y,x);
+c = multcompare(stats)
+
+
+%% Comparing Between groups across type of assemblies
+figure
+subplot(121)
+y = [Between.bothA(:,1) ; Between.dHPCA(:,1) ;  Between.vHPCA(:,1)];
+x = [ones(length(Between.bothA(:,1)),1) ; ones(length(Between.dHPCA(:,1)),1)*2 ; ones(length(Between.vHPCA(:,1)),1)*3];
+scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter([1 2 3],[nanmedian(Between.bothA(:,1)) , nanmedian(Between.dHPCA(:,1)), nanmedian(Between.vHPCA(:,1))],'filled')
+
+[p,tbl,stats] = kruskalwallis(y,x);
+c = multcompare(stats)
+
+
+subplot(122)
+y = [Between.bothR(:,1) ; Between.dHPCR(:,1) ;  Between.vHPCR(:,1)];
+x = [ones(length(Between.bothR(:,1)),1) ; ones(length(Between.dHPCR(:,1)),1)*2 ; ones(length(Between.vHPCR(:,1)),1)*3];
+scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter([1 2 3],[nanmedian(Between.bothR(:,1)) , nanmedian(Between.dHPCR(:,1)), nanmedian(Between.vHPCR(:,1))],'filled')
+
+[p,tbl,stats] = kruskalwallis(y,x);
+c = multcompare(stats)

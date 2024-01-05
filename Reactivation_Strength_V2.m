@@ -20,6 +20,7 @@ TA =  logical(0); % Trigger Reactivation Strength
 TPks = logical(0); %trigger CCG assemblies peaks to events
 REC = logical(0); % Assemblie Recruitment during cooridnated events
 SRC = logical(0); % If I want to calculate the tuning curve for shocks
+C = logical(1); % if I want to calculate CumSum of peaks
 
 % for SU
 criteria_fr = 0; %criteria to include or not a SU into the analysis
@@ -29,7 +30,7 @@ binSize = 0.025; %for qssemblie detection qnd qxctivity strength
 n_SU_V = 0;
 n_SU_D = 0;
 
-win = 300; % time window for bin construction
+win = 60; % time window for bin construction
 
 % Behavior
 minimal_speed = 7; % minimal speed to detect quite periods
@@ -572,8 +573,8 @@ for tt = 1:length(path)
                 is.reward = InIntervals(bins,rewardTS_run./1000);
                 
                 %% Reactivation Strenght
-                
                 %                 if aversiveTS_run(1) < rewardTS_run(1)
+                
                 if sum(cond.both.aversive)>=1
                     [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization);
                     reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
@@ -598,24 +599,75 @@ for tt = 1:length(path)
                 if sum(cond.both.reward)>=1
                     [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
                     reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
-                    RBR = R; clear R
+                    RBR = R; clear R                  
                 end
                 
                 if sum(cond.dHPC.reward)>=1
                     [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
                     reactivation.reward.dHPC = [reactivation.reward.dHPC ; R];
-                    RDR = R; clear R
+                    RDR = R; clear R                      
                 end
                 
                 if sum(cond.vHPC.reward)>=1
                     [R] = reactivation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
                     reactivation.reward.vHPC = [reactivation.reward.vHPC ; R];
-                    RVR = R; clear R
+                    RVR = R; clear R                      
                 end
                 %                 end
             end
             
-                        
+            %% CumSum for peaks
+            if C
+                CumBA = [];
+                CumDA = [];
+                CumVA = [];
+                CumBR = [];
+                CumDR = [];
+                CumVR = [];
+                
+                if aversiveTS(1)>rewardTS(1)
+                    aversiveB = NREM.reward;
+                    rewardB = NREM.baseline;
+                else
+                    aversiveB = NREM.baseline;
+                    rewardB = NREM.aversive;
+                end
+                
+                if sum(cond.both.aversive)>=1
+                    [R] = cumulative_activation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , th , NREM.aversive, win , aversiveB);
+                    CumBA = R; clear R
+                end
+                
+                if sum(cond.dHPC.aversive)>=1
+                    [R] = cumulative_activation_strength(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , th , NREM.aversive, win , aversiveB);
+                    CumDA = R; clear R
+                end
+                
+                if sum(cond.vHPC.aversive)>=1
+                    [R] = cumulative_activation_strength(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , th , NREM.aversive, win , aversiveB);
+                    CumVA = R; clear R
+                end
+                %                 end
+                
+                
+                %                 if aversiveTS_run(1) > rewardTS_run(1)
+                if sum(cond.both.reward)>=1
+                    [R] = cumulative_activation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , th , NREM.reward, win , rewardB);
+                    CumBR = R; clear R
+                end
+                
+                if sum(cond.dHPC.reward)>=1
+                    [R] = cumulative_activation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , th , NREM.reward, win , rewardB);
+                    CumDR = R; clear R
+                end
+                
+                if sum(cond.vHPC.reward)>=1
+                    [R] = cumulative_activation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , th , NREM.reward, win , rewardB);
+                    CumVR = R; clear R
+                end
+                save([cd,'\CumSumPeaks.mat'],'CumVR','CumDR','CumBR','CumVA','CumDA','CumBA')
+                clear CumVR CumDR CumBR CumVA CumDA CumBA
+            end
             
             %% Coordinated events triggered Assemblies activity
             if TPks
@@ -821,3 +873,127 @@ for tt = 1:length(path)
     clear num_assembliesA num_assembliesR
     
 end
+
+
+reactivation.aversive.dvHPC > 0
+reactivation.reward.dvHPC > 0
+reactivation.aversive.dHPC > 0
+reactivation.reward.dHPC > 0
+reactivation.aversive.vHPC > 0
+reactivation.reward.vHPC > 0
+
+
+%%
+figure,
+BothA = []; BothR = []; dHPCA = []; dHPCR = []; vHPCA = []; vHPCR = [];
+dur = 100000
+for ttt = 1:3
+    for tt = 1:length(path)
+        %List of folders from the path
+        files = dir(path{tt});
+        % Get a logical vector that tells which is a directory.
+        dirFlags = [files.isdir];
+        % Extract only those that are directories.
+        subFolders = files(dirFlags);
+        clear files dirFlags
+        num_assembliesR = [];
+        num_assembliesA = [];
+        for t = 1 : length(subFolders)-2
+            disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+            session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+            cd([session,'\Spikesorting'])
+            if isfile('CumSumPeaks.mat')
+                load('CumSumPeaks.mat')
+                
+                % for Joint Assemblies
+                if ttt==1
+                    if not(isempty(CumBR))
+                        for i = 1 : size(CumBR,1)
+                            tmp = nan(1,dur);
+                            tmp(1:size(CumBR(i,:),2)) = CumBR(i,:);
+                            BothR = [BothR ; tmp];
+                            clear tmp
+                        end
+                    end
+                    
+                    if not(isempty(CumBA))
+                        for i = 1 : size(CumBA,1)
+                            tmp = nan(1,dur);
+                            tmp(1:size(CumBA(i,:),2)) = CumBA(i,:);
+                            BothA = [BothA ; tmp];
+                            clear tmp
+                        end
+                    end
+                end
+                
+                % for Dorsal Assemblies
+                if ttt==2
+                    if not(isempty(CumDR))
+                        for i = 1 : size(CumDR,1)
+                            tmp = nan(1,dur);
+                            tmp(1:size(CumDR(i,:),2)) = CumDR(i,:);
+                            dHPCR = [dHPCR ; tmp];
+                            clear tmp
+                        end
+                    end
+                    
+                    if not(isempty(CumDA))
+                        for i = 1 : size(CumDA,1)
+                            tmp = nan(1,dur);
+                            tmp(1:size(CumDA(i,:),2)) = CumDA(i,:);
+                            dHPCA = [dHPCA ; tmp];
+                            clear tmp
+                        end
+                    end
+                end
+                
+                % for Ventral Assemblies
+                if ttt==3
+                   if not(isempty(CumVR))
+                        for i = 1 : size(CumVR,1)
+                            tmp = nan(1,dur);
+                            tmp(1:size(CumVR(i,:),2)) = CumVR(i,:);
+                            vHPCR = [vHPCR ; tmp];
+                            clear tmp
+                        end
+                    end
+                    
+                    if not(isempty(CumVA))
+                        for i = 1 : size(CumVA,1)
+                            tmp = nan(1,dur);
+                            tmp(1:size(CumVA(i,:),2)) = CumVA(i,:);
+                            vHPCA = [vHPCA ; tmp];
+                            clear tmp
+                        end
+                    end
+                end
+                clear CumBA CumDA CumVA CumBR CumDR CumVR
+                
+            end
+        end
+    end
+end
+
+
+% TRATAR DE ENCONTRAR UNA NORMALIZACION DE LA ACTIVIDAD DEL ENSAMBLE;
+% POR EJEMPLO, FOLD CHANGE OF PRE SLEEP
+subplot(311)
+plot(nanmean(BothA),'r'),hold on
+plot(nanmean(BothR),'b'),hold on
+ciplot(nanmean(BothA)-nansem(BothA) , nanmean(BothA)+nansem(BothA) , [1:1:100],'r'), alpha 0.5
+ciplot(nanmean(BothR)-nansem(BothR) , nanmean(BothR)+nansem(BothR) , [1:1:100],'b'), alpha 0.5
+xlim([0 60])
+
+subplot(312)
+plot(nanmean(dHPCA),'r'),hold on
+plot(nanmean(dHPCR),'b'),hold on
+ciplot(nanmean(dHPCA)-nansem(dHPCA) , nanmean(dHPCA)+nansem(dHPCA) , [1:1:100],'r'), alpha 0.5
+ciplot(nanmean(dHPCR)-nansem(dHPCR) , nanmean(dHPCR)+nansem(dHPCR) , [1:1:100],'b'), alpha 0.5
+xlim([0 60])
+
+subplot(313)
+plot(nanmean(vHPCA),'r'),hold on
+plot(nanmean(vHPCR),'b'),hold on
+ciplot(nanmean(vHPCA)-nansem(vHPCA) , nanmean(vHPCA)+nansem(vHPCA) , [1:1:100],'r'), alpha 0.5
+ciplot(nanmean(vHPCR)-nansem(vHPCR) , nanmean(vHPCR)+nansem(vHPCR) , [1:1:100],'b'), alpha 0.5
+xlim([0 60])

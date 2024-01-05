@@ -1,7 +1,7 @@
 function [between] = Between_pc(pos_ave,spks_ave,pos_rew,spks_rew,bin_size,sigma,Xedges)
 %
-% Between_pc - Randomly splits spike and position data of the two conditions (ave and rew) in two and randomly selects one group 
-% of each condition and calcualtes remapping parameters(spatial correlation, firing rate change and rate overlap)between them. 
+% Between_pc - Randomly splits spike and position data of the two conditions (ave and rew) in two groups and randomly selects one group 
+% of each condition and calcualtes remapping parameters(spatial correlation, firing rate change,rate overlap and peak shift)between conditions. 
 % Repeat 500 times  
 %
 % [between] = Between_pc(pos_ave,spks_ave,pos_rew,spks_rew,bin_size,sigma,Xedges)
@@ -18,14 +18,14 @@ function [between] = Between_pc(pos_ave,spks_ave,pos_rew,spks_rew,bin_size,sigma
 %
 % ---> OUTPUTS
 % between: vector with the mean value of the 500 iterations for the 3
-%          remapping parameters(spatial correlation, firing rate change and
-%          rate overlap).
+%          remapping parameters(spatial correlation, firing rate change,
+%          rate overlap and peak shift).
 % 
 %
 %other functions:FiringCurve (FMAtoolbox), Bins_half
 %
 %Azul Silva, 2023
-between = nan(500,3);
+between = nan(500,4);
 
 for c=1:500
 
@@ -45,8 +45,8 @@ for c=1:500
     tspk_rew = groups_rew{id,2};
     
     %Calculate remapping parameters 
-    [curveA] = FiringCurve(time_x_ave, tspk_ave , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
-    [curveR] = FiringCurve(time_x_rew, tspk_rew , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
+    [curveA, statsA] = FiringCurve(time_x_ave, tspk_ave , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
+    [curveR, statsR] = FiringCurve(time_x_rew, tspk_rew , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
                     
     fr_A= nanmean(curveA.rate);
     fr_R= nanmean(curveR.rate);
@@ -65,10 +65,13 @@ for c=1:500
     s = corrcoef(curveA.rate, curveR.rate);
     spatial = s(1,2);
     
+    % Peak shift 
+    shift = abs(statsA.x(1) - statsR.x(1)); 
     %Save 
     between(c,1)=spatial;
     between(c,2)=fr_change;
     between(c,3)=overlap;
+    between(c,4)=shift;
     
    
 end 
