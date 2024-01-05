@@ -75,7 +75,7 @@ bins = SpikeTrain(:,1);
 dt = bins(2)-bins(1); % delta time
 spks = SpikeTrain(:,2:end);
 prc = 90; % percentile to check if the Strenght is higher 
-iterations = 100; % iterations to create the surrogated distribution
+iterations = 10; % iterations to create the surrogated distribution
 
 a = assembly_activity(patterns(:,cond) , spks');
 a = zscore(a,1,2);
@@ -148,7 +148,7 @@ for i = 1:size(a,1)
     
     s = nanstd(surrogated);
     m = nanmean(surrogated);
-    m = 0;
+%     m = 0;
     clear s
     
     %% Calculation of Reactivation

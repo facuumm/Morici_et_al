@@ -1,4 +1,4 @@
-function [R] = cumulative_activation_strength(patterns , cond , SpikeTrain , th , events , duration,baseline)
+function [R] = cumulative_activation_strength(patterns , cond , SpikeTrain , th , events , duration , baseline)
 % This function find the peaks of the zscored assemblies strength and
 % returns the cummulative of peaks in function of the time.
 % If you include events, it will contatenate the events you introduce.

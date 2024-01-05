@@ -875,18 +875,101 @@ for tt = 1:length(path)
 end
 
 
-reactivation.aversive.dvHPC > 0
-reactivation.reward.dvHPC > 0
-reactivation.aversive.dHPC > 0
-reactivation.reward.dHPC > 0
-reactivation.aversive.vHPC > 0
-reactivation.reward.vHPC > 0
+%% Plot Strenght Reactivation
+% for joint assemblies
+
+figure
+x = logical(reactivation.reward.dvHPC(:,6));
+y = logical(reactivation.aversive.dvHPC(:,6));
+
+% reactivation.reward.dvHPC(isnan(reactivation.reward.dvHPC(:,1)),:) = [];
+% reactivation.aversive.dvHPC(isnan(reactivation.aversive.dvHPC(:,1)),:) = [];
+x = reactivation.reward.dvHPC(x,1);
+y = reactivation.aversive.dvHPC(y,1);
+
+kstest(x)
+kstest(y)
+[h, p] = ttest2(x,y)  
+[h, p] = ttest(y)
+[h, p] = ttest(x)
 
 
-%%
+xx = [1 2];
+yy = [nanmean(x) nanmean(y)];
+% err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
+err = [nansem(x) nansem(y)];
+
+subplot(131),
+bar(xx,yy),hold on
+er = errorbar(xx,yy,err);ylim([-0.25 0.25])
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';
+hold off
+
+% for dHPC assemblies
+x = logical(reactivation.reward.dHPC(:,6));
+y = logical(reactivation.aversive.dHPC(:,6));
+% reactivation.reward.dHPC(isnan(reactivation.reward.dHPC(:,1)),:) = [];
+% reactivation.aversive.dHPC(isnan(reactivation.aversive.dHPC(:,1)),:) = [];
+x = reactivation.reward.dHPC(x,1);
+y = reactivation.aversive.dHPC(y,1);
+kstest(x)
+kstest(y)
+[h, p] = ttest2(x,y)  
+[h, p] = ttest(y)
+[h, p] = ttest(x)
+
+xx = [1 2];
+yy = [nanmean(x) nanmean(y)];
+% err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
+err = [nansem(x) nansem(y)];
+
+subplot(132),
+bar(xx,yy),hold on
+er = errorbar(xx,yy,err);ylim([-0.25 0.25])
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';
+hold off
+
+% for vHPC assemblies
+x = logical(reactivation.reward.vHPC(:,6));
+y = logical(reactivation.aversive.vHPC(:,6));
+% reactivation.reward.vHPC(isnan(reactivation.reward.vHPC(:,1)),:) = [];
+% reactivation.aversive.vHPC(isnan(reactivation.aversive.vHPC(:,1)),:) = [];
+x = reactivation.reward.vHPC(x,1);
+y = reactivation.aversive.vHPC(y,1);
+kstest(x)
+kstest(y)
+[h, p] = ttest2(x,y)  
+[h, p] = ttest(y)
+[h, p] = ttest(x)
+
+xx = [1 2];
+yy = [nanmean(x) nanmean(y)];
+% err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
+err = [nansem(x) nansem(y)];
+
+subplot(133),
+bar(xx,yy),hold on
+er = errorbar(xx,yy,err);ylim([-0.25 0.25])
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';
+hold off
+
+
+
+
+reactivation.aversive.dvHPC(:,end)
+reactivation.reward.dvHPC(:,end)
+reactivation.aversive.dHPC(:,end)
+reactivation.reward.dHPC(:,end)
+reactivation.aversive.vHPC(:,end)
+reactivation.reward.vHPC(:,end)
+
+%% Plot cumulative
 figure,
 BothA = []; BothR = []; dHPCA = []; dHPCR = []; vHPCA = []; vHPCR = [];
-dur = 100000
+dur = 100;
 for ttt = 1:3
     for tt = 1:length(path)
         %List of folders from the path
@@ -899,7 +982,7 @@ for ttt = 1:3
         num_assembliesR = [];
         num_assembliesA = [];
         for t = 1 : length(subFolders)-2
-            disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+%             disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
             session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
             cd([session,'\Spikesorting'])
             if isfile('CumSumPeaks.mat')
@@ -978,8 +1061,8 @@ end
 % TRATAR DE ENCONTRAR UNA NORMALIZACION DE LA ACTIVIDAD DEL ENSAMBLE;
 % POR EJEMPLO, FOLD CHANGE OF PRE SLEEP
 subplot(311)
-plot(nanmean(BothA),'r'),hold on
-plot(nanmean(BothR),'b'),hold on
+plot(nanmean(BothA(id,:)),'r'),hold on
+plot(nanmean(BothR(id,:)),'b'),hold on
 ciplot(nanmean(BothA)-nansem(BothA) , nanmean(BothA)+nansem(BothA) , [1:1:100],'r'), alpha 0.5
 ciplot(nanmean(BothR)-nansem(BothR) , nanmean(BothR)+nansem(BothR) , [1:1:100],'b'), alpha 0.5
 xlim([0 60])
