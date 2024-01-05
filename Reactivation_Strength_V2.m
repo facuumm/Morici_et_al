@@ -1061,9 +1061,14 @@ end
 % TRATAR DE ENCONTRAR UNA NORMALIZACION DE LA ACTIVIDAD DEL ENSAMBLE;
 % POR EJEMPLO, FOLD CHANGE OF PRE SLEEP
 subplot(311)
+id = logical(reactivation.aversive.dvHPC(:,end));
 plot(nanmean(BothA(id,:)),'r'),hold on
+
+id = logical(reactivation.reward.dvHPC(:,end));
 plot(nanmean(BothR(id,:)),'b'),hold on
+
 ciplot(nanmean(BothA)-nansem(BothA) , nanmean(BothA)+nansem(BothA) , [1:1:100],'r'), alpha 0.5
+
 ciplot(nanmean(BothR)-nansem(BothR) , nanmean(BothR)+nansem(BothR) , [1:1:100],'b'), alpha 0.5
 xlim([0 60])
 

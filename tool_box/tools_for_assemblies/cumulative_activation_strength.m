@@ -51,8 +51,6 @@ function [R] = cumulative_activation_strength(patterns , cond , SpikeTrain , th 
 bins = SpikeTrain(:,1);
 dt = bins(2)-bins(1); % delta time
 spks = SpikeTrain(:,2:end);
-prc = 90; % percentile to check if the Strenght is higher 
-iterations = 100; % iterations to create the surrogated distribution
 
 a = assembly_activity(patterns(:,cond) , spks');
 a = zscore(a,1,2);
@@ -92,11 +90,11 @@ for i = 1:size(a,1)
     if not(isempty(baseline))
         m = Restrict([l,p'],baseline);
         m = nanmean(m(:,2));
-        result =  cumsum(result./m);
-%         result = result - m;
+%         result =  cumsum(result./m);
+        result = result ./ m;
     else
-        result =  cumsum(result);
-%         result = result;
+%         result =  cumsum(result);
+        result = result;
     end
 %     % binning peaks according to duration input
 %     [t,b]=binspikes(loc,1/duration,[events(1,1) events(end,2)-tmp]); 
