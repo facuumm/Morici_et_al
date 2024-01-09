@@ -57,6 +57,7 @@ Number_of_assemblies.reward = [];
 
 % Sacar el filtro que puse del FR en el counts de neuronas
 %% Main loop, to iterate across sessions
+
 for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
@@ -874,10 +875,8 @@ for tt = 1:length(path)
     
 end
 
-
 %% Plot Strenght Reactivation
-% for joint assemblies
-
+%  for joint assemblies
 figure
 x = logical(reactivation.reward.dvHPC(:,6));
 y = logical(reactivation.aversive.dvHPC(:,6));
@@ -906,7 +905,7 @@ er.Color = [0 0 0];
 er.LineStyle = 'none';
 hold off
 
-% for dHPC assemblies
+%  for dHPC assemblies
 x = logical(reactivation.reward.dHPC(:,6));
 y = logical(reactivation.aversive.dHPC(:,6));
 % reactivation.reward.dHPC(isnan(reactivation.reward.dHPC(:,1)),:) = [];
@@ -931,7 +930,7 @@ er.Color = [0 0 0];
 er.LineStyle = 'none';
 hold off
 
-% for vHPC assemblies
+%  for vHPC assemblies
 x = logical(reactivation.reward.vHPC(:,6));
 y = logical(reactivation.aversive.vHPC(:,6));
 % reactivation.reward.vHPC(isnan(reactivation.reward.vHPC(:,1)),:) = [];
@@ -956,15 +955,6 @@ er.Color = [0 0 0];
 er.LineStyle = 'none';
 hold off
 
-
-
-
-reactivation.aversive.dvHPC(:,end)
-reactivation.reward.dvHPC(:,end)
-reactivation.aversive.dHPC(:,end)
-reactivation.reward.dHPC(:,end)
-reactivation.aversive.vHPC(:,end)
-reactivation.reward.vHPC(:,end)
 
 %% Plot cumulative
 figure,

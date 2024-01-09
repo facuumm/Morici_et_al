@@ -57,6 +57,7 @@ Number_of_assemblies.reward = [];
 
 % Sacar el filtro que puse del FR en el counts de neuronas
 %% Main loop, to iterate across sessions
+
 for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
@@ -874,14 +875,8 @@ for tt = 1:length(path)
     
 end
 
-
-
-
-
-
-
 %% Plot Strenght Reactivation
-% for joint assemblies
+%  for joint assemblies
 
 figure
 x = logical(reactivation.reward.dvHPC(:,6));
@@ -889,8 +884,8 @@ y = logical(reactivation.aversive.dvHPC(:,6));
 
 % reactivation.reward.dvHPC(isnan(reactivation.reward.dvHPC(:,1)),:) = [];
 % reactivation.aversive.dvHPC(isnan(reactivation.aversive.dvHPC(:,1)),:) = [];
-x = reactivation.reward.dvHPC(:,1);
-y = reactivation.aversive.dvHPC(:,1);
+x = reactivation.reward.dvHPC(x,1);
+y = reactivation.aversive.dvHPC(y,1);
 
 kstest(x)
 kstest(y)
@@ -911,13 +906,13 @@ er.Color = [0 0 0];
 er.LineStyle = 'none';
 hold off
 
-% for dHPC assemblies
+%  for dHPC assemblies
 x = logical(reactivation.reward.dHPC(:,6));
 y = logical(reactivation.aversive.dHPC(:,6));
 % reactivation.reward.dHPC(isnan(reactivation.reward.dHPC(:,1)),:) = [];
 % reactivation.aversive.dHPC(isnan(reactivation.aversive.dHPC(:,1)),:) = [];
-x = reactivation.reward.dHPC(:,1);
-y = reactivation.aversive.dHPC(:,1);
+x = reactivation.reward.dHPC(x,1);
+y = reactivation.aversive.dHPC(y,1);
 kstest(x)
 kstest(y)
 [h, p] = ttest2(x,y)  
@@ -936,13 +931,13 @@ er.Color = [0 0 0];
 er.LineStyle = 'none';
 hold off
 
-% for vHPC assemblies
+%  for vHPC assemblies
 x = logical(reactivation.reward.vHPC(:,6));
 y = logical(reactivation.aversive.vHPC(:,6));
 % reactivation.reward.vHPC(isnan(reactivation.reward.vHPC(:,1)),:) = [];
 % reactivation.aversive.vHPC(isnan(reactivation.aversive.vHPC(:,1)),:) = [];
-x = reactivation.reward.vHPC(:,1);
-y = reactivation.aversive.vHPC(:,1);
+x = reactivation.reward.vHPC(x,1);
+y = reactivation.aversive.vHPC(y,1);
 kstest(x)
 kstest(y)
 [h, p] = ttest2(x,y)  
@@ -971,11 +966,10 @@ reactivation.reward.dHPC(:,end)
 reactivation.aversive.vHPC(:,end)
 reactivation.reward.vHPC(:,end)
 
-
-%%
+%% Plot cumulative
 figure,
 BothA = []; BothR = []; dHPCA = []; dHPCR = []; vHPCA = []; vHPCR = [];
-dur = 100000
+dur = 100;
 for ttt = 1:3
     for tt = 1:length(path)
         %List of folders from the path
@@ -1063,13 +1057,18 @@ for ttt = 1:3
     end
 end
 
-
-% TRATAR DE ENCONTRAR UNA NORMALIZACION DE LA ACTIVIDAD DEL ENSAMBLE;
-% POR EJEMPLO, FOLD CHANGE OF PRE SLEEP
+%% 
+%  TRATAR DE ENCONTRAR UNA NORMALIZACION DE LA ACTIVIDAD DEL ENSAMBLE;
+%  POR EJEMPLO, FOLD CHANGE OF PRE SLEEP
 subplot(311)
-plot(nanmean(BothA),'r'),hold on
-plot(nanmean(BothR),'b'),hold on
+id = logical(reactivation.aversive.dvHPC(:,end));
+plot(nanmean(BothA(id,:)),'r'),hold on
+
+id = logical(reactivation.reward.dvHPC(:,end));
+plot(nanmean(BothR(id,:)),'b'),hold on
+
 ciplot(nanmean(BothA)-nansem(BothA) , nanmean(BothA)+nansem(BothA) , [1:1:100],'r'), alpha 0.5
+
 ciplot(nanmean(BothR)-nansem(BothR) , nanmean(BothR)+nansem(BothR) , [1:1:100],'b'), alpha 0.5
 xlim([0 60])
 

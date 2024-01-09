@@ -74,8 +74,8 @@ function [R] = reactivation_strength(patterns , cond , SpikeTrain , Is , th , ty
 bins = SpikeTrain(:,1);
 dt = bins(2)-bins(1); % delta time
 spks = SpikeTrain(:,2:end);
-prc = 90; % percentile to check if the Strenght is higher 
-iterations = 200; % iterations to create the surrogated distribution
+prc = 50; % percentile to check if the Strenght is higher 
+iterations = 50; % iterations to create the surrogated distribution
 
 a = assembly_activity(patterns(:,cond) , spks');
 a = zscore(a,1,2);
@@ -96,12 +96,10 @@ for i = 1:size(a,1)
     
     [pks.all,loc.all] = findpeaks(a(i,:),bins,'MinPeakHeight',th);
     
-    
     % shuffle peaks to create surrogated
     surrogated = [];
     for ii = 1 : iterations
-        tmp = [loc.all , pks.all'];
-        tmp = [tmp(:,1) , tmp(randperm(size(tmp,1)),2)];
+        tmp = Shuffle2D([loc.all , pks.all']);
         
         pks.b = Restrict(tmp , ToIntervals(bins,Is.baseline));
         pks.b = pks.b(:,2);
@@ -147,8 +145,8 @@ for i = 1:size(a,1)
     end
     
     s = nanstd(surrogated);
-    m = nanmedian(surrogated);
-    m = prctile(surrogated,prc);
+    m = nanmean(surrogated);
+%     m = prctile(surrogated,prc);
 %     m = 0;
     clear s
     
@@ -192,7 +190,6 @@ for i = 1:size(a,1)
                 clear strength FR
             end
         end
-        clear pks loc
         
     elseif type == 'R' % check if is reward assembly
         if config == 2
@@ -233,7 +230,7 @@ for i = 1:size(a,1)
             end
         end
     end
-    clear m
+    clear m pks loc
 end
 
 end
