@@ -1057,9 +1057,9 @@ for ttt = 1:3
     end
 end
 
-
-% TRATAR DE ENCONTRAR UNA NORMALIZACION DE LA ACTIVIDAD DEL ENSAMBLE;
-% POR EJEMPLO, FOLD CHANGE OF PRE SLEEP
+%% 
+%  TRATAR DE ENCONTRAR UNA NORMALIZACION DE LA ACTIVIDAD DEL ENSAMBLE;
+%  POR EJEMPLO, FOLD CHANGE OF PRE SLEEP
 subplot(311)
 id = logical(reactivation.aversive.dvHPC(:,end));
 plot(nanmean(BothA(id,:)),'r'),hold on
