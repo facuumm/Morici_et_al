@@ -108,6 +108,7 @@ NumberOfAssemblies = sum(eigenvalues>lambda_max);
 fprintf(['Number of assemblies detected: ' num2str(NumberOfAssemblies) '\n'])
 if NumberOfAssemblies<1
     AssemblyTemplates=[];
+    Members = [];
     return
 end
 %% Finding co-activation patterns

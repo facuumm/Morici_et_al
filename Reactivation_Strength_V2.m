@@ -422,25 +422,24 @@ for tt = 1:length(path)
             clear a b  spks
         end
         
-        %%
-        disp('Lets go for the assemblies')
-        % --- Options for assemblies detection ---
-        opts.Patterns.method = 'ICA';
-        opts.threshold.method= 'MarcenkoPastur';
-        opts.Patterns.number_of_iterations= 500;
-        opts.threshold.permutations_percentile = 0.9;
-        opts.threshold.number_of_permutations = 500;
-        opts.Patterns.number_of_iterations = 500;
-        opts.Members.method = 'Sqrt';
-        
-        % --- Aversive ---
-        disp('Loading Aversive template')
+        %% --- Aversive ---
+        disp('Lets go for the assemblies')   
         if isfile('dorsalventral_assemblies_aversive3.mat')
+            disp('Loading Aversive template')
             load('dorsalventral_assemblies_aversive3.mat')
             
             %                         if not(exist('Th','var'))
         else
             disp('Detection of assemblies using Aversive template')
+            % --- Options for assemblies detection ---
+            opts.Patterns.method = 'ICA';
+            opts.threshold.method= 'MarcenkoPastur';
+            opts.Patterns.number_of_iterations= 500;
+            opts.threshold.permutations_percentile = 0.9;
+            opts.threshold.number_of_permutations = 500;
+            opts.Patterns.number_of_iterations = 500;
+            opts.Members.method = 'Sqrt';
+            
             limits = aversiveTS_run./1000;
             events = [];
             events = movement.aversive;
@@ -454,15 +453,30 @@ for tt = 1:length(path)
         clear cond Th pat
         
         % Detection of members
-        cond1 =  sum(Thresholded.aversive.all(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
-        cond2 =  sum(Thresholded.aversive.all(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
-        cond.dHPC.aversive = and(cond1 , not(cond2));
-        cond.vHPC.aversive = and(cond2 , not(cond1));
-        cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
-        
+        if not(isempty(Thresholded.aversive.all))
+            if numberD>0
+                cond1 =  sum(Thresholded.aversive.all(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
+                cond2 =  sum(Thresholded.aversive.all(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
+                cond.dHPC.aversive = and(cond1 , not(cond2));
+                cond.vHPC.aversive = and(cond2 , not(cond1));
+                cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
+            else
+                cond1 =  logical(zeros(1,size(Thresholded.aversive.all,2))); %checking of dHPC SU
+                cond2 =  logical(ones(1,size(Thresholded.aversive.all,2))); %checking of vHPC SU
+                cond.dHPC.aversive = and(cond1 , not(cond2));
+                cond.vHPC.aversive = and(cond2 , not(cond1));
+                cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
+            end
+        else
+            cond1 =  logical(0); %checking of dHPC SU
+            cond2 =  logical(0); %checking of vHPC SU
+            cond.dHPC.aversive = and(cond1 , not(cond2));
+            cond.vHPC.aversive = and(cond2 , not(cond1));
+            cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
+        end
         num_assembliesA = [num_assembliesA ; sum(cond.both.aversive) sum(cond.dHPC.aversive) sum(cond.vHPC.aversive)];
         
-        % --- Reward ---
+        %% --- Reward ---
         disp('Loading Reward template')
         if isfile('dorsalventral_assemblies_reward3.mat')
             load('dorsalventral_assemblies_reward3.mat')
@@ -470,6 +484,15 @@ for tt = 1:length(path)
             %                         if not(exist('Th','var'))
         else
             disp('Detection of assemblies using Rewarded template')
+            % --- Options for assemblies detection ---
+            opts.Patterns.method = 'ICA';
+            opts.threshold.method= 'MarcenkoPastur';
+            opts.Patterns.number_of_iterations= 500;
+            opts.threshold.permutations_percentile = 0.9;
+            opts.threshold.number_of_permutations = 500;
+            opts.Patterns.number_of_iterations = 500;
+            opts.Members.method = 'Sqrt';
+            
             limits = rewardTS_run./1000;
             events = [];
             events = movement.reward;
@@ -483,14 +506,30 @@ for tt = 1:length(path)
         clear Th pat
         
         % Detection of members using
-        cond1 =  sum(Thresholded.reward.all(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
-        cond2 =  sum(Thresholded.reward.all(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
-        cond.dHPC.reward = and(cond1 , not(cond2));
-        cond.vHPC.reward = and(cond2 , not(cond1));
-        cond.both.reward = and(cond1 , cond2); clear cond1 cond2
-        
+        if not(isempty(Thresholded.reward.all))
+            if numberD>0
+                cond1 =  sum(Thresholded.reward.all(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
+                cond2 =  sum(Thresholded.reward.all(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
+                cond.dHPC.reward = and(cond1 , not(cond2));
+                cond.vHPC.reward = and(cond2 , not(cond1));
+                cond.both.reward = and(cond1 , cond2); clear cond1 cond2
+            else
+                cond1 =  logical(zeros(1,size(Thresholded.reward.all,2))); %checking of dHPC SU
+                cond2 =  logical(ones(1,size(Thresholded.reward.all,2))); %checking of vHPC SU
+                cond.dHPC.reward = and(cond1 , not(cond2));
+                cond.vHPC.reward = and(cond2 , not(cond1));
+                cond.both.reward = and(cond1 , cond2); clear cond1 cond2
+            end
+        else
+            cond1 =  logical(0); %checking of dHPC SU
+            cond2 =  logical(0); %checking of vHPC SU
+            cond.dHPC.reward = and(cond1 , not(cond2));
+            cond.vHPC.reward = and(cond2 , not(cond1));
+            cond.both.reward = and(cond1 , cond2); clear cond1 cond2
+        end
         num_assembliesR = [num_assembliesR ; sum(cond.both.reward) sum(cond.dHPC.reward) sum(cond.vHPC.reward)];
         
+        %% Similarity Index Calculation
         [r.AR , p.AR] = SimilarityIndex(patterns.all.aversive , patterns.all.reward);
         A = sum(p.AR,1)>=1;
         R = sum(p.AR,2)>=1; R = R';
@@ -890,8 +929,8 @@ y = logical(reactivation.aversive.dvHPC(:,6));
 
 % reactivation.reward.dvHPC(isnan(reactivation.reward.dvHPC(:,1)),:) = [];
 % reactivation.aversive.dvHPC(isnan(reactivation.aversive.dvHPC(:,1)),:) = [];
-x = reactivation.reward.dvHPC(x,1);
-y = reactivation.aversive.dvHPC(y,1);
+x = reactivation.reward.dvHPC(:,1);
+y = reactivation.aversive.dvHPC(:,1);
 
 kstest(x)
 kstest(y)
@@ -917,8 +956,8 @@ x = logical(reactivation.reward.dHPC(:,6));
 y = logical(reactivation.aversive.dHPC(:,6));
 % reactivation.reward.dHPC(isnan(reactivation.reward.dHPC(:,1)),:) = [];
 % reactivation.aversive.dHPC(isnan(reactivation.aversive.dHPC(:,1)),:) = [];
-x = reactivation.reward.dHPC(x,1);
-y = reactivation.aversive.dHPC(y,1);
+x = reactivation.reward.dHPC(:,1);
+y = reactivation.aversive.dHPC(:,1);
 kstest(x)
 kstest(y)
 [h, p] = ttest2(x,y)  
@@ -942,8 +981,8 @@ x = logical(reactivation.reward.vHPC(:,6));
 y = logical(reactivation.aversive.vHPC(:,6));
 % reactivation.reward.vHPC(isnan(reactivation.reward.vHPC(:,1)),:) = [];
 % reactivation.aversive.vHPC(isnan(reactivation.aversive.vHPC(:,1)),:) = [];
-x = reactivation.reward.vHPC(x,1);
-y = reactivation.aversive.vHPC(y,1);
+x = reactivation.reward.vHPC(:,1);
+y = reactivation.aversive.vHPC(:,1);
 kstest(x)
 kstest(y)
 [h, p] = ttest2(x,y)  
