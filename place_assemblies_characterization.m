@@ -63,12 +63,14 @@ for tt = 1:length(path)
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
-        %Loading TS of the sessions
+        
+        %% Loading TS of the sessions
         disp('Uploading session time stamps')
         x = dir([cd,'\*.cat.evt']);
         segments = readtable([cd,'\',x.name],'FileType','text');
         clear x
-        % TimeStamps of begening and end of the sleep and awake trials
+        
+        %% TimeStamps of begening and end of the sleep and awake trials
         % Reward and Aversive trials
         aversiveTS = [];
         aversiveTS_run = [];
@@ -184,7 +186,7 @@ for tt = 1:length(path)
         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
         clear tmp start stop
         
-        %% load sleep states
+        %% Load sleep states
         disp('Uploading sleep scoring')
         x = dir([cd,'\*-states.mat']);    states = load([cd,'\',x.name]);    states = states.states;
         REM.all = ToIntervals(states==5);    NREM.all = ToIntervals(states==3);    WAKE.all = ToIntervals(states==1);
@@ -232,6 +234,7 @@ for tt = 1:length(path)
         spks_vHPC(:,2) = double(spks_vHPC(:,2))./20000;
         spks_dHPC(:,2) = double(spks_dHPC(:,2))./20000;
         spks(:,2) = double(spks(:,2))./20000;
+        
         % Selection of celltype to analyze
         if criteria_type == 0 %pyr
             cellulartype = [K(:,1) , K(:,3)];
@@ -281,124 +284,153 @@ for tt = 1:length(path)
         clear ejeX ejeY dX dY dX_int dY_int
         
         criteria_n = [3 3];
-        
-        %% --- Aversive ---
-        disp('Lets go for the assemblies')
-        if isfile('dorsalventral_assemblies_aversive3.mat')
-            disp('Loading Aversive template')
-            load('dorsalventral_assemblies_aversive3.mat')
-            
-            %                         if not(exist('Th','var'))
-        else
-            disp('Detection of assemblies using Aversive template')
-            % --- Options for assemblies detection ---
-            opts.Patterns.method = 'ICA';
-            opts.threshold.method= 'MarcenkoPastur';
-            opts.Patterns.number_of_iterations= 500;
-            opts.threshold.permutations_percentile = 0.9;
-            opts.threshold.number_of_permutations = 500;
-            opts.Patterns.number_of_iterations = 500;
-            opts.Members.method = 'Sqrt';
-            
-            limits = aversiveTS_run./1000;
-            events = [];
-            events = movement.aversive;
-            [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
-            [Th , pat] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
-            save([cd,'\dorsalventral_assemblies_aversive3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
-        end
-        
-        Thresholded.aversive.all = Th;
-        patterns.all.aversive = pat;
-        clear cond Th pat
-        
-        % Detection of members
-        if not(isempty(Thresholded.aversive.all))
-            if numberD>0
-                cond1 =  sum(Thresholded.aversive.all(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
-                cond2 =  sum(Thresholded.aversive.all(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
-                cond.dHPC.aversive = and(cond1 , not(cond2));
-                cond.vHPC.aversive = and(cond2 , not(cond1));
-                cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
+        if or(numberD > 2 , numberV > 2)
+            %% --- Aversive ---
+            disp('Lets go for the assemblies')
+            if isfile('dorsalventral_assemblies_aversive3.mat')
+                disp('Loading Aversive template')
+                load('dorsalventral_assemblies_aversive3.mat')
+                
+                %                         if not(exist('Th','var'))
             else
-                cond1 =  logical(zeros(1,size(Thresholded.aversive.all,2))); %checking of dHPC SU
-                cond2 =  logical(ones(1,size(Thresholded.aversive.all,2))); %checking of vHPC SU
+                disp('Detection of assemblies using Aversive template')
+                % --- Options for assemblies detection ---
+                opts.Patterns.method = 'ICA';
+                opts.threshold.method= 'MarcenkoPastur';
+                opts.Patterns.number_of_iterations= 500;
+                opts.threshold.permutations_percentile = 0.9;
+                opts.threshold.number_of_permutations = 500;
+                opts.Patterns.number_of_iterations = 500;
+                opts.Members.method = 'Sqrt';
+                
+                limits = aversiveTS_run./1000;
+                events = [];
+                events = movement.aversive;
+                [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
+                [Th , pat] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
+                save([cd,'\dorsalventral_assemblies_aversive3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
+            end
+            
+            Thresholded.aversive.all = Th;
+            patterns.all.aversive = pat;
+            clear cond Th pat
+            
+            % Detection of members
+            if not(isempty(Thresholded.aversive.all))
+                if numberD>0
+                    cond1 =  sum(Thresholded.aversive.all(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
+                    cond2 =  sum(Thresholded.aversive.all(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
+                    cond.dHPC.aversive = and(cond1 , not(cond2));
+                    cond.vHPC.aversive = and(cond2 , not(cond1));
+                    cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
+                else
+                    cond1 =  logical(zeros(1,size(Thresholded.aversive.all,2))); %checking of dHPC SU
+                    cond2 =  logical(ones(1,size(Thresholded.aversive.all,2))); %checking of vHPC SU
+                    cond.dHPC.aversive = and(cond1 , not(cond2));
+                    cond.vHPC.aversive = and(cond2 , not(cond1));
+                    cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
+                end
+            else
+                cond1 =  logical(0); %checking of dHPC SU
+                cond2 =  logical(0); %checking of vHPC SU
                 cond.dHPC.aversive = and(cond1 , not(cond2));
                 cond.vHPC.aversive = and(cond2 , not(cond1));
                 cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
             end
-        else
-            cond1 =  logical(0); %checking of dHPC SU
-            cond2 =  logical(0); %checking of vHPC SU
-            cond.dHPC.aversive = and(cond1 , not(cond2));
-            cond.vHPC.aversive = and(cond2 , not(cond1));
-            cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
-        end
-        num_assembliesA = [num_assembliesA ; sum(cond.both.aversive) sum(cond.dHPC.aversive) sum(cond.vHPC.aversive)];
-        
-        %% --- Reward ---
-        disp('Loading Reward template')
-        if isfile('dorsalventral_assemblies_reward3.mat')
-            load('dorsalventral_assemblies_reward3.mat')
+            num_assembliesA = [num_assembliesA ; sum(cond.both.aversive) sum(cond.dHPC.aversive) sum(cond.vHPC.aversive)];
             
-            %                         if not(exist('Th','var'))
-        else
-            disp('Detection of assemblies using Rewarded template')
-            % --- Options for assemblies detection ---
-            opts.Patterns.method = 'ICA';
-            opts.threshold.method= 'MarcenkoPastur';
-            opts.Patterns.number_of_iterations= 500;
-            opts.threshold.permutations_percentile = 0.9;
-            opts.threshold.number_of_permutations = 500;
-            opts.Patterns.number_of_iterations = 500;
-            opts.Members.method = 'Sqrt';
-            
-            limits = rewardTS_run./1000;
-            events = [];
-            events = movement.reward;
-            [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
-            [Th , pat] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
-            save([cd,'\dorsalventral_assemblies_reward3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
-        end
-        
-        Thresholded.reward.all = Th;
-        patterns.all.reward = pat;
-        clear Th pat
-        
-        % Detection of members using
-        if not(isempty(Thresholded.reward.all))
-            if numberD>0
-                cond1 =  sum(Thresholded.reward.all(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
-                cond2 =  sum(Thresholded.reward.all(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
-                cond.dHPC.reward = and(cond1 , not(cond2));
-                cond.vHPC.reward = and(cond2 , not(cond1));
-                cond.both.reward = and(cond1 , cond2); clear cond1 cond2
+            %% --- Reward ---
+            disp('Loading Reward template')
+            if isfile('dorsalventral_assemblies_reward3.mat')
+                load('dorsalventral_assemblies_reward3.mat')
+                
+                %                         if not(exist('Th','var'))
             else
-                cond1 =  logical(zeros(1,size(Thresholded.reward.all,2))); %checking of dHPC SU
-                cond2 =  logical(ones(1,size(Thresholded.reward.all,2))); %checking of vHPC SU
+                disp('Detection of assemblies using Rewarded template')
+                % --- Options for assemblies detection ---
+                opts.Patterns.method = 'ICA';
+                opts.threshold.method= 'MarcenkoPastur';
+                opts.Patterns.number_of_iterations= 500;
+                opts.threshold.permutations_percentile = 0.9;
+                opts.threshold.number_of_permutations = 500;
+                opts.Patterns.number_of_iterations = 500;
+                opts.Members.method = 'Sqrt';
+                
+                limits = rewardTS_run./1000;
+                events = [];
+                events = movement.reward;
+                [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
+                [Th , pat] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
+                save([cd,'\dorsalventral_assemblies_reward3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
+            end
+            
+            Thresholded.reward.all = Th;
+            patterns.all.reward = pat;
+            clear Th pat
+            
+            % Detection of members using
+            if not(isempty(Thresholded.reward.all))
+                if numberD>0
+                    cond1 =  sum(Thresholded.reward.all(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
+                    cond2 =  sum(Thresholded.reward.all(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
+                    cond.dHPC.reward = and(cond1 , not(cond2));
+                    cond.vHPC.reward = and(cond2 , not(cond1));
+                    cond.both.reward = and(cond1 , cond2); clear cond1 cond2
+                else
+                    cond1 =  logical(zeros(1,size(Thresholded.reward.all,2))); %checking of dHPC SU
+                    cond2 =  logical(ones(1,size(Thresholded.reward.all,2))); %checking of vHPC SU
+                    cond.dHPC.reward = and(cond1 , not(cond2));
+                    cond.vHPC.reward = and(cond2 , not(cond1));
+                    cond.both.reward = and(cond1 , cond2); clear cond1 cond2
+                end
+            else
+                cond1 =  logical(0); %checking of dHPC SU
+                cond2 =  logical(0); %checking of vHPC SU
                 cond.dHPC.reward = and(cond1 , not(cond2));
                 cond.vHPC.reward = and(cond2 , not(cond1));
                 cond.both.reward = and(cond1 , cond2); clear cond1 cond2
             end
-        else
-            cond1 =  logical(0); %checking of dHPC SU
-            cond2 =  logical(0); %checking of vHPC SU
-            cond.dHPC.reward = and(cond1 , not(cond2));
-            cond.vHPC.reward = and(cond2 , not(cond1));
-            cond.both.reward = and(cond1 , cond2); clear cond1 cond2
-        end
-        num_assembliesR = [num_assembliesR ; sum(cond.both.reward) sum(cond.dHPC.reward) sum(cond.vHPC.reward)];
-        
-        %% SpikeTrains construction
-        limits = [0 segments.Var1(end)/1000];
-        events = [];
-        [Spikes , bins , Clusters] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, true, true);
-        clear limits events
-        
-        %% Assemblies activation in the entier recording
-        % Aversive
-        if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
-            if sum(cond.both.aversive)>=1
+            num_assembliesR = [num_assembliesR ; sum(cond.both.reward) sum(cond.dHPC.reward) sum(cond.vHPC.reward)];
+            
+            %% SpikeTrains construction
+            limits = [0 segments.Var1(end)/1000];
+            events = [];
+            [Spikes , bins , Clusters] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, true, true);
+            clear limits events
+            
+            %% Assemblies activation in the entier recording
+            % Aversive
+            if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
+                if sum(cond.both.aversive)>=1
+                    pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
+                    [x xx] = sort(pos(:,1));
+                    pos = pos(xx,:);
+                    events = cell(2,1);
+                    events{1} = movement.aversive;
+                    events{2}  = movement.reward;
+                    
+                    [Maps pc between within] = FiringMap_Assemblies(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , th , pos , events , 60 , true , true);
+                    clear pos x xx
+                    
+                    if s
+                        save([cd,'\Joint_Aversive_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+                    end
+                    
+                    pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
+                    
+                    map.bothA.aversive = [map.bothA.aversive ; Maps.cond1(pc,:)];
+                    map.bothA.reward = [map.bothA.reward ; Maps.cond2(pc,:)];
+                    
+                    Within.bothA.aversive = [Within.bothA.aversive ; within.cond1(pc,:)];
+                    Within.bothA.reward = [Within.bothA.reward ; within.cond2(pc,:)];
+                    
+                    Between.bothA = [Between.bothA ; between(pc,:)];
+                    
+                    clear within between pc Maps pos x xx events
+                end
+            end
+            
+            if sum(cond.dHPC.aversive)>=1
                 pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
                 [x xx] = sort(pos(:,1));
                 pos = pos(xx,:);
@@ -406,86 +438,86 @@ for tt = 1:length(path)
                 events{1} = movement.aversive;
                 events{2}  = movement.reward;
                 
-                [Maps pc between within] = FiringMap_Assemblies(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , th , pos , events , 60 , true , true);
+                [Maps pc between within] = FiringMap_Assemblies(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , th , pos , events , 60 , true , true);
                 clear pos x xx
                 
                 if s
-                    save([cd,'\Joint_Aversive_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+                    save([cd,'\dHPC_Aversive_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
                 end
                 
                 pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
                 
-                map.bothA.aversive = [map.bothA.aversive ; Maps.cond1(pc,:)];
-                map.bothA.reward = [map.bothA.reward ; Maps.cond2(pc,:)];
+                map.dHPCA.aversive = [map.dHPCA.aversive ; Maps.cond1(pc,:)];
+                map.dHPCA.reward = [map.dHPCA.reward ; Maps.cond2(pc,:)];
                 
-                Within.bothA.aversive = [Within.bothA.aversive ; within.cond1(pc,:)];
-                Within.bothA.reward = [Within.bothA.reward ; within.cond2(pc,:)];
+                Within.dHPCA.aversive = [Within.dHPCA.aversive ; within.cond1(pc,:)];
+                Within.dHPCA.reward = [Within.dHPCA.reward ; within.cond2(pc,:)];
                 
-                Between.bothA = [Between.bothA ; between(pc,:)];
+                Between.dHPCA = [Between.dHPCA ; between(pc,:)];
                 
                 clear within between pc Maps pos x xx events
             end
-        end
-        
-        if sum(cond.dHPC.aversive)>=1
-            pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
-            [x xx] = sort(pos(:,1));
-            pos = pos(xx,:);
-            events = cell(2,1);
-            events{1} = movement.aversive;
-            events{2}  = movement.reward;
             
-            [Maps pc between within] = FiringMap_Assemblies(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , th , pos , events , 60 , true , true);
-            clear pos x xx
-            
-            if s
-                save([cd,'\dHPC_Aversive_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+            if sum(cond.vHPC.aversive)>=1
+                pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
+                [x xx] = sort(pos(:,1));
+                pos = pos(xx,:);
+                events = cell(2,1);
+                events{1} = movement.aversive;
+                events{2}  = movement.reward;
+                
+                [Maps pc between within] = FiringMap_Assemblies(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , th , pos , events , 60 , true , true);
+                clear pos x xx
+                
+                if s
+                    save([cd,'\vHPC_Aversive_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+                end
+                
+                pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
+                
+                map.vHPCA.aversive = [map.vHPCA.aversive ; Maps.cond1(pc,:)];
+                map.vHPCA.reward = [map.vHPCA.reward ; Maps.cond2(pc,:)];
+                
+                Within.vHPCA.aversive = [Within.vHPCA.aversive ; within.cond1(pc,:)];
+                Within.vHPCA.reward = [Within.vHPCA.reward ; within.cond2(pc,:)];
+                
+                Between.vHPCA = [Between.vHPCA ; between(pc,:)];
+                
+                clear within between pc Maps pos x xx events
             end
             
-            pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
-            
-            map.dHPCA.aversive = [map.dHPCA.aversive ; Maps.cond1(pc,:)];
-            map.dHPCA.reward = [map.dHPCA.reward ; Maps.cond2(pc,:)];
-            
-            Within.dHPCA.aversive = [Within.dHPCA.aversive ; within.cond1(pc,:)];
-            Within.dHPCA.reward = [Within.dHPCA.reward ; within.cond2(pc,:)];
-            
-            Between.dHPCA = [Between.dHPCA ; between(pc,:)];
-            
-            clear within between pc Maps pos x xx events
-        end
-        
-        if sum(cond.vHPC.aversive)>=1
-            pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
-            [x xx] = sort(pos(:,1));
-            pos = pos(xx,:);
-            events = cell(2,1);
-            events{1} = movement.aversive;
-            events{2}  = movement.reward;
-            
-            [Maps pc between within] = FiringMap_Assemblies(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , th , pos , events , 60 , true , true);
-            clear pos x xx
-            
-            if s
-                save([cd,'\vHPC_Aversive_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+            % Reward
+            if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
+                if sum(cond.both.reward)>=1
+                    pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
+                    [x xx] = sort(pos(:,1));
+                    pos = pos(xx,:);
+                    events = cell(2,1);
+                    events{1} = movement.reward;
+                    events{2}  = movement.aversive;
+                    
+                    [Maps pc between within] = FiringMap_Assemblies(patterns.all.reward , cond.both.reward , [bins' , Spikes] , th , pos , events , 60 , true , true);
+                    clear pos x xx
+                    
+                    if s
+                        save([cd,'\Joint_Reward_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+                    end
+                    
+                    pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
+                    
+                    map.bothR.reward = [map.bothR.reward ; Maps.cond1(pc,:)];
+                    map.bothR.aversive = [map.bothR.aversive ; Maps.cond2(pc,:)];
+                    
+                    Within.bothR.reward = [Within.bothR.reward ; within.cond1(pc,:)];
+                    Within.bothR.aversive = [Within.bothR.aversive ; within.cond2(pc,:)];
+                    
+                    Between.bothR = [Between.bothR ; between(pc,:)];
+                    
+                    clear within between pc Maps pos x xx events
+                end
             end
             
-            pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
-            
-            map.vHPCA.aversive = [map.vHPCA.aversive ; Maps.cond1(pc,:)];
-            map.vHPCA.reward = [map.vHPCA.reward ; Maps.cond2(pc,:)];
-            
-            Within.vHPCA.aversive = [Within.vHPCA.aversive ; within.cond1(pc,:)];
-            Within.vHPCA.reward = [Within.vHPCA.reward ; within.cond2(pc,:)];
-            
-            Between.vHPCA = [Between.vHPCA ; between(pc,:)];
-            
-            clear within between pc Maps pos x xx events
-        end
-        
-        % Reward
-        if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
-            if sum(cond.both.reward)>=1
+            if sum(cond.dHPC.reward)>=1
                 pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
                 [x xx] = sort(pos(:,1));
                 pos = pos(xx,:);
@@ -493,81 +525,53 @@ for tt = 1:length(path)
                 events{1} = movement.reward;
                 events{2}  = movement.aversive;
                 
-                [Maps pc between within] = FiringMap_Assemblies(patterns.all.reward , cond.both.reward , [bins' , Spikes] , th , pos , events , 60 , true , true);
+                [Maps pc between within] = FiringMap_Assemblies(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , th , pos , events , 60 , true , true);
                 clear pos x xx
                 
                 if s
-                    save([cd,'\Joint_Reward_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+                    save([cd,'\dHPC_Reward_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
                 end
                 
                 pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
                 
-                map.bothR.reward = [map.bothR.reward ; Maps.cond1(pc,:)];
-                map.bothR.aversive = [map.bothR.aversive ; Maps.cond2(pc,:)];
+                map.dHPCR.reward = [map.dHPCR.reward ; Maps.cond1(pc,:)];
+                map.dHPCR.aversive = [map.dHPCR.aversive ; Maps.cond2(pc,:)];
                 
-                Within.bothR.reward = [Within.bothR.reward ; within.cond1(pc,:)];
-                Within.bothR.aversive = [Within.bothR.aversive ; within.cond2(pc,:)];
+                Within.dHPCR.reward = [Within.dHPCR.reward ; within.cond1(pc,:)];
+                Within.dHPCR.aversive = [Within.dHPCR.aversive ; within.cond2(pc,:)];
                 
-                Between.bothR = [Between.bothR ; between(pc,:)];
+                Between.dHPCR = [Between.dHPCR ; between(pc,:)];
                 
                 clear within between pc Maps pos x xx events
             end
-        end
-        
-        if sum(cond.dHPC.reward)>=1
-            pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
-            [x xx] = sort(pos(:,1));
-            pos = pos(xx,:);
-            events = cell(2,1);
-            events{1} = movement.reward;
-            events{2}  = movement.aversive;
             
-            [Maps pc between within] = FiringMap_Assemblies(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , th , pos , events , 60 , true , true);
-            clear pos x xx
-            
-            if s
-                save([cd,'\dHPC_Reward_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+            if sum(cond.vHPC.reward)>=1
+                pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
+                [x xx] = sort(pos(:,1));
+                pos = pos(xx,:);
+                events = cell(2,1);
+                events{1} = movement.reward;
+                events{2}  = movement.aversive;
+                
+                [Maps pc between within] = FiringMap_Assemblies(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , th , pos , events , 60 , true , true);
+                clear pos x xx
+                
+                if s
+                    save([cd,'\vHPC_Reward_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
+                end
+                
+                pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
+                
+                map.vHPCR.reward = [map.vHPCR.reward ; Maps.cond1(pc,:)];
+                map.vHPCR.aversive = [map.vHPCR.aversive ; Maps.cond2(pc,:)];
+                
+                Within.vHPCR.reward = [Within.vHPCR.reward ; within.cond1(pc,:)];
+                Within.vHPCR.aversive = [Within.vHPCR.aversive ; within.cond2(pc,:)];
+                
+                Between.vHPCR = [Between.vHPCR ; between(pc,:)];
+                
+                clear within between pc Maps pos x xx events
             end
-            
-            pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
-            
-            map.dHPCR.reward = [map.dHPCR.reward ; Maps.cond1(pc,:)];
-            map.dHPCR.aversive = [map.dHPCR.aversive ; Maps.cond2(pc,:)];
-            
-            Within.dHPCR.reward = [Within.dHPCR.reward ; within.cond1(pc,:)];
-            Within.dHPCR.aversive = [Within.dHPCR.aversive ; within.cond2(pc,:)];
-            
-            Between.dHPCR = [Between.dHPCR ; between(pc,:)];
-            
-            clear within between pc Maps pos x xx events
-        end
-        
-        if sum(cond.vHPC.reward)>=1
-            pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
-            [x xx] = sort(pos(:,1));
-            pos = pos(xx,:);
-            events = cell(2,1);
-            events{1} = movement.reward;
-            events{2}  = movement.aversive;
-            
-            [Maps pc between within] = FiringMap_Assemblies(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , th , pos , events , 60 , true , true);
-            clear pos x xx
-            
-            if s
-                save([cd,'\vHPC_Reward_Assemblies_Maps.mat'],'Maps' , 'pc' , 'between' , 'within')
-            end
-            
-            pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
-            
-            map.vHPCR.reward = [map.vHPCR.reward ; Maps.cond1(pc,:)];
-            map.vHPCR.aversive = [map.vHPCR.aversive ; Maps.cond2(pc,:)];
-            
-            Within.vHPCR.reward = [Within.vHPCR.reward ; within.cond1(pc,:)];
-            Within.vHPCR.aversive = [Within.vHPCR.aversive ; within.cond2(pc,:)];
-            
-            Between.vHPCR = [Between.vHPCR ; between(pc,:)];
-            
-            clear within between pc Maps pos x xx events
         end
         disp(' ')
         
@@ -588,6 +592,7 @@ for tt = 1:length(path)
     clear num_assembliesA num_assembliesR
     
 end
+
 
 %% Plotting section
 % The following section is used to plot the outputs of the script
