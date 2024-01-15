@@ -3,7 +3,7 @@ clc
 close all
 
 %% Parameters
-path = {'E:\Rat103\usable';'E:\Rat126\Ephys\in-Pyr';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
+path = {'E:\Rat103\usable';'E:\Rat126\Ephys\in_Pyr';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 
 %Sleep
 time_criteria = 1; % minimal time to include a NREM epoch (in min)

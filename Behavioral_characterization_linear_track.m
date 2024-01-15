@@ -3,7 +3,7 @@ clc
 close all
 
 %% Parameters
-path = {'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
+path = {'E:\Rat103\usable';'E:\Rat126\Ephys\in_Pyr';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 minimal_speed = 7; % minimal speed to detect quite periods
 minimal_speed_time = 2; % minimal time to detect quite periods
 Re = [];
@@ -259,7 +259,7 @@ for tt = 1:length(path)
     	N = N+1;
             
     end
-    if tt <length(path)
+    if tt < length(path)
         curveA = [curveA ; nan(3,size(curveA,2))];
         curveR = [curveR ; nan(3,size(curveR,2))];
         
@@ -275,9 +275,9 @@ subplot(121),imagesc([3:3:180],[1:1:size(curveA,1)],curveR)
 subplot(122),imagesc([3:3:180],[1:1:size(curveA,1)],curveA)
 
 figure
-plot(e(2:end),mean(curveR,'omitnan')),ylim([0 20]),xlim([min(e(2:end)) max(e(2:end))])
+plot(e(2:end),mean(curveR,'omitnan')),ylim([0 24]),xlim([min(e(2:end)) max(e(2:end))])
 hold on
-plot(e(2:end),mean(curveA,'omitnan')),ylim([0 20]),xlim([min(e(2:end)) max(e(2:end))])
+plot(e(2:end),mean(curveA,'omitnan')),ylim([0 24]),xlim([min(e(2:end)) max(e(2:end))])
 
 % Plot average speed across space
 figure
@@ -311,17 +311,17 @@ ciplot(m-s,m+s,c(1:end-1),'r'),alpha 0.1
 % Plot mean speed, percentage of Quiet and Active periods
 figure
 subplot(132)
-scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [meanSpeed(:,1);meanSpeed(:,2)],'filled','MarkerEdgeColor','none','MarkerFaceColor','k'),,xlim([0 3]),ylim([0 60])
+scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [meanSpeed(:,1);meanSpeed(:,2)],'filled','MarkerEdgeColor','none','MarkerFaceColor','k'),,xlim([0 3]),ylim([0 80])
 hold on
 scatter([1;2] , [mean(meanSpeed(:,1));mean(meanSpeed(:,2))],'filled','MarkerEdgeColor','none','MarkerFaceColor','r'),,xlim([0 3]),ylim([0 60])
 
 subplot(131)
-scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [meanSpeed(:,3);meanSpeed(:,4)],'filled','MarkerEdgeColor','none','MarkerFaceColor','k'),,xlim([0 3]),ylim([0 60])
+scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [meanSpeed(:,3);meanSpeed(:,4)],'filled','MarkerEdgeColor','none','MarkerFaceColor','k'),,xlim([0 3]),ylim([0 80])
 hold on
 scatter([1;2] , [mean(meanSpeed(:,3));mean(meanSpeed(:,4))],'filled','MarkerEdgeColor','none','MarkerFaceColor','r'),,xlim([0 3]),ylim([0 60])
 
 subplot(133)
-scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [meanSpeed(:,5);meanSpeed(:,6)],'filled','MarkerEdgeColor','none','MarkerFaceColor','k'),,xlim([0 3]),ylim([0 60])
+scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [meanSpeed(:,5);meanSpeed(:,6)],'filled','MarkerEdgeColor','none','MarkerFaceColor','k'),,xlim([0 3]),ylim([0 80])
 hold on
 scatter([1;2] , [mean(meanSpeed(:,5));mean(meanSpeed(:,6))],'filled','MarkerEdgeColor','none','MarkerFaceColor','r'),,xlim([0 3]),ylim([0 100])
 
