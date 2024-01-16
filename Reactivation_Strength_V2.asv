@@ -213,84 +213,84 @@ for tt = 1:length(path)
         WAKE.aversive = Restrict(WAKE.all,aversiveTS./1000);
         WAKE.reward = Restrict(WAKE.all,rewardTS./1000);
         
-%         %% load coordinated ripple bursts
-%         load('coordinated_ripple_bursts.mat')
-%         coordinated_ripple_bursts = [coordinated_ripple_bursts(:,1)  coordinated_ripple_bursts(:,3)];
-%         %         [coordinated_ripple_bursts] = merge_events(coordinated_ripple_bursts, 0.05);
-%         
-%         ripple_bursts.baseline = Restrict(coordinated_ripple_bursts,baselineTS./1000);
-%         ripple_bursts.reward = Restrict(coordinated_ripple_bursts,rewardTS./1000);
-%         ripple_bursts.aversive = Restrict(coordinated_ripple_bursts,aversiveTS./1000);
-%         ripple_bursts.all = coordinated_ripple_bursts;
-%         clear coordinated_ripple_bursts
-%         
-%         %% Load ripples
-%         ripplesD = table2array(readtable('ripplesD_customized2.csv'));
-%         ripplesV = table2array(readtable('ripplesV_customized2.csv'));
-%         % coordination
-%         coordinated = [];
-%         coordinatedV = [];
-%         coordinatedV_refined = [];
-%         cooridnated_event = [];
-%         cooridnated_eventDV = [];
-%         cooridnated_eventVD = [];
-%         for i = 1:length(ripplesD)
-%             r = ripplesD(i,:);
-%             tmp = sum(and(ripplesV(:,2)>= r(1,2)-0.1, ripplesV(:,2)<= r(1,2)+0.1));
-%             if tmp>0
-%                 z = ripplesV(and(ripplesV(:,2)>= r(1,2)-0.1, ripplesV(:,2)<= r(1,2)+0.1),:);
-%                 coordinatedV = [coordinatedV ; z];
-%                 [p,indice] = min(abs(r(2)-z(:,2)));
-%                 coordinatedV_refined = [coordinatedV_refined ; z(indice,:)];
-%                 coordinated = [coordinated ; r];
-%                 
-%                 cooridnated_event = [cooridnated_event ; min([r(1) , z(indice,1)]) , min(min(z(indice,2),r(2)))+abs(z(indice,2)-r(2))/2 , max([r(3) , z(indice,3)])];
-%                 
-%                 if r(2)<z(indice,2)
-%                     cooridnated_eventDV = [cooridnated_eventDV ; min([r(1) , z(indice,1)]) , min(min(z(indice,2),r(2)))+abs(z(indice,2)-r(2))/2 , max([r(3) , z(indice,3)])];
-%                 else
-%                     cooridnated_eventVD = [cooridnated_eventVD ; min([r(1) , z(indice,1)]) , min(min(z(indice,2),r(2)))+abs(z(indice,2)-r(2))/2 , max([r(3) , z(indice,3)])];
-%                 end
-%                 
-%                 clear tmp2 tmp1 p indice z
-%             end
-%             clear r
-%         end
-%         clear x tmp i
-%         
-%         % Store events time stamps
-%         % dRipples
-%         ripples.dHPC.baseline = Restrict(ripplesD , NREM.baseline);
-%         ripples.dHPC.reward = Restrict(ripplesD , NREM.reward);
-%         ripples.dHPC.aversive = Restrict(ripplesD , NREM.aversive);
-%         % vRipples
-%         ripples.vHPC.baseline = Restrict(ripplesV , NREM.baseline);
-%         ripples.vHPC.reward = Restrict(ripplesV , NREM.reward);
-%         ripples.vHPC.aversive = Restrict(ripplesV , NREM.aversive);
-%         % coordinated dRipples
-%         ripples.dHPC.coordinated.baseline = Restrict(coordinated , NREM.baseline);
-%         ripples.dHPC.coordinated.reward = Restrict(coordinated , NREM.reward);
-%         ripples.dHPC.coordinated.aversive = Restrict(coordinated , NREM.aversive);
-%         % coordinated vRipples
-%         ripples.vHPC.coordinated.baseline = Restrict(coordinatedV_refined , NREM.baseline);
-%         ripples.vHPC.coordinated.reward = Restrict(coordinatedV_refined , NREM.reward);
-%         ripples.vHPC.coordinated.aversive = Restrict(coordinatedV_refined , NREM.aversive);
-%         %coordinated event
-%         cooridnated_event((cooridnated_event(:,3)-cooridnated_event(:,1)<0.04),:) = [];
-%         ripple_event.baseline = Restrict(cooridnated_event,baselineTS./1000);
-%         ripple_event.reward = Restrict(cooridnated_event,rewardTS./1000);
-%         ripple_event.aversive = Restrict(cooridnated_event,aversiveTS./1000);
-%         ripple_event.all = cooridnated_event;
-%         % coordinated event when dRipple was first
-%         ripple_event.DV.baseline = Restrict(cooridnated_eventDV,baselineTS./1000);
-%         ripple_event.DV.reward = Restrict(cooridnated_eventDV,rewardTS./1000);
-%         ripple_event.DV.aversive = Restrict(cooridnated_eventDV,aversiveTS./1000);
-%         ripple_event.DV.all = cooridnated_eventDV;
-%         % coordinated event when vRipple was first
-%         ripple_event.VD.baseline = Restrict(cooridnated_eventVD,baselineTS./1000);
-%         ripple_event.VD.reward = Restrict(cooridnated_eventVD,rewardTS./1000);
-%         ripple_event.VD.aversive = Restrict(cooridnated_eventVD,aversiveTS./1000);
-%         ripple_event.VD.all = cooridnated_eventVD;
+        %% load coordinated ripple bursts
+        load('coordinated_ripple_bursts.mat')
+        coordinated_ripple_bursts = [coordinated_ripple_bursts(:,1)  coordinated_ripple_bursts(:,3)];
+        %         [coordinated_ripple_bursts] = merge_events(coordinated_ripple_bursts, 0.05);
+        
+        ripple_bursts.baseline = Restrict(coordinated_ripple_bursts,baselineTS./1000);
+        ripple_bursts.reward = Restrict(coordinated_ripple_bursts,rewardTS./1000);
+        ripple_bursts.aversive = Restrict(coordinated_ripple_bursts,aversiveTS./1000);
+        ripple_bursts.all = coordinated_ripple_bursts;
+        clear coordinated_ripple_bursts
+        
+        %% Load ripples
+        ripplesD = table2array(readtable('ripplesD_customized2.csv'));
+        ripplesV = table2array(readtable('ripplesV_customized2.csv'));
+        % coordination
+        coordinated = [];
+        coordinatedV = [];
+        coordinatedV_refined = [];
+        cooridnated_event = [];
+        cooridnated_eventDV = [];
+        cooridnated_eventVD = [];
+        for i = 1:length(ripplesD)
+            r = ripplesD(i,:);
+            tmp = sum(and(ripplesV(:,2)>= r(1,2)-0.1, ripplesV(:,2)<= r(1,2)+0.1));
+            if tmp>0
+                z = ripplesV(and(ripplesV(:,2)>= r(1,2)-0.1, ripplesV(:,2)<= r(1,2)+0.1),:);
+                coordinatedV = [coordinatedV ; z];
+                [p,indice] = min(abs(r(2)-z(:,2)));
+                coordinatedV_refined = [coordinatedV_refined ; z(indice,:)];
+                coordinated = [coordinated ; r];
+                
+                cooridnated_event = [cooridnated_event ; min([r(1) , z(indice,1)]) , min(min(z(indice,2),r(2)))+abs(z(indice,2)-r(2))/2 , max([r(3) , z(indice,3)])];
+                
+                if r(2)<z(indice,2)
+                    cooridnated_eventDV = [cooridnated_eventDV ; min([r(1) , z(indice,1)]) , min(min(z(indice,2),r(2)))+abs(z(indice,2)-r(2))/2 , max([r(3) , z(indice,3)])];
+                else
+                    cooridnated_eventVD = [cooridnated_eventVD ; min([r(1) , z(indice,1)]) , min(min(z(indice,2),r(2)))+abs(z(indice,2)-r(2))/2 , max([r(3) , z(indice,3)])];
+                end
+                
+                clear tmp2 tmp1 p indice z
+            end
+            clear r
+        end
+        clear x tmp i
+        
+        % Store events time stamps
+        % dRipples
+        ripples.dHPC.baseline = Restrict(ripplesD , NREM.baseline);
+        ripples.dHPC.reward = Restrict(ripplesD , NREM.reward);
+        ripples.dHPC.aversive = Restrict(ripplesD , NREM.aversive);
+        % vRipples
+        ripples.vHPC.baseline = Restrict(ripplesV , NREM.baseline);
+        ripples.vHPC.reward = Restrict(ripplesV , NREM.reward);
+        ripples.vHPC.aversive = Restrict(ripplesV , NREM.aversive);
+        % coordinated dRipples
+        ripples.dHPC.coordinated.baseline = Restrict(coordinated , NREM.baseline);
+        ripples.dHPC.coordinated.reward = Restrict(coordinated , NREM.reward);
+        ripples.dHPC.coordinated.aversive = Restrict(coordinated , NREM.aversive);
+        % coordinated vRipples
+        ripples.vHPC.coordinated.baseline = Restrict(coordinatedV_refined , NREM.baseline);
+        ripples.vHPC.coordinated.reward = Restrict(coordinatedV_refined , NREM.reward);
+        ripples.vHPC.coordinated.aversive = Restrict(coordinatedV_refined , NREM.aversive);
+        %coordinated event
+        cooridnated_event((cooridnated_event(:,3)-cooridnated_event(:,1)<0.04),:) = [];
+        ripple_event.baseline = Restrict(cooridnated_event,baselineTS./1000);
+        ripple_event.reward = Restrict(cooridnated_event,rewardTS./1000);
+        ripple_event.aversive = Restrict(cooridnated_event,aversiveTS./1000);
+        ripple_event.all = cooridnated_event;
+        % coordinated event when dRipple was first
+        ripple_event.DV.baseline = Restrict(cooridnated_eventDV,baselineTS./1000);
+        ripple_event.DV.reward = Restrict(cooridnated_eventDV,rewardTS./1000);
+        ripple_event.DV.aversive = Restrict(cooridnated_eventDV,aversiveTS./1000);
+        ripple_event.DV.all = cooridnated_eventDV;
+        % coordinated event when vRipple was first
+        ripple_event.VD.baseline = Restrict(cooridnated_eventVD,baselineTS./1000);
+        ripple_event.VD.reward = Restrict(cooridnated_eventVD,rewardTS./1000);
+        ripple_event.VD.aversive = Restrict(cooridnated_eventVD,aversiveTS./1000);
+        ripple_event.VD.all = cooridnated_eventVD;
         
         %% Spikes
         % Load Units
@@ -381,46 +381,46 @@ for tt = 1:length(path)
         
         %% Assemblies detection
         if or(numberD > 2 , numberV > 2)
-%             if MUAselection
-%                 disp('Selection of coordinated events with high MUA')
-%                 freq = 1/0.001;
-%                 limits = [0 segments.Var1(end)/1000];
-%                 tmp = [];
-%                 for ii=1:length(cellulartype) % selection of SU for spks train
-%                     if logical(cellulartype(ii,2))
-%                         tmp = [tmp ; spks(spks(:,1)==cellulartype(ii,1),2)];
-%                     end
-%                 end
-%                 [MUA,b]=binspikes(sort(tmp,'ascend'),freq,limits); % spiketrain
-%                 %             MUA = Smooth(MUA , 30 ,'kernel','gaussian'); % smooth
-%                 MUA = smoothdata(MUA , 'gaussian' , 30); % smooth
-%                 MUA = MUA>mean(MUA)+std(MUA)*2; % detection of high MUA
-%                 MUA = ToIntervals(b',MUA); % definition of periods
-%                 MUA = merge_events(MUA, 0.04); % merge periods with short IEI
-%                 
-%                 if strcmp(W,'E')
-%                     a = ripple_event.all(:,2); % center of the event
-%                 elseif strcmp(W,'DV')
-%                     a = ripple_event.DV.all(:,2); % center of the event
-%                 elseif strcmp(W,'VD')
-%                     a = ripple_event.VD.all(:,2); % center of the event
-%                 end
-%                 
-%                 a = Restrict(a , MUA); % restriction of events to MUA periods
-%                 ripple_event.filtered.all = Restrict(a,NREM.all); % store all events
-%                 ripple_event.filtered.baseline = Restrict(a,NREM.baseline); % store baseline events
-%                 ripple_event.filtered.reward = Restrict(a,NREM.reward); % store reward events
-%                 ripple_event.filtered.aversive = Restrict(a,NREM.aversive); % store aversive events
-%                 clear a b  spks
-%                 
-%             else
-%                 a = ripplesD(:,1:3); % center of the event
-%                 ripple_event.filtered.all = Restrict(a,NREM.all); % store all events
-%                 ripple_event.filtered.baseline = Restrict(a,NREM.baseline); % store baseline events
-%                 ripple_event.filtered.reward = Restrict(a,NREM.reward); % store reward events
-%                 ripple_event.filtered.aversive = Restrict(a,NREM.aversive); % store aversive events
-%                 clear a b  spks
-%             end
+            if MUAselection
+                disp('Selection of coordinated events with high MUA')
+                freq = 1/0.001;
+                limits = [0 segments.Var1(end)/1000];
+                tmp = [];
+                for ii=1:length(cellulartype) % selection of SU for spks train
+                    if logical(cellulartype(ii,2))
+                        tmp = [tmp ; spks(spks(:,1)==cellulartype(ii,1),2)];
+                    end
+                end
+                [MUA,b]=binspikes(sort(tmp,'ascend'),freq,limits); % spiketrain
+                %             MUA = Smooth(MUA , 30 ,'kernel','gaussian'); % smooth
+                MUA = smoothdata(MUA , 'gaussian' , 30); % smooth
+                MUA = MUA>mean(MUA)+std(MUA)*2; % detection of high MUA
+                MUA = ToIntervals(b',MUA); % definition of periods
+                MUA = merge_events(MUA, 0.04); % merge periods with short IEI
+                
+                if strcmp(W,'E')
+                    a = ripple_event.all(:,2); % center of the event
+                elseif strcmp(W,'DV')
+                    a = ripple_event.DV.all(:,2); % center of the event
+                elseif strcmp(W,'VD')
+                    a = ripple_event.VD.all(:,2); % center of the event
+                end
+                
+                a = Restrict(a , MUA); % restriction of events to MUA periods
+                ripple_event.filtered.all = Restrict(a,NREM.all); % store all events
+                ripple_event.filtered.baseline = Restrict(a,NREM.baseline); % store baseline events
+                ripple_event.filtered.reward = Restrict(a,NREM.reward); % store reward events
+                ripple_event.filtered.aversive = Restrict(a,NREM.aversive); % store aversive events
+                clear a b  spks
+                
+            else
+                a = ripplesD(:,1:3); % center of the event
+                ripple_event.filtered.all = Restrict(a,NREM.all); % store all events
+                ripple_event.filtered.baseline = Restrict(a,NREM.baseline); % store baseline events
+                ripple_event.filtered.reward = Restrict(a,NREM.reward); % store reward events
+                ripple_event.filtered.aversive = Restrict(a,NREM.aversive); % store aversive events
+                clear a b  spks
+            end
             
             %% --- Aversive ---
             disp('Lets go for the assemblies')

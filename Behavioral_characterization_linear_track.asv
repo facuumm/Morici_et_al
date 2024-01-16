@@ -333,30 +333,26 @@ subplot(121),imagesc([3:3:180],[1:1:size(quietR,1)],quietR)
 subplot(122),imagesc([3:3:180],[1:1:size(quietA,1)],quietA)
 
 figure
-plot(e(2:end),mean(quietR,'omitnan'),'b'),ylim([0 150]),xlim([min(e(2:end)) max(e(2:end))])
+plot(e(2:end),mean(quietR,'omitnan'),'b'),ylim([0 300]),xlim([min(E(2:end)) max(E(2:end))])
 hold on
-plot(e(2:end),mean(quietA,'omitnan'),'r'),ylim([0 150]),xlim([min(e(2:end)) max(e(2:end))])
+plot(e(2:end),mean(quietR,'omitnan'),'r'),ylim([0 300]),xlim([min(E(2:end)) max(E(2:end))])
 
 
 %% Plot mean speed, percentage of Quiet and Active periods
 figure
-subplot(142)
-scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [meanSpeed(:,1);meanSpeed(:,2)],'filled','MarkerEdgeColor','none','MarkerFaceColor','k'),xlim([0 3]),ylim([0 60])
+subplot(132)
+scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [meanSpeed(:,1);meanSpeed(:,2)],'filled','MarkerEdgeColor','none','MarkerFaceColor','k'),,xlim([0 3]),ylim([0 60])
 hold on
 scatter([1;2] , [mean(meanSpeed(:,1));mean(meanSpeed(:,2))],'filled','MarkerEdgeColor','none','MarkerFaceColor','r'),,xlim([0 3]),ylim([0 60])
 
-subplot(141)
+subplot(131)
 scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [meanSpeed(:,3);meanSpeed(:,4)],'filled','MarkerEdgeColor','none','MarkerFaceColor','k'),,xlim([0 3]),ylim([0 60])
 hold on
 scatter([1;2] , [mean(meanSpeed(:,3));mean(meanSpeed(:,4))],'filled','MarkerEdgeColor','none','MarkerFaceColor','r'),xlim([0 3]),ylim([0 60])
 
-subplot(143)
+subplot(133)
 scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [meanSpeed(:,5);meanSpeed(:,6)],'filled','MarkerEdgeColor','none','MarkerFaceColor','k'),,xlim([0 3]),ylim([0 100])
 hold on
 scatter([1;2] , [mean(meanSpeed(:,5));mean(meanSpeed(:,6))],'filled','MarkerEdgeColor','none','MarkerFaceColor','r'),,xlim([0 3]),ylim([0 100])
 
-subplot(144)
-scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [100-meanSpeed(:,5);100-meanSpeed(:,6)],'filled','MarkerEdgeColor','none','MarkerFaceColor','k'),,xlim([0 3]),ylim([0 100])
-hold on
-scatter([1;2] , [100-mean(meanSpeed(:,5));100-mean(meanSpeed(:,6))],'filled','MarkerEdgeColor','none','MarkerFaceColor','r'),,xlim([0 3]),ylim([0 100])
 
