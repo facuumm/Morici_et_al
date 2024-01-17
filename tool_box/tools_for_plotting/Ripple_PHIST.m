@@ -1,4 +1,4 @@
-function output = Ripple_PHIST(path,type)
+function output = Ripple_PHIST(path,Type)
 % This function construct a CCG using SU activity lock the occurrence
 % of dorsal or ventral ripples. It will iterate in the subfolder from the
 % paths you introduce.
@@ -106,9 +106,14 @@ for tt = 1:length(path)
         WAKE.reward = Restrict(WAKE.all,rewardTS./1000);
         
         %% Load ripples
-        ripplesD = table2array(readtable('ripplesD_customized2.csv'));
-        ripplesV = table2array(readtable('ripplesV_customized2.csv'));
-             
+        if isfile('ripplesD_customized2.csv')
+            ripplesD = table2array(readtable('ripplesD_customized2.csv'));
+        end
+        
+        if isfile('ripplesV_customized2.csv')
+            ripplesV = table2array(readtable('ripplesV_customized2.csv'));
+        end
+        
         %% Spikes
         % Load Units
         cd 'Spikesorting'
@@ -138,10 +143,10 @@ for tt = 1:length(path)
         spks(:,2) = double(spks(:,2))./20000;
         
         % Selection of celltype to analyze
-        if type == 0 %pyr
-            cellulartype = [K(:,1) , K(:,3)];
-        elseif type == 1 % int
+        if Type == 0 %pyr
             cellulartype = [K(:,1) , K(:,4)];
+        elseif Type == 1 % int
+            cellulartype = [K(:,1) , not(K(:,4))];
         end
         
         

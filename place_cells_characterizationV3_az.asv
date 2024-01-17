@@ -20,7 +20,7 @@ minimal_speed = 2.5;% minimal speed to detect quite periods
 minimal_speed_time = 2; % minimal time to detect quite periods
 
 %% Main loop, to iterate across sessions
-for tt = 6:length(path)
+for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
     % Get a logical vector that tells which is a directory.
@@ -627,24 +627,24 @@ for tt = 6:length(path)
             %% Saving data
             disp('Saving outputs')
             if not(exist('pc_all','var'))
-%                 maps.dHPC.aversive = maps_dHPC_A;
-%                 maps.vHPC.aversive = maps_vHPC_A;
-%                 maps.dHPC.reward   = maps_dHPC_R;
-%                 maps.vHPC.reward   = maps_vHPC_R;
-%                 maps.dHPC.aversiveS = maps_dHPC_SA;
-%                 maps.vHPC.aversiveS = maps_vHPC_SA;
-%                 maps.dHPC.rewardS   = maps_dHPC_SR;
-%                 maps.vHPC.rewardS   = maps_vHPC_SR;
-%                 peak.dHPC.aversive = peak_dHPC_A;
-%                 peak.vHPC.aversive = peak_vHPC_A;
-%                 peak.dHPC.reward   = peak_dHPC_R;
-%                 peak.vHPC.reward   = peak_vHPC_R;
-%                 field.dHPC.aversive = field_dHPC_A;
-%                 field.vHPC.aversive = field_vHPC_A;
-%                 field.dHPC.reward   = field_dHPC_R;
-%                 field.vHPC.reward   = field_vHPC_R;
-%                 clus.dHPC = cluster_dHPC;
-%                 clus.vHPC = cluster_vHPC;
+                maps.dHPC.aversive = maps_dHPC_A;
+                maps.vHPC.aversive = maps_vHPC_A;
+                maps.dHPC.reward   = maps_dHPC_R;
+                maps.vHPC.reward   = maps_vHPC_R;
+                maps.dHPC.aversiveS = maps_dHPC_SA;
+                maps.vHPC.aversiveS = maps_vHPC_SA;
+                maps.dHPC.rewardS   = maps_dHPC_SR;
+                maps.vHPC.rewardS   = maps_vHPC_SR;
+                peak.dHPC.aversive = peak_dHPC_A;
+                peak.vHPC.aversive = peak_vHPC_A;
+                peak.dHPC.reward   = peak_dHPC_R;
+                peak.vHPC.reward   = peak_vHPC_R;
+                field.dHPC.aversive = field_dHPC_A;
+                field.vHPC.aversive = field_vHPC_A;
+                field.dHPC.reward   = field_dHPC_R;
+                field.vHPC.reward   = field_vHPC_R;
+                clus.dHPC = cluster_dHPC;
+                clus.vHPC = cluster_vHPC;
                 
                 pc_all.dHPC.within.A =  pc_dHPC_par.within.ave;
                 pc_all.dHPC.within.R =  pc_dHPC_par.within.rew;
@@ -673,24 +673,24 @@ for tt = 6:length(path)
                 pc_all.vHPC.pc_params.rew=pc_vHPC_par.pc_params.rew;
                 
             else
-%                 maps.dHPC.aversive = [maps.dHPC.aversive ; maps_dHPC_A];
-%                 maps.vHPC.aversive = [maps.vHPC.aversive ; maps_vHPC_A];
-%                 maps.dHPC.reward   = [maps.dHPC.reward ; maps_dHPC_R];
-%                 maps.vHPC.reward   = [maps.vHPC.reward ; maps_vHPC_R];
-%                 maps.dHPC.aversiveS = [maps.dHPC.aversiveS ; maps_dHPC_SA];
-%                 maps.vHPC.aversiveS = [maps.vHPC.aversiveS ; maps_vHPC_SA];
-%                 maps.dHPC.rewardS   = [maps.dHPC.rewardS ; maps_dHPC_SR];
-%                 maps.vHPC.rewardS   = [maps.vHPC.rewardS ; maps_vHPC_SR];                
-%                 peak.dHPC.aversive = [peak.dHPC.aversive ; peak_dHPC_A];
-%                 peak.vHPC.aversive = [peak.vHPC.aversive ; peak_vHPC_A];
-%                 peak.dHPC.reward   = [peak.dHPC.reward ; peak_dHPC_R];
-%                 peak.vHPC.reward   = [peak.vHPC.reward ; peak_vHPC_R];
-%                 field.dHPC.aversive = [field.dHPC.aversive ; field_dHPC_A];
-%                 field.vHPC.aversive = [field.vHPC.aversive ; field_vHPC_A];
-%                 field.dHPC.reward   = [field.dHPC.reward ; field_dHPC_R];
-%                 field.vHPC.reward   = [field.vHPC.reward ; field_vHPC_R];
-%                 clus.dHPC = [clus.dHPC ; cluster_dHPC];
-%                 clus.vHPC = [clus.vHPC ; cluster_vHPC]; 
+                maps.dHPC.aversive = [maps.dHPC.aversive ; maps_dHPC_A];
+                maps.vHPC.aversive = [maps.vHPC.aversive ; maps_vHPC_A];
+                maps.dHPC.reward   = [maps.dHPC.reward ; maps_dHPC_R];
+                maps.vHPC.reward   = [maps.vHPC.reward ; maps_vHPC_R];
+                maps.dHPC.aversiveS = [maps.dHPC.aversiveS ; maps_dHPC_SA];
+                maps.vHPC.aversiveS = [maps.vHPC.aversiveS ; maps_vHPC_SA];
+                maps.dHPC.rewardS   = [maps.dHPC.rewardS ; maps_dHPC_SR];
+                maps.vHPC.rewardS   = [maps.vHPC.rewardS ; maps_vHPC_SR];                
+                peak.dHPC.aversive = [peak.dHPC.aversive ; peak_dHPC_A];
+                peak.vHPC.aversive = [peak.vHPC.aversive ; peak_vHPC_A];
+                peak.dHPC.reward   = [peak.dHPC.reward ; peak_dHPC_R];
+                peak.vHPC.reward   = [peak.vHPC.reward ; peak_vHPC_R];
+                field.dHPC.aversive = [field.dHPC.aversive ; field_dHPC_A];
+                field.vHPC.aversive = [field.vHPC.aversive ; field_vHPC_A];
+                field.dHPC.reward   = [field.dHPC.reward ; field_dHPC_R];
+                field.vHPC.reward   = [field.vHPC.reward ; field_vHPC_R];
+                clus.dHPC = [clus.dHPC ; cluster_dHPC];
+                clus.vHPC = [clus.vHPC ; cluster_vHPC]; 
                 
                 pc_all.dHPC.within.A = [pc_all.dHPC.within.A ; pc_dHPC_par.within.ave];
                 pc_all.dHPC.within.R  = [pc_all.dHPC.within.R ; pc_dHPC_par.within.rew];
@@ -737,7 +737,7 @@ for tt = 6:length(path)
     disp(' ')
 end
 
-save('W:\Remapping-analysis-Facu\pc_all_within_between_v6.mat', 'pc_all');
+save('W:\Remapping-analysis-Facu\pc_all_within_between_v5.mat', 'pc_all');
 
 %% Total number of recorded neurons - next time put this inseide the main loop
 % c1: rat c2: session c3: #dHPC neurons c4: dHPC #pyr c5: #vHPCneurons  c6:VHPC#pyr 

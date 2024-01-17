@@ -11,7 +11,7 @@ time_criteria = 1; % minimal time to include a NREM epoch (in min)
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
 MUAselection = logical(0); % to select ripples by their MUA
-W = 'N'; % to select what kind of ripples I want to check
+W = 'R'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % D= uncoordinated dorsal, V= uncoordinated ventral
 % CB = cooridnated bursts
@@ -949,7 +949,7 @@ err = [nansem(x) nansem(y)];
 
 subplot(131),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.25 0.25])
+er = errorbar(xx,yy,err);ylim([-0.07 0.07])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -974,7 +974,7 @@ err = [nansem(x) nansem(y)];
 
 subplot(132),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.25 0.25])
+er = errorbar(xx,yy,err);ylim([-0.07 0.07])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -999,11 +999,76 @@ err = [nansem(x) nansem(y)];
 
 subplot(133),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.25 0.25])
+er = errorbar(xx,yy,err);ylim([-0.07 0.07])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
 
+%% Plot cumulative distribution
+%  for joint assemblies
+figure
+x = reactivation.reward.dvHPC(:,1);
+y = reactivation.aversive.dvHPC(:,1);
+[h p] = kstest2(x,y,'Tail','larger')
+
+subplot(131),
+cdfplot(x)
+hold on
+cdfplot(y),xlim([-0.6 0.6])
+
+%  for dHPC assemblies
+x = reactivation.reward.dHPC(:,1);
+y = reactivation.aversive.dHPC(:,1);
+[h p] = kstest2(x,y,'Tail','larger')
+
+subplot(132),
+cdfplot(x)
+hold on
+cdfplot(y),xlim([-0.6 0.6])
+
+%  for vHPC assemblies
+x = reactivation.reward.vHPC(:,1);
+y = reactivation.aversive.vHPC(:,1);
+[h p] = kstest2(x,y,'Tail','larger')
+
+subplot(133),
+cdfplot(x)
+hold on
+cdfplot(y),xlim([-0.6 0.6])
+
+
+%% Plot Correlations
+figure
+subplot(131)
+% scatter(reactivation.reward.dvHPC(:,4) , reactivation.reward.dvHPC(:,1),'filled','b'),hold on,xlim([0 60]),ylim([-1 1])
+scatter(reactivation.aversive.dvHPC(:,4) , reactivation.aversive.dvHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-1 1])
+
+subplot(132)
+% scatter(reactivation.reward.dHPC(:,4) , reactivation.reward.dHPC(:,1),'filled','b'),hold on,xlim([0 60]),ylim([-1 1])
+scatter(reactivation.aversive.dHPC(:,4) , reactivation.aversive.dHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-1 1])
+
+subplot(133)
+% scatter(reactivation.reward.vHPC(:,4) , reactivation.reward.vHPC(:,1),'filled','b'),hold on,xlim([0 60]),ylim([-1 1])
+scatter(reactivation.aversive.vHPC(:,4) , reactivation.aversive.vHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-1 1])
+
+figure
+subplot(131)
+fitlm(reactivation.aversive.dvHPC(:,4) , reactivation.aversive.dvHPC(:,1))
+plot(ans),xlim([0 60]),ylim([-1 1]),hold on
+fitlm(reactivation.reward.dvHPC(:,4) , reactivation.reward.dvHPC(:,1))
+plot(ans),xlim([0 60]),ylim([-1 1]),hold on
+
+subplot(132)
+fitlm(reactivation.aversive.dHPC(:,4) , reactivation.aversive.dHPC(:,1))
+plot(ans),xlim([0 60]),ylim([-1 1]),hold on
+fitlm(reactivation.reward.dHPC(:,4) , reactivation.reward.dHPC(:,1))
+plot(ans),xlim([0 60]),ylim([-1 1]),hold on
+
+subplot(133)
+fitlm(reactivation.aversive.vHPC(:,4) , reactivation.aversive.vHPC(:,1))
+plot(ans),xlim([0 60]),ylim([-1 1]),hold on
+fitlm(reactivation.reward.vHPC(:,4) , reactivation.reward.vHPC(:,1))
+plot(ans),xlim([0 60]),ylim([-1 1]),hold on
 
 %% Plot cumulative
 figure,
