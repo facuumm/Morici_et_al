@@ -11,7 +11,7 @@ time_criteria = 1; % minimal time to include a NREM epoch (in min)
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
 MUAselection = logical(0); % to select ripples by their MUA
-W = 'R'; % to select what kind of ripples I want to check
+W = 'N'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % D= uncoordinated dorsal, V= uncoordinated ventral
 % CB = cooridnated bursts
@@ -43,7 +43,7 @@ reactivation.reward.dHPC = [];
 reactivation.aversive.vHPC = [];
 reactivation.reward.vHPC = [];
 
-normalization = true; % to define if normalization over Reactivation Strength is applied or not
+normalization = false; % to define if normalization over Reactivation Strength is applied or not
 th = 5; % threshold for peak detection
 
 gain.both.reward.pre = [];     gain.both.reward.post = [];
@@ -55,9 +55,7 @@ percentages = [];
 Number_of_assemblies.aversive = [];
 Number_of_assemblies.reward = [];
 
-% Sacar el filtro que puse del FR en el counts de neuronas
 %% Main loop, to iterate across sessions
-
 for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
@@ -200,7 +198,7 @@ for tt = 1:length(path)
         %         REM.all(REM.all(:,2)-REM.all(:,1)<60,:) = [];
         clear x states
         
-        NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
+%         NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
         NREM.baseline = Restrict(NREM.all,baselineTS./1000);
         NREM.aversive = Restrict(NREM.all,aversiveTS./1000);
         NREM.reward = Restrict(NREM.all,rewardTS./1000);
@@ -320,11 +318,12 @@ for tt = 1:length(path)
         spks_vHPC(:,2) = double(spks_vHPC(:,2))./20000;
         spks_dHPC(:,2) = double(spks_dHPC(:,2))./20000;
         spks(:,2) = double(spks(:,2))./20000;
+        
         % Selection of celltype to analyze
         if criteria_type == 0 %pyr
-            cellulartype = [K(:,1) , K(:,3)];
-        elseif criteria_type == 1 % int
             cellulartype = [K(:,1) , K(:,4)];
+        elseif criteria_type == 1 % int
+            cellulartype = [K(:,1) , not(K(:,4))];
         elseif criteria_type == 2 % all
             cellulartype = [K(:,1) , ones(length(K),1)];
         end
@@ -376,9 +375,7 @@ for tt = 1:length(path)
             ResponsiveS = [ResponsiveS ; i , responsive'];
             clear curve responsive i
         end
-        
-        criteria_n = [3 3];
-        
+                
         %% Assemblies detection
         if or(numberD > 2 , numberV > 2)
 %             if MUAselection
@@ -424,11 +421,9 @@ for tt = 1:length(path)
             
             %% --- Aversive ---
             disp('Lets go for the assemblies')
-            if isfile('dorsalventral_assemblies_aversive3.mat')
+            if isfile('dorsalventral_assemblies_aversive.mat')
                 disp('Loading Aversive template')
-                load('dorsalventral_assemblies_aversive3.mat')
-                
-                %                         if not(exist('Th','var'))
+                load('dorsalventral_assemblies_aversive.mat')
             else
                 disp('Detection of assemblies using Aversive template')
                 % --- Options for assemblies detection ---
@@ -445,7 +440,7 @@ for tt = 1:length(path)
                 events = movement.aversive;
                 [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
                 [Th , pat] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
-                save([cd,'\dorsalventral_assemblies_aversive3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
+                save([cd,'\dorsalventral_assemblies_aversive.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
             end
             
             Thresholded.aversive.all = Th;
@@ -478,10 +473,8 @@ for tt = 1:length(path)
             
             %% --- Reward ---
             disp('Loading Reward template')
-            if isfile('dorsalventral_assemblies_reward3.mat')
-                load('dorsalventral_assemblies_reward3.mat')
-                
-                %                         if not(exist('Th','var'))
+            if isfile('dorsalventral_assemblies_reward.mat')
+                load('dorsalventral_assemblies_reward.mat')
             else
                 disp('Detection of assemblies using Rewarded template')
                 % --- Options for assemblies detection ---
@@ -498,7 +491,7 @@ for tt = 1:length(path)
                 events = movement.reward;
                 [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
                 [Th , pat] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
-                save([cd,'\dorsalventral_assemblies_reward3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
+                save([cd,'\dorsalventral_assemblies_reward.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
             end
             
             Thresholded.reward.all = Th;
@@ -924,6 +917,8 @@ for tt = 1:length(path)
     
 end
 
+save([cd,'\Reactivation_Strength_Data.mat'] , reactivation)
+
 %% Plot Strenght Reactivation
 %  for joint assemblies
 figure
@@ -937,7 +932,7 @@ y = reactivation.aversive.dvHPC(:,1);
 
 kstest(x)
 kstest(y)
-[h, p] = ttest2(x,y)  
+[h, p] = ttest2(x,y,'tail','left')  
 [h, p] = ttest(y)
 [h, p] = ttest(x)
 

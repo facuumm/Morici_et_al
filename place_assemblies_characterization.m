@@ -237,9 +237,9 @@ for tt = 1:length(path)
         
         % Selection of celltype to analyze
         if criteria_type == 0 %pyr
-            cellulartype = [K(:,1) , K(:,3)];
-        elseif criteria_type == 1 % int
             cellulartype = [K(:,1) , K(:,4)];
+        elseif criteria_type == 1 % int
+            cellulartype = [K(:,1) , not(K(:,4))];
         elseif criteria_type == 2 % all
             cellulartype = [K(:,1) , ones(length(K),1)];
         end
@@ -287,9 +287,9 @@ for tt = 1:length(path)
         if or(numberD > 2 , numberV > 2)
             %% --- Aversive ---
             disp('Lets go for the assemblies')
-            if isfile('dorsalventral_assemblies_aversive3.mat')
+            if isfile('dorsalventral_assemblies_aversive.mat')
                 disp('Loading Aversive template')
-                load('dorsalventral_assemblies_aversive3.mat')
+                load('dorsalventral_assemblies_aversive.mat')
                 
                 %                         if not(exist('Th','var'))
             else
@@ -341,8 +341,8 @@ for tt = 1:length(path)
             
             %% --- Reward ---
             disp('Loading Reward template')
-            if isfile('dorsalventral_assemblies_reward3.mat')
-                load('dorsalventral_assemblies_reward3.mat')
+            if isfile('dorsalventral_assemblies_reward.mat')
+                load('dorsalventral_assemblies_reward.mat')
                 
                 %                         if not(exist('Th','var'))
             else
@@ -400,7 +400,7 @@ for tt = 1:length(path)
             
             %% Assemblies activation in the entier recording
             % Aversive
-            if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
+            if or(numberD >= 2,numberV >= 2)
                 if sum(cond.both.aversive)>=1
                     pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
                     [x xx] = sort(pos(:,1));
@@ -432,7 +432,7 @@ for tt = 1:length(path)
             
             if sum(cond.dHPC.aversive)>=1
                 pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
-                [x xx] = sort(pos(:,1));
+                [~, xx] = sort(pos(:,1));
                 pos = pos(xx,:);
                 events = cell(2,1);
                 events{1} = movement.aversive;

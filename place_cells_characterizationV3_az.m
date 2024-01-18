@@ -20,7 +20,7 @@ minimal_speed = 2.5;% minimal speed to detect quite periods
 minimal_speed_time = 2; % minimal time to detect quite periods
 
 %% Main loop, to iterate across sessions
-for tt = 6:length(path)
+for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
     % Get a logical vector that tells which is a directory.
@@ -242,9 +242,9 @@ for tt = 6:length(path)
         spks_dHPC(:,2) = double(spks_dHPC(:,2))./20000;
         % Selection of celltype to analyze
         if criteria_type == 0 %pyr
-            cellulartype = [K(:,1) , K(:,3)];
-        elseif criteria_type == 1 % int
             cellulartype = [K(:,1) , K(:,4)];
+        elseif criteria_type == 1 % int
+            cellulartype = [K(:,1) , not(K(:,4))];
         elseif criteria_type == 2 % all
             cellulartype = [K(:,1) , ones(length(K),1)];
         end
@@ -737,7 +737,7 @@ for tt = 6:length(path)
     disp(' ')
 end
 
-save('W:\Remapping-analysis-Facu\pc_all_within_between_v6.mat', 'pc_all');
+save('W:\Remapping-analysis-Facu\pc_all_within_between.mat', 'pc_all');
 
 %% Total number of recorded neurons - next time put this inseide the main loop
 % c1: rat c2: session c3: #dHPC neurons c4: dHPC #pyr c5: #vHPCneurons  c6:VHPC#pyr 
