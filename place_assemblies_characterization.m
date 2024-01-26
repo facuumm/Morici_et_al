@@ -3,7 +3,7 @@ clc
 close all
 
 %% Parameters
-path = {'E:\Rat103\usable';'E:\Rat126\Ephys\in-Pyr';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
+path = {'E:\Rat103\usable';'E:\Rat126\Ephys\in_Pyr';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 
 %Sleep
 time_criteria = 1; % minimal time to include a NREM epoch (in min)
@@ -284,7 +284,7 @@ for tt = 1:length(path)
         clear ejeX ejeY dX dY dX_int dY_int
         
         criteria_n = [3 3];
-        if or(numberD > 2 , numberV > 2)
+        if or(numberD > 3 , numberV > 3)
             %% --- Aversive ---
             disp('Lets go for the assemblies')
             if isfile('dorsalventral_assemblies_aversive.mat')
@@ -400,7 +400,7 @@ for tt = 1:length(path)
             
             %% Assemblies activation in the entier recording
             % Aversive
-            if or(numberD >= 2,numberV >= 2)
+            if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
                 if sum(cond.both.aversive)>=1
                     pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
                     [x xx] = sort(pos(:,1));
@@ -690,7 +690,7 @@ figure
 subplot(3,2,1)
 y = [Between.bothA(:,1) ; Within.bothA.reward(:,1) ; Within.bothA.aversive(:,1)];
 x = [ones(length(Between.bothA(:,1)),1) ; ones(length(Within.bothA.reward(:,1)),1)*2 ; ones(length(Within.bothA.aversive(:,1)),1)*3];
-scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
 scatter([1 2 3],[nanmedian(Between.bothA(:,1)) , nanmedian( Within.bothA.reward(:,1)), nanmedian( Within.bothA.aversive(:,1))],'filled')
 % boxplot(y,x),ylim([-0.55 1.05])
 
@@ -701,7 +701,7 @@ c = multcompare(stats)
 subplot(3,2,2)
 y = [Between.bothR(:,1) ; Within.bothR.reward(:,1) ; Within.bothR.aversive(:,1)];
 x = [ones(length(Between.bothR(:,1)),1) ; ones(length(Within.bothR.reward(:,1)),1)*2 ; ones(length(Within.bothR.aversive(:,1)),1)*3];
-scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
 scatter([1 2 3],[nanmedian(Between.bothR(:,1)) , nanmedian( Within.bothR.reward(:,1)), nanmedian( Within.bothR.aversive(:,1))],'filled')
 % boxplot(y,x),ylim([-0.55 1.05])
 
@@ -712,7 +712,7 @@ c = multcompare(stats)
 subplot(3,2,3)
 y = [Between.dHPCA(:,1) ; Within.dHPCA.reward(:,1) ; Within.dHPCA.aversive(:,1)];
 x = [ones(length(Between.dHPCA(:,1)),1) ; ones(length(Within.dHPCA.reward(:,1)),1)*2 ; ones(length(Within.dHPCA.aversive(:,1)),1)*3];
-scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
 scatter([1 2 3],[nanmedian(Between.dHPCA(:,1)) , nanmedian( Within.dHPCA.reward(:,1)), nanmedian( Within.dHPCA.aversive(:,1))],'filled')
 % boxplot(y,x),ylim([-0.55 1.05])
 
@@ -722,7 +722,7 @@ c = multcompare(stats)
 subplot(3,2,4)
 y = [Between.dHPCR(:,1) ; Within.dHPCR.reward(:,1) ; Within.dHPCR.aversive(:,1)];
 x = [ones(length(Between.dHPCR(:,1)),1) ; ones(length(Within.dHPCR.reward(:,1)),1)*2 ; ones(length(Within.dHPCR.aversive(:,1)),1)*3];
-scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
 scatter([1 2 3],[nanmedian(Between.dHPCR(:,1)) , nanmedian( Within.dHPCR.reward(:,1)), nanmedian( Within.dHPCR.aversive(:,1))],'filled')
 % boxplot(y,x),ylim([-0.55 1.05])
 
@@ -732,7 +732,7 @@ c = multcompare(stats)
 subplot(3,2,5)
 y = [Between.vHPCA(:,1) ; Within.vHPCA.reward(:,1) ; Within.vHPCA.aversive(:,1)];
 x = [ones(length(Between.vHPCA(:,1)),1) ; ones(length(Within.vHPCA.reward(:,1)),1)*2 ; ones(length(Within.vHPCA.aversive(:,1)),1)*3];
-scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
 scatter([1 2 3],[nanmedian(Between.vHPCA(:,1)) , nanmedian( Within.vHPCA.reward(:,1)), nanmedian( Within.vHPCA.aversive(:,1))],'filled')
 % boxplot(y,x),ylim([-0.55 1.05])
 
@@ -742,7 +742,7 @@ c = multcompare(stats)
 subplot(3,2,6)
 y = [Between.vHPCR(:,1) ; Within.vHPCR.reward(:,1) ; Within.vHPCR.aversive(:,1)];
 x = [ones(length(Between.vHPCR(:,1)),1) ; ones(length(Within.vHPCR.reward(:,1)),1)*2 ; ones(length(Within.vHPCR.aversive(:,1)),1)*3];
-scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
 scatter([1 2 3],[nanmedian(Between.vHPCR(:,1)) , nanmedian( Within.vHPCR.reward(:,1)), nanmedian( Within.vHPCR.aversive(:,1))],'filled')
 % boxplot(y,x),ylim([-0.55 1.05])
 
@@ -755,7 +755,7 @@ figure
 subplot(121)
 y = [Between.bothA(:,1) ; Between.dHPCA(:,1) ;  Between.vHPCA(:,1)];
 x = [ones(length(Between.bothA(:,1)),1) ; ones(length(Between.dHPCA(:,1)),1)*2 ; ones(length(Between.vHPCA(:,1)),1)*3];
-scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
 scatter([1 2 3],[nanmedian(Between.bothA(:,1)) , nanmedian(Between.dHPCA(:,1)), nanmedian(Between.vHPCA(:,1))],'filled')
 
 [p,tbl,stats] = kruskalwallis(y,x);
@@ -765,7 +765,7 @@ c = multcompare(stats)
 subplot(122)
 y = [Between.bothR(:,1) ; Between.dHPCR(:,1) ;  Between.vHPCR(:,1)];
 x = [ones(length(Between.bothR(:,1)),1) ; ones(length(Between.dHPCR(:,1)),1)*2 ; ones(length(Between.vHPCR(:,1)),1)*3];
-scatter(x,y,'filled'),hold on,xlim([0 4]),ylim([-0.55 1.05])
+scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
 scatter([1 2 3],[nanmedian(Between.bothR(:,1)) , nanmedian(Between.dHPCR(:,1)), nanmedian(Between.vHPCR(:,1))],'filled')
 
 [p,tbl,stats] = kruskalwallis(y,x);

@@ -32,8 +32,7 @@ function [R] = triggered_activity(patterns , cond , SpikeTrain , limits , events
 %
 % normalization: logical, to define if assemblie activity will be zscored.
 %
-% selection: logical vector, it contains 1 or 0 to define which assemblie
-%            will be considered
+% selection: logical vector, it contains 1 or 
 %
 % --- OUTPUT ---
 % R: column vector storing all the Reactivation Strength values for sleep
@@ -64,10 +63,6 @@ win = round(2/dt);
 check = (limits*2)/dt; % construct the maximun of points for each curve
 
 a = assembly_activity(patterns(:,cond) , spks');
-
-if not(isempty(selection))
-    a = a(selection,:);
-end
 
 if normalization % normalization
     a = zscore(a,1,2);

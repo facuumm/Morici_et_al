@@ -1,4 +1,4 @@
-function [R , t] = triggered_CCG(patterns , cond , SpikeTrain , limits , events, th , Baseline)
+function [R , t] = triggered_CCG(patterns , cond , SpikeTrain , duration , events, th , Baseline)
 % This function construct a peri-event histogram using ripple peaks and
 % assemblies activity peaks. If you wanna change the output normalization,
 % please check details in PHIST function and change it in this code.
@@ -25,6 +25,8 @@ function [R , t] = triggered_CCG(patterns , cond , SpikeTrain , limits , events,
 %                       0.2    3     5     1     3    0.1 sec time bin.
 %                       ...   ...   ...   ...   ...
 %
+% duration: int, it define in seconds the total duration of the CCG
+%
 % events: matrix, it contains Ripples timestamps (in sec).
 %         Example:   Begining1    Peak1    End1
 %                    Begining2    Peak2    End2
@@ -50,7 +52,11 @@ function [R , t] = triggered_CCG(patterns , cond , SpikeTrain , limits , events,
 
 bins = SpikeTrain(:,1);
 spks = SpikeTrain(:,2:end);
-baseline = SubtractIntervals(Baseline,[events(:,1)-0.05 events(:,3)]+0.05);
+if not(isempty(Baseline))
+    baseline = SubtractIntervals(Baseline,[events(:,1)-0.05 events(:,3)]+0.05);
+else
+    baseline = [];
+end
 a = assembly_activity(patterns(:,cond) , spks');
 a = zscore(a,1,2);
 
@@ -58,7 +64,7 @@ R = [];
 for i = 1:size(a,1)
     [pks,loc] = findpeaks(a(i,:),bins,'MinPeakHeight',th);
     
-    [p , t] = PHIST(events(:,2),loc,baseline,2,0.025,1,'Gain');
+    [p , t] = PHIST(events(:,2),loc,baseline,duration,0.01,1,'Gain');
     R = [R , p];
     
 end

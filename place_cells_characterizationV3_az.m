@@ -795,10 +795,34 @@ n_total(any(isnan(n_total), 2), :) = [];
 size(unique(n_total(n_total(:,1)==165,2)))
 
 sum(n_total(n_total(:,1)==165,6))
-%% Remapping stats 
+%% Scatter plot between within 
+%data: 
+%c1 = spatial c2= fr_change c3=  overlap c4: pf shift c5:  1 = between 2 = within aversive 3= within reward 
+
+%Comment/uncomment dependig if you want to plot dhpc or vhpc
+% data = [pc_all.dHPC.between,ones(size(pc_all.dHPC.between,1),1);pc_all.dHPC.within.A,...
+% ones(size(pc_all.dHPC.within.A,1),1)*2;pc_all.dHPC.within.R, ones(size(pc_all.dHPC.within.R,1),1)*3];
+
+data = [pc_all.vHPC.between,ones(size(pc_all.vHPC.between,1),1);pc_all.vHPC.within.A,...
+ones(size(pc_all.vHPC.within.A,1),1)*2;pc_all.vHPC.within.R, ones(size(pc_all.vHPC.within.R,1),1)*3];
+
+% Plot 
+figure, 
+x = data(:,5);
+y= data(:,4);%Change the column number (1-4) to choose which variable to plot 
+scatter(x,y,"filled",'jitter','on', 'jitterAmount',0.1) , xlim([0 4]), % ylim([-0.8 1])
+title('vHPC')
+ylabel('PF shift')
+hold on
+x = [1 2 3];
+y = [nanmedian(data(data(:,5)==1,4)) , nanmedian(data(data(:,5)==2,4)) , nanmedian(data(data(:,5)==3,4))]; % select the same c than y 
+scatter(x,y, "filled") , xlim([0 4]), hold on
+
+
+%% Remapping stats and box plot 
 %dHPC 
-%c4:  1 = between 2 = within aversive 3= within reward
-% c1 = spatial c2= fr_change c3=  overlap
+%c5:  1 = between 2 = within aversive 3= within reward 
+% c1 = spatial c2= fr_change c3=  overlap c4: pf shift 
 
 data = [pc_all.dHPC.between,ones(size(pc_all.dHPC.between,1),1);pc_all.dHPC.within.A,...
 ones(size(pc_all.dHPC.within.A,1),1)*2;pc_all.dHPC.within.R, ones(size(pc_all.dHPC.within.R,1),1)*3];
@@ -807,7 +831,7 @@ ones(size(pc_all.dHPC.within.A,1),1)*2;pc_all.dHPC.within.R, ones(size(pc_all.dH
 % ones(size(pc_all.vHPC.within.A,1),1)*2;pc_all.vHPC.within.R, ones(size(pc_all.vHPC.within.R,1),1)*3];
 
 % Stats
-[P,ANOVATAB,STATS] = kruskalwallis(data(:,2),data(:,5));
+[P,ANOVATAB,STATS] = kruskalwallis(data(:,4),data(:,5));
 c = multcompare(STATS)
 
 tbl = array2table(c,"VariableNames", ...

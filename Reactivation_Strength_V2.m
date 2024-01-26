@@ -183,12 +183,12 @@ for tt = 1:length(path)
         % Reward
         start = behavior.speed.reward(1,1);   stop = behavior.speed.reward(end,1);
         movement.reward = InvertIntervals(behavior.quiet.reward , start , stop); %keep only those higher than criteria
-        movement.reward(movement.reward(:,2) - movement.reward(:,1) <1,:)=[]; %eliminate 1sec segments
+%         movement.reward(movement.reward(:,2) - movement.reward(:,1) <1,:)=[]; %eliminate 1sec segments
         clear tmp start stop
         % Aversive
         start = behavior.speed.aversive(1,1);   stop = behavior.speed.aversive(end,1);
         movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
-        movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
+%         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
         clear tmp start stop
         
         %% load sleep states
@@ -944,7 +944,7 @@ err = [nansem(x) nansem(y)];
 
 subplot(131),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.07 0.07])
+er = errorbar(xx,yy,err)%;ylim([-0.07 0.07])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -958,7 +958,7 @@ x = reactivation.reward.dHPC(:,1);
 y = reactivation.aversive.dHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = ttest2(x,y)  
+[h, p] = kstest2(x,y,'Tail','larger')  
 [h, p] = ttest(y)
 [h, p] = ttest(x)
 
@@ -969,7 +969,7 @@ err = [nansem(x) nansem(y)];
 
 subplot(132),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.07 0.07])
+er = errorbar(xx,yy,err)%;ylim([-0.07 0.07])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
@@ -983,7 +983,7 @@ x = reactivation.reward.vHPC(:,1);
 y = reactivation.aversive.vHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = ttest2(x,y)  
+[h, p] = kstest2(x,y,'Tail','larger')  
 [h, p] = ttest(y)
 [h, p] = ttest(x)
 
@@ -994,7 +994,7 @@ err = [nansem(x) nansem(y)];
 
 subplot(133),
 bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-0.07 0.07])
+er = errorbar(xx,yy,err)%;ylim([-0.07 0.07])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off

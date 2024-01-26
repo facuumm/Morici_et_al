@@ -1,4 +1,4 @@
-function [pInc pDec surp] = ThetaModulation(RipplesTS,Spks,cluster,Periods)
+function [pInc pDec surp] = RippleModulation(RipplesTS,Spks,cluster,Periods)
 % This function determine if a SU is modulated by the ripples.
 %
 % syntax = [pInc pDec surp] = ThetaModulation(RipplesTS,Spks,cluster,Periods)
