@@ -1,7 +1,7 @@
 function [SpksTrains , Bins , C] = spike_train_construction(Spks, clusters, type, binSize, limits, events, normalization, smooth)
 % Spike Trains matrix construction
 %
-% SpksTrains = spike_train_construction(Spks, clusters, type, binSize, limits, events, normalization)
+% [SpksTrains , Bins , C] = spike_train_construction(Spks, clusters, type, binSize, limits, events, normalization, smooth)
 %
 % --- INPUTS ---
 % Spks: Column vector, spikes times
@@ -64,6 +64,8 @@ if normalization
 %     SpksTrains = (SpksTrains - S) ./ SS;
     SpksTrains = zscore(SpksTrains);
     clear SS S
+else
+    SpksTrains = SpksTrains./binSize;
 end
 
 if isempty(events)

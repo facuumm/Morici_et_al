@@ -426,31 +426,31 @@ for tt = 2:length(path)
                     p = patterns.all.aversive(:,cond.both.aversive);
                     for i = 1:size(assemblies,2)
                         SUs = clusters.all(assemblies(:,i));
-                        SUs = SUs(ismember(SUs,clusters.dHPC));
+                        SUs = SUs(ismember(SUs,clusters.vHPC));
                         weights = p(assemblies(:,i));
                         q = quantile(p(:,i),0.75);
                         qq = quantile(p(:,i),0.25);
 %                         q = 0;
-                        qq = q;
-                        criteria = pInc.dvHPC.dHPC(ismember(pInc.dvHPC.dHPC(:,1),SUs),:);
+%                         qq = q;
+                        criteria = pInc.dvHPC.vHPC(ismember(pInc.dvHPC.vHPC(:,1),SUs),:);
                         for ii = 1 : size(SUs,1)
                             if and(or(weights(ii)>=q ,weights(ii)<=qq)  , criteria(ii,3))
 %                             if weights(ii)>q
                                 tmp = spks(spks(:,1)==SUs(ii),2);
                                 if aversiveTS_run(1) < rewardTS_run(1)
                                     b = Restrict(baseline,baselineTS./1000);
-                                    [R.baseline , ttttt] = PHIST_Ripple_SU(ripple_event.VD.unique.baseline,tmp,b,2,0.01,1,'Gain'); clear b
+                                    [R.baseline , ttttt] = PHIST_Ripple_SU(ripples.dHPC.baseline,tmp,b,2,0.01,0,'Gain'); clear b
                                     b = Restrict(baseline,aversiveTS./1000);
-                                    [R.aversive , ttttt] = PHIST_Ripple_SU(ripple_event.VD.unique.aversive,tmp,b,2,0.01,1,'Gain'); clear b
+                                    [R.aversive , ttttt] = PHIST_Ripple_SU(ripples.dHPC.aversive,tmp,b,2,0.01,0,'Gain'); clear b
                                     
                                     gain.both.aversive.pre = [gain.both.aversive.pre , R.baseline];
                                     gain.both.aversive.post = [gain.both.aversive.post , R.aversive];
                                     clear R
                                 else
                                     b = Restrict(baseline,rewardTS./1000);
-                                    [R.reward , ttttt] = PHIST_Ripple_SU(ripple_event.VD.unique.reward,tmp,b,2,0.01,1,'Gain'); clear b
+                                    [R.reward , ttttt] = PHIST_Ripple_SU(ripples.dHPC.reward,tmp,b,2,0.01,0,'Gain'); clear b
                                     b = Restrict(baseline,aversiveTS./1000);
-                                    [R.aversive , ttttt] = PHIST_Ripple_SU(ripple_event.VD.unique.aversive,tmp,b,2,0.01,1,'Gain'); clear b
+                                    [R.aversive , ttttt] = PHIST_Ripple_SU(ripples.dHPC.aversive,tmp,b,2,0.01,0,'Gain'); clear b
                                     
                                     gain.both.aversive.pre = [gain.both.aversive.pre , R.reward];
                                     gain.both.aversive.post = [gain.both.aversive.post , R.aversive];
@@ -471,31 +471,31 @@ for tt = 2:length(path)
                     p = patterns.all.reward(:,cond.both.reward);
                     for i = 1:size(assemblies,2)
                         SUs = clusters.all(assemblies(:,i));
-                        SUs = SUs(ismember(SUs,clusters.dHPC));
+                        SUs = SUs(ismember(SUs,clusters.vHPC));
                         weights = p(assemblies(:,i));
                         q = quantile(p(:,i),0.75);
                         qq = quantile(p(:,i),0.25);
 %                         q = 0;
-                        qq = q;
-                        criteria = pInc.dvHPC.dHPC(ismember(pInc.dvHPC.dHPC(:,1),SUs),:);
+%                         qq = q;
+                        criteria = pInc.dvHPC.vHPC(ismember(pInc.dvHPC.vHPC(:,1),SUs),:);
                         for ii = 1 : size(SUs,1)
                             if and(or(weights(ii)>=q , weights(ii)<=qq) , criteria(ii,3))
 %                             if weights(ii)>q
                                 tmp = spks(spks(:,1)==SUs(ii),2);
                                 if rewardTS_run(1) < aversiveTS_run(1)
                                     b = Restrict(baseline,baselineTS./1000);
-                                    [R.baseline , ttttt] = PHIST_Ripple_SU(ripple_event.VD.unique.baseline,tmp,b,2,0.01,1,'Gain'); clear b
+                                    [R.baseline , ttttt] = PHIST_Ripple_SU(ripples.dHPC.baseline,tmp,b,2,0.01,1,'Gain'); clear b
                                     b = Restrict(baseline,rewardTS./1000);
-                                    [R.reward , ttttt] = PHIST_Ripple_SU(ripple_event.VD.unique.reward,tmp,b,2,0.01,1,'Gain'); clear b
+                                    [R.reward , ttttt] = PHIST_Ripple_SU(ripples.dHPC.reward,tmp,b,2,0.01,1,'Gain'); clear b
                                     
                                     gain.both.reward.pre = [gain.both.reward.pre , R.baseline];
                                     gain.both.reward.post = [gain.both.reward.post , R.reward];
                                     clear R
                                 else
                                     b = Restrict(baseline,aversiveTS./1000);
-                                    [R.aversive , ttttt] = PHIST_Ripple_SU(ripple_event.VD.unique.aversive,tmp,b,2,0.01,1,'Gain'); clear b
+                                    [R.aversive , ttttt] = PHIST_Ripple_SU(ripples.dHPC.aversive,tmp,b,2,0.01,1,'Gain'); clear b
                                     b = Restrict(baseline,rewardTS./1000);
-                                    [R.reward , ttttt] = PHIST_Ripple_SU(ripple_event.VD.unique.reward,tmp,b,2,0.01,1,'Gain'); clear b
+                                    [R.reward , ttttt] = PHIST_Ripple_SU(ripples.dHPC.reward,tmp,b,2,0.01,1,'Gain'); clear b
                                     
                                     gain.both.reward.pre = [gain.both.reward.pre , R.aversive];
                                     gain.both.reward.post = [gain.both.reward.post , R.reward];
@@ -681,119 +681,21 @@ plot(ans),xlim([0 60]),ylim([-1 1]),hold on
 fitlm(reactivation.reward.vHPC(:,4) , reactivation.reward.vHPC(:,1))
 plot(ans),xlim([0 60]),ylim([-1 1]),hold on
 
-%% Plot cumulative
-figure,
-BothA = []; BothR = []; dHPCA = []; dHPCR = []; vHPCA = []; vHPCR = [];
-dur = 100;
-for ttt = 1:3
-    for tt = 1:length(path)
-        %List of folders from the path
-        files = dir(path{tt});
-        % Get a logical vector that tells which is a directory.
-        dirFlags = [files.isdir];
-        % Extract only those that are directories.
-        subFolders = files(dirFlags);
-        clear files dirFlags
-        num_assembliesR = [];
-        num_assembliesA = [];
-        for t = 1 : length(subFolders)-2
-%             disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
-            session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
-            cd([session,'\Spikesorting'])
-            if isfile('CumSumPeaks.mat')
-                load('CumSumPeaks.mat')
-                
-                % for Joint Assemblies
-                if ttt==1
-                    if not(isempty(CumBR))
-                        for i = 1 : size(CumBR,1)
-                            tmp = nan(1,dur);
-                            tmp(1:size(CumBR(i,:),2)) = CumBR(i,:);
-                            BothR = [BothR ; tmp];
-                            clear tmp
-                        end
-                    end
-                    
-                    if not(isempty(CumBA))
-                        for i = 1 : size(CumBA,1)
-                            tmp = nan(1,dur);
-                            tmp(1:size(CumBA(i,:),2)) = CumBA(i,:);
-                            BothA = [BothA ; tmp];
-                            clear tmp
-                        end
-                    end
-                end
-                
-                % for Dorsal Assemblies
-                if ttt==2
-                    if not(isempty(CumDR))
-                        for i = 1 : size(CumDR,1)
-                            tmp = nan(1,dur);
-                            tmp(1:size(CumDR(i,:),2)) = CumDR(i,:);
-                            dHPCR = [dHPCR ; tmp];
-                            clear tmp
-                        end
-                    end
-                    
-                    if not(isempty(CumDA))
-                        for i = 1 : size(CumDA,1)
-                            tmp = nan(1,dur);
-                            tmp(1:size(CumDA(i,:),2)) = CumDA(i,:);
-                            dHPCA = [dHPCA ; tmp];
-                            clear tmp
-                        end
-                    end
-                end
-                
-                % for Ventral Assemblies
-                if ttt==3
-                   if not(isempty(CumVR))
-                        for i = 1 : size(CumVR,1)
-                            tmp = nan(1,dur);
-                            tmp(1:size(CumVR(i,:),2)) = CumVR(i,:);
-                            vHPCR = [vHPCR ; tmp];
-                            clear tmp
-                        end
-                    end
-                    
-                    if not(isempty(CumVA))
-                        for i = 1 : size(CumVA,1)
-                            tmp = nan(1,dur);
-                            tmp(1:size(CumVA(i,:),2)) = CumVA(i,:);
-                            vHPCA = [vHPCA ; tmp];
-                            clear tmp
-                        end
-                    end
-                end
-                clear CumBA CumDA CumVA CumBR CumDR CumVR
-                
-            end
-        end
-    end
-end
 
-subplot(311)
-id = logical(reactivation.aversive.dvHPC(:,end));
-plot(nanmean(BothA(id,:)),'r'),hold on
+[i ii] = min(abs(ttttt-(-0.1)))
+[i iii] = min(abs(ttttt-0.1))
+[i ii] = sort(nanmean(gain.both.aversive.post(ii:iii,:)))
 
-id = logical(reactivation.reward.dvHPC(:,end));
-plot(nanmean(BothR(id,:)),'b'),hold on
 
-ciplot(nanmean(BothA)-nansem(BothA) , nanmean(BothA)+nansem(BothA) , [1:1:100],'r'), alpha 0.5
+x = [max(gain.both.aversive.pre(ii:iii,:))' ; max(gain.both.aversive.post(ii:iii,:))'];
+grps = [ones(size(gain.both.aversive.pre,2),1) ; ones(size(gain.both.aversive.pre,2),1)*2];
 
-ciplot(nanmean(BothR)-nansem(BothR) , nanmean(BothR)+nansem(BothR) , [1:1:100],'b'), alpha 0.5
-xlim([0 60])
 
-subplot(312)
-plot(nanmean(dHPCA),'r'),hold on
-plot(nanmean(dHPCR),'b'),hold on
-ciplot(nanmean(dHPCA)-nansem(dHPCA) , nanmean(dHPCA)+nansem(dHPCA) , [1:1:100],'r'), alpha 0.5
-ciplot(nanmean(dHPCR)-nansem(dHPCR) , nanmean(dHPCR)+nansem(dHPCR) , [1:1:100],'b'), alpha 0.5
-xlim([0 60])
+ subplot(121)
+imagesc(gain.both.aversive.pre(:,ii)'),caxis([0 5])
+subplot(122)
+imagesc(gain.both.aversive.post(:,ii)'),caxis([0 5])
 
-subplot(313)
-plot(nanmean(vHPCA),'r'),hold on
-plot(nanmean(vHPCR),'b'),hold on
-ciplot(nanmean(vHPCA)-nansem(vHPCA) , nanmean(vHPCA)+nansem(vHPCA) , [1:1:100],'r'), alpha 0.5
-ciplot(nanmean(vHPCR)-nansem(vHPCR) , nanmean(vHPCR)+nansem(vHPCR) , [1:1:100],'b'), alpha 0.5
-xlim([0 60])
+figure
+plot(nanmean(gain.both.aversive.pre,2)), hold on
+plot(nanmean(gain.both.aversive.post,2)),

@@ -1,8 +1,8 @@
-function [R] = triggered_activity(patterns , cond , SpikeTrain , limits , events, graph , normalization , selection)
+function [R] = triggered_activity(patterns , cond , SpikeTrain , limits , events, graph , normalization , selection , baseline)
 % This function calculate Reactivation Strength (van de Ven et al (2016)).
 % Plot the activity sourrounding the events introduced.
 %
-% [R] = triggered_activity(patterns , cond , SpikeTrain , limits , events, graph)
+% [R] = triggered_activity(patterns , cond , SpikeTrain , limits , events, graph , normalization , selection , baseline)
 %
 % --- Inputs ---
 % patterns: matrix with the weigths for each cell in each assembly.
@@ -77,6 +77,11 @@ for i = 1:length(events)
     is = [is , InIntervals(bins , [events(i)-limits , events(i)+limits])];
 end
 
+if not(isempty(baseline))
+    baseline = InIntervals(bins,baseline);
+    gain = nanmean(a(:,baseline),2);
+end
+
 R = [];
 for i = 1:size(a,1)
     
@@ -84,12 +89,18 @@ for i = 1:size(a,1)
     for ii = 1:size(events)
         [~ , t] = min(abs(bins-events(ii)));
         
-        tmp = [tmp ; a(i,t-win : t+win)];
+        if and(t-win>1 , t+win<size(bins,1))
+          tmp = [tmp ; a(i,t-win : t+win)];
+        end
         clear t
     end
-    
-    R = [R ; mean(tmp)];
+    if not(isempty(baseline))
+        R = [R ; mean(tmp)./gain(i)];
+    else
+        R = [R ; mean(tmp)];
+    end
     clear tmp
+    
 end
 
 if graph

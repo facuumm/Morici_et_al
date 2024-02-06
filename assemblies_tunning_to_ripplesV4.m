@@ -16,8 +16,8 @@ W = 'N'; % to select what kind of ripples I want to check
 % D= uncoordinated dorsal, V= uncoordinated ventral
 % CB = cooridnated bursts
 % N= NREM, R= REM
-TA =  logical(1); % Trigger Reactivation Strength
-TPks = logical(0); %trigger CCG assemblies peaks to events
+TA =  logical(0); % Trigger Reactivation Strength
+TPks = logical(1); %trigger CCG assemblies peaks to events
 REC = logical(0); % Assemblie Recruitment during cooridnated events
 SRC = logical(0); % If I want to calculate the tuning curve for shocks
 C = logical(0); % if I want to calculate CumSum of peaks
@@ -45,7 +45,7 @@ reactivation.aversive.vHPC = [];
 reactivation.reward.vHPC = [];
 
 normalization = false; % to define if normalization over Reactivation Strength is applied or not
-th = 5; % threshold for peak detection
+th = 10; % threshold for peak detection
 
 gain.both.reward.pre = [];     gain.both.reward.post = [];
 gain.both.aversive.pre = [];   gain.both.aversive.post = [];
@@ -609,37 +609,43 @@ for tt = 2:length(path)
             %% Coordinated events triggered Assemblies activity
             if TPks
                 disp('Triggered assemblies activity sourrounding cooridnated events')
+                baseline = SubtractIntervals(NREM.all,[ripplesD(:,1)-0.05 , ripplesD(:,3)+0.05 ; ripplesV(:,1)-0.05 , ripplesV(:,3)+0.05]);
+
                 % Aversive
                 if sum(cond.both.aversive) >= 1
                     condd = logical(RBA(:,end));
-                    if sum(RBA(:,end))>=1
+%                     if sum(RBA(:,end))>=1
                         if aversiveTS_run(1) < rewardTS_run(1)
-                            [R.baseline , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 4 , ripple_event.baseline , 5 , NREM.baseline);
-                            [R.aversive , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 4 , ripple_event.aversive , 5 , NREM.aversive);
+                            b = Restrict(baseline,baselineTS./1000);
+                            [R.baseline , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 4 , ripples.dHPC.baseline , th , b); clear b
+                            b = Restrict(baseline,aversiveTS./1000);                            
+                            [R.aversive , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 4 , ripples.dHPC.aversive , th , b); clear b
                             
                             if isempty(gain.both.aversive.pre)
-                                gain.both.aversive.pre = [gain.both.aversive.pre , R.baseline(:,condd)];
-                                gain.both.aversive.post = [gain.both.aversive.post , R.aversive(:,condd)];
+                                gain.both.aversive.pre = [gain.both.aversive.pre , R.baseline];
+                                gain.both.aversive.post = [gain.both.aversive.post , R.aversive];
                             else
-                                gain.both.aversive.pre = [gain.both.aversive.pre , R.baseline(:,condd)];
-                                gain.both.aversive.post = [gain.both.aversive.post , R.aversive(:,condd)];
+                                gain.both.aversive.pre = [gain.both.aversive.pre , R.baseline];
+                                gain.both.aversive.post = [gain.both.aversive.post , R.aversive];
                             end
                             
                             clear R
                         else
-                            [R.reward , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 4 , ripple_event.reward , 5 , NREM.reward);
-                            [R.aversive , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 4 , ripple_event.aversive , 5 , NREM.aversive);
+                            b = Restrict(baseline,rewardTS./1000);
+                            [R.reward , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 4 , ripples.dHPC.reward , th , b);clear b
+                            b = Restrict(baseline,aversiveTS./1000);
+                            [R.aversive , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 4 , ripples.dHPC.aversive , th , b); clear b
                             
                             if isempty(gain.both.aversive.pre)
-                                gain.both.aversive.pre = [gain.both.aversive.pre , R.reward(:,condd)];
-                                gain.both.aversive.post = [gain.both.aversive.post , R.aversive(:,condd)];
+                                gain.both.aversive.pre = [gain.both.aversive.pre , R.reward];
+                                gain.both.aversive.post = [gain.both.aversive.post , R.aversive];
                             else
-                                gain.both.aversive.pre = [gain.both.aversive.pre , R.reward(:,condd)];
-                                gain.both.aversive.post = [gain.both.aversive.post , R.aversive(:,condd)];
+                                gain.both.aversive.pre = [gain.both.aversive.pre , R.reward];
+                                gain.both.aversive.post = [gain.both.aversive.post , R.aversive];
                             end
                             clear R
                         end
-                    end
+%                     end
                     clear condd
                 end
                 
@@ -648,33 +654,38 @@ for tt = 2:length(path)
                     condd = logical(RBR(:,end));
                     if RBR(:,end)>=1
                         if aversiveTS_run(1) > rewardTS_run(1)
-                            [R.baseline , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 4 , ripple_event.baseline , 5 , NREM.baseline);
-                            [R.reward , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 4 , ripple_event.reward , 5 , NREM.reward);
+                             b = Restrict(baseline,baselineTS./1000);
+                            [R.baseline , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 4 , ripples.dHPC.baseline , th , b); clear b
+                            b = Restrict(baseline,rewardTS./1000);                            
+                            [R.reward , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 4 , ripples.dHPC.reward , th , b); clear b
                             
                             if isempty(gain.both.reward.pre)
-                                gain.both.reward.pre = [gain.both.reward.pre , R.baseline(:,condd)];
-                                gain.both.reward.post = [gain.both.reward.post , R.reward(:,condd)];
+                                gain.both.reward.pre = [gain.both.reward.pre , R.baseline];
+                                gain.both.reward.post = [gain.both.reward.post , R.reward];
                             else
-                                gain.both.reward.pre = [gain.both.reward.pre , R.baseline(:,condd)];
-                                gain.both.reward.post = [gain.both.reward.post , R.reward(:,condd)];
+                                gain.both.reward.pre = [gain.both.reward.pre , R.baseline];
+                                gain.both.reward.post = [gain.both.reward.post , R.reward];
                             end
                             clear R
                         else
-                            [R.aversive , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 4 , ripple_event.aversive , 5 , NREM.aversive);
-                            [R.reward , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 4 , ripple_event.reward , 5 , NREM.reward);
+                            b = Restrict(baseline,aversiveTS./1000);                            
+                            [R.aversive , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 4 , ripples.dHPC.aversive , th , b); clear b
+                            b = Restrict(baseline,rewardTS./1000);                            
+                            [R.reward , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 4 , ripples.dHPC.reward , th , b); clear b
                             
                             if isempty(gain.both.reward.pre)
-                                gain.both.reward.pre = [gain.both.reward.pre , R.aversive(:,condd)];
-                                gain.both.reward.post = [gain.both.reward.post , R.reward(:,condd)];
+                                gain.both.reward.pre = [gain.both.reward.pre , R.aversive];
+                                gain.both.reward.post = [gain.both.reward.post , R.reward];
                             else
-                                gain.both.reward.pre = [gain.both.reward.pre , R.aversive(:,condd)];
-                                gain.both.reward.post = [gain.both.reward.post , R.reward(:,condd)];
+                                gain.both.reward.pre = [gain.both.reward.pre , R.aversive];
+                                gain.both.reward.post = [gain.both.reward.post , R.reward];
                             end
                             clear R
                         end
                     end
                     clear cond
                 end
+                clear baseline
             end
             
      
@@ -964,3 +975,14 @@ plot(nanmean(vHPCR),'b'),hold on
 ciplot(nanmean(vHPCA)-nansem(vHPCA) , nanmean(vHPCA)+nansem(vHPCA) , [1:1:100],'r'), alpha 0.5
 ciplot(nanmean(vHPCR)-nansem(vHPCR) , nanmean(vHPCR)+nansem(vHPCR) , [1:1:100],'b'), alpha 0.5
 xlim([0 60])
+
+
+
+
+
+
+
+cond = reactivation.aversive.dvHPC(:,4) >= quantile(reactivation.aversive.dvHPC(:,4),0.75)
+plot(ttttt,nanmean(gain.both.aversive.pre,2))
+hold on
+plot(ttttt,nanmean(gain.both.aversive.post,2))

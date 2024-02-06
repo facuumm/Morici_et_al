@@ -806,18 +806,22 @@ sum(n_total(n_total(:,1)==165,6))
 data = [pc_all.vHPC.between,ones(size(pc_all.vHPC.between,1),1);pc_all.vHPC.within.A,...
 ones(size(pc_all.vHPC.within.A,1),1)*2;pc_all.vHPC.within.R, ones(size(pc_all.vHPC.within.R,1),1)*3];
 
+data = [pc_all.dHPC.between(:,1),ones(size(pc_all.dHPC.between,1),1) ; pc_all.vHPC.between(:,1),ones(size(pc_all.vHPC.between,1),1)*2];
+
+
 % Plot 
 figure, 
-x = data(:,5);
-y= data(:,4);%Change the column number (1-4) to choose which variable to plot 
-scatter(x,y,"filled",'jitter','on', 'jitterAmount',0.1) , xlim([0 4]), % ylim([-0.8 1])
-title('vHPC')
-ylabel('PF shift')
+x = data(:,2);
+y= data(:,1);%Change the column number (1-4) to choose which variable to plot 
+scatter(x,y,"filled",'jitter','on', 'jitterAmount',0.1) , xlim([0 3]), % ylim([-0.8 1])
+title('dvHPC')
+ylabel('Spatial Correlation')
 hold on
-x = [1 2 3];
-y = [nanmedian(data(data(:,5)==1,4)) , nanmedian(data(data(:,5)==2,4)) , nanmedian(data(data(:,5)==3,4))]; % select the same c than y 
-scatter(x,y, "filled") , xlim([0 4]), hold on
+x = [1 2];
+y = [nanmedian(data(data(:,2)==1,1)) , nanmedian(data(data(:,2)==2,1))]; % select the same c than y 
+scatter(x,y, "filled") , xlim([0 3]), hold on
 
+[h p] = ranksum(pc_all.dHPC.between(:,1) , pc_all.vHPC.between(:,1))
 
 %% Remapping stats and box plot 
 %dHPC 

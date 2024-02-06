@@ -210,22 +210,21 @@ for tt = 1:length(path)
             clear p
             
             %All
-            dHPC1 = Restrict(dHPC,REM);
-            dHPC1(:,2) = dHPC1(:,2)./max(dHPC1(:,2));
-            
-            [spectrogram,f,s] = MTSpectrum(dHPC1,'frequency',1250,'range',[0 40]);
+            dHPC = Restrict(dHPC,REM);
+            dHPC()
+            [spectrogram,f,s] = MTSpectrum(dHPC,'frequency',1250,'range',[0 40]);
             REM_SpectrumD = [REM_SpectrumD , spectrogram'];
             clear spectrogram s
             %Baseline
-            [spectrogram,f,s] = MTSpectrum(Restrict(dHPC1,REM_B),'frequency',1250,'range',[0 40]);
+            [spectrogram,f,s] = MTSpectrum(Restrict(dHPC,REM_B),'frequency',1250,'range',[0 40]);
             REM_SpectrumDB = [REM_SpectrumDB , spectrogram'];
             clear spectrogram s
             %Reward
-            [spectrogram,f,s] = MTSpectrum(Restrict(dHPC1,REM_R),'frequency',1250,'range',[0 40]);
+            [spectrogram,f,s] = MTSpectrum(Restrict(dHPC,REM_R),'frequency',1250,'range',[0 40]);
             REM_SpectrumDR = [REM_SpectrumDR , spectrogram'];
             clear spectrogram s
             %Aversive
-            [spectrogram,f,s] = MTSpectrum(Restrict(dHPC1,REM_A),'frequency',1250,'range',[0 40]);
+            [spectrogram,f,s] = MTSpectrum(Restrict(dHPC,REM_A),'frequency',1250,'range',[0 40]);
             REM_SpectrumDA = [REM_SpectrumDA , spectrogram'];
             clear spectrogram s
             
@@ -254,24 +253,21 @@ for tt = 1:length(path)
             [vHPC1,p] = Detrend(vHPC1);
             clear p
             
-            vHPC = Restrict(vHPC1,REM);
-            vHPC(:,2) = vHPC(:,2)./max(vHPC(:,2));
-            
             %REM
             %All
-            [spectrogram,f,s] = MTSpectrum(vHPC,'frequency',1250,'range',[0 40]);
+            [spectrogram,f,s] = MTSpectrum(Restrict(vHPC1,REM),'frequency',1250,'range',[0 40]);
             REM_SpectrumV = [REM_SpectrumV , spectrogram'];
             clear spectrogram s
             %Baseline
-            [spectrogram,f,s] = MTSpectrum(Restrict(vHPC,REM_B),'frequency',1250,'range',[0 40]);
+            [spectrogram,f,s] = MTSpectrum(Restrict(vHPC1,REM_B),'frequency',1250,'range',[0 40]);
             REM_SpectrumVB = [REM_SpectrumVB , spectrogram'];
             clear spectrogram s
             %Reward
-            [spectrogram,f,s] = MTSpectrum(Restrict(vHPC,REM_R),'frequency',1250,'range',[0 40]);
+            [spectrogram,f,s] = MTSpectrum(Restrict(vHPC1,REM_R),'frequency',1250,'range',[0 40]);
             REM_SpectrumVR = [REM_SpectrumVR , spectrogram'];
             clear spectrogram s
             %Aversive
-            [spectrogram,f,s] = MTSpectrum(Restrict(vHPC,REM_A),'frequency',1250,'range',[0 40]);
+            [spectrogram,f,s] = MTSpectrum(Restrict(vHPC1,REM_A),'frequency',1250,'range',[0 40]);
             REM_SpectrumVA = [REM_SpectrumVA , spectrogram'];
             clear spectrogram s
             
@@ -301,7 +297,7 @@ for tt = 1:length(path)
         clear uncoordinated uncoordinatedA uncoordinatedA_V uncoordinatedB uncoordinatedB_V
         clear uncoordinatedR uncoordinatedR_V uncoordinatedV
         clear REM REM_A REM_B REM_R NREM NREM_A NREM_B NREM_R WAKE
-        clear dHPC vHPC vHPC1 vHPC2 vHPC3 vHPC4 vHPC5 dHPC1
+        clear dHPC vHPC vHPC1 vHPC2 vHPC3 vHPC4 vHPC5
     end
     disp(['-- Finishing analysis from rat #',num2str(tt) , ' --'])
     disp('  ')

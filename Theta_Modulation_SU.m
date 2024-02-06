@@ -1,9 +1,10 @@
+
 clear
 clc
 close all
 
 %% Parameters
-path = {'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
+path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 % for SU
 criteria_fr = 0; %criteria to include or not a SU into the analysis
 pval = 0.001;
@@ -160,51 +161,6 @@ for tt = 1:length(path)
         WAKE.aversive = Restrict(WAKE.all,aversiveTS./1000);
         WAKE.reward = Restrict(WAKE.all,rewardTS./1000);
         
-        %% load coordinated ripple bursts
-        load('coordinated_ripple_bursts.mat')
-        coordinated_ripple_bursts = [coordinated_ripple_bursts(:,1)  coordinated_ripple_bursts(:,3)];
-        %         [coordinated_ripple_bursts] = merge_events(coordinated_ripple_bursts, 0.05);
-        
-        ripple_bursts.baseline = Restrict(coordinated_ripple_bursts,baselineTS./1000);
-        ripple_bursts.reward = Restrict(coordinated_ripple_bursts,rewardTS./1000);
-        ripple_bursts.aversive = Restrict(coordinated_ripple_bursts,aversiveTS./1000);
-        ripple_bursts.all = coordinated_ripple_bursts;
-        clear coordinated_ripple_bursts
-        
-        %% Load ripples
-        ripplesD = table2array(readtable('ripplesD_customized2.csv'));
-        ripplesV = table2array(readtable('ripplesV_customized2.csv'));
-        % coordination
-        coordinated = [];
-        coordinatedV = [];
-        coordinatedV_refined = [];
-        cooridnated_event = [];
-        cooridnated_eventDV = [];
-        cooridnated_eventVD = [];
-        for i = 1:length(ripplesD)
-            r = ripplesD(i,:);
-            tmp = sum(and(ripplesV(:,2)>= r(1,2)-0.1, ripplesV(:,2)<= r(1,2)+0.1));
-            if tmp>0
-                z = ripplesV(and(ripplesV(:,2)>= r(1,2)-0.1, ripplesV(:,2)<= r(1,2)+0.1),:);
-                coordinatedV = [coordinatedV ; z];
-                [p,indice] = min(abs(r(2)-z(:,2)));
-                coordinatedV_refined = [coordinatedV_refined ; z(indice,:)];
-                coordinated = [coordinated ; r];
-                
-                cooridnated_event = [cooridnated_event ; min([r(1) , z(indice,1)]) , min(min(z(indice,2),r(2)))+abs(z(indice,2)-r(2))/2 , max([r(3) , z(indice,3)])];
-                
-                if r(2)<z(indice,2)
-                    cooridnated_eventDV = [cooridnated_eventDV ; min([r(1) , z(indice,1)]) , min(min(z(indice,2),r(2)))+abs(z(indice,2)-r(2))/2 , max([r(3) , z(indice,3)])];
-                else
-                    cooridnated_eventVD = [cooridnated_eventVD ; min([r(1) , z(indice,1)]) , min(min(z(indice,2),r(2)))+abs(z(indice,2)-r(2))/2 , max([r(3) , z(indice,3)])];
-                end
-                
-                clear tmp2 tmp1 p indice z
-            end
-            clear r
-        end
-        clear x tmp i
-        
         %% Spikes
         % Load Units
         disp('Uploading Spiking activity')
@@ -235,9 +191,9 @@ for tt = 1:length(path)
         spks(:,2) = double(spks(:,2))./20000;
 %         % Selection of celltype to analyze
 %         if criteria_type == 0 %pyr
-%             cellulartype = [K(:,1) , K(:,3)];
-%         elseif criteria_type == 1 % int
 %             cellulartype = [K(:,1) , K(:,4)];
+%         elseif criteria_type == 1 % int
+%             cellulartype = [K(:,1) , not(K(:,4))];
 %         elseif criteria_type == 2 % all
 %             cellulartype = [K(:,1) , ones(length(K),1)];
 %         end
@@ -279,46 +235,15 @@ for tt = 1:length(path)
         end
         clear freq limits
         clear ejeX ejeY dX dY dX_int dY_int
-        
-        %%
-        PeriodsA = SubtractIntervals(aversiveTS_run./1000,behavior.quiet.aversive);
-        PeriodsR = SubtractIntervals(rewardTS_run./1000,behavior.quiet.reward);
-        P = sort([PeriodsA ; PeriodsR]); clear PeriodsA PeriodsR
-        [spectrum1,f,s] = MTSpectrum(Restrict(vHPC1,P));
-        [spectrum2,f,s] = MTSpectrum(Restrict(vHPC2,P));
-        [spectrum3,f,s] = MTSpectrum(Restrict(vHPC3,P));
-        [spectrum4,f,s] = MTSpectrum(Restrict(vHPC4,P));
-        [spectrum5,f,s] = MTSpectrum(Restrict(vHPC5,P));
-        
-        [m mm] = min(abs(f-6));
-        [m mmm] = min(abs(f-10));
-        
-        [m s] = max([mean(spectrum1(mm : mmm)) mean(spectrum2(mm : mmm)) mean(spectrum3(mm : mmm)) mean(spectrum4(mm : mmm)) mean(spectrum5(mm : mmm))]);
-        
-        lfp.raw.dHPC = dHPC;
-        if s == 1
-            lfp.raw.vHPC = vHPC1;
-        elseif s == 2
-            lfp.raw.vHPC = vHPC2;
-        elseif s == 3
-            lfp.raw.vHPC = vHPC3;
-        elseif s == 4
-            lfp.raw.vHPC = vHPC4;
-        elseif s == 5
-            lfp.raw.vHPC = vHPC5;
-        end
-        clear dHPC vHPC1 vHPC2 vHPC3 vHPC4 vHPC5
-        clear spectrum1 spectrum2 spectrum3 spectrum4 spectrum5 s m mm mmm
-        
-        %% filtering LFP
-        lfp.filtered.dHPC = FilterLFP(lfp.raw.dHPC,'passband',[6 10]);
-        lfp.filtered.vHPC = FilterLFP(lfp.raw.vHPC,'passband',[6 10]);
+
         
         %%
         if not(isempty(spks_dHPC))
+            lfp.raw.dHPC = dHPC;
+            lfp.filtered.dHPC = FilterLFP(lfp.raw.dHPC,'passband',[6 10]);% filtering LFP
             disp('Rayleight for dHPC SUs')
             iterator = ismember(K(:,1),clusters.dHPC); %keep logical to differentiate pyr from rest
-            iterator  = K(iterator,3);
+            iterator  = K(iterator,4);
             
             Periods = SubtractIntervals(aversiveTS_run./1000,behavior.quiet.aversive);
             Periods = Restrict(Periods,[behavior.pos.aversive(1,1) behavior.pos.aversive(end,1)]);
@@ -336,23 +261,52 @@ for tt = 1:length(path)
         end
         
         if not(isempty(spks_vHPC))
+            PeriodsA = SubtractIntervals(aversiveTS_run./1000,behavior.quiet.aversive);
+            PeriodsR = SubtractIntervals(rewardTS_run./1000,behavior.quiet.reward);
+            P = sort([PeriodsA ; PeriodsR]); clear PeriodsA PeriodsR
+            [spectrum1,f,s] = MTSpectrum(Restrict(vHPC1,P));
+            [spectrum2,f,s] = MTSpectrum(Restrict(vHPC2,P));
+            [spectrum3,f,s] = MTSpectrum(Restrict(vHPC3,P));
+            [spectrum4,f,s] = MTSpectrum(Restrict(vHPC4,P));
+            [spectrum5,f,s] = MTSpectrum(Restrict(vHPC5,P));
+            
+            [m mm] = min(abs(f-6));
+            [m mmm] = min(abs(f-10));
+            
+            [m s] = max([mean(spectrum1(mm : mmm)) mean(spectrum2(mm : mmm)) mean(spectrum3(mm : mmm)) mean(spectrum4(mm : mmm)) mean(spectrum5(mm : mmm))]);
+            
+            if s == 1
+                lfp.raw.vHPC = vHPC1;
+            elseif s == 2
+                lfp.raw.vHPC = vHPC2;
+            elseif s == 3
+                lfp.raw.vHPC = vHPC3;
+            elseif s == 4
+                lfp.raw.vHPC = vHPC4;
+            elseif s == 5
+                lfp.raw.vHPC = vHPC5;
+            end
+            clear dHPC vHPC1 vHPC2 vHPC3 vHPC4 vHPC5
+            clear spectrum1 spectrum2 spectrum3 spectrum4 spectrum5 s m mm mmm
+            
+            lfp.filtered.vHPC = FilterLFP(lfp.raw.vHPC,'passband',[6 10]);% filtering LFP
             disp('Rayleight for vHPC SUs')
             iterator = ismember(K(:,1),clusters.vHPC); %keep logical to differentiate pyr from rest
-            iterator  = K(iterator,3);
+            iterator  = K(iterator,4);
             
             Periods = SubtractIntervals(aversiveTS_run./1000,behavior.quiet.aversive);
             Periods = Restrict(Periods,[behavior.pos.aversive(1,1) behavior.pos.aversive(end,1)]);
             [p,theta,rbar,delta] = ThetaModulation(spks_vHPC,clusters.vHPC,lfp.filtered.vHPC,Periods);
-            theta_modulated.vHPC.aversive = [theta_modulated.vHPC.aversive ; clusters.vHPC iterator p' theta' rbar' delta'];            
+            theta_modulated.vHPC.aversive = [theta_modulated.vHPC.aversive ; clusters.vHPC iterator p' theta' rbar' delta'];
             temp.vHPC.aversive = [clusters.vHPC iterator p' theta' rbar' delta'];
             clear Periods p theta rbar delta
             
             Periods = SubtractIntervals(rewardTS_run./1000,behavior.quiet.reward);
             Periods = Restrict(Periods,[behavior.pos.reward(1,1) behavior.pos.reward(end,1)]);
             [p,theta,rbar,delta] = ThetaModulation(spks_vHPC,clusters.vHPC,lfp.filtered.vHPC,Periods);
-            theta_modulated.vHPC.reward = [theta_modulated.vHPC.reward ; clusters.vHPC iterator p' theta' rbar' delta'];            
+            theta_modulated.vHPC.reward = [theta_modulated.vHPC.reward ; clusters.vHPC iterator p' theta' rbar' delta'];
             temp.vHPC.reward = [clusters.vHPC iterator p' theta' rbar' delta'];
-            clear Periods p theta rbar delta iterator 
+            clear Periods p theta rbar delta iterator
         end
         
         save([cd,'\theta_modulated_SU.mat'],'temp')
@@ -362,8 +316,6 @@ for tt = 1:length(path)
         clear ripple_bursts behavior baselineTS camara Cell_type_classification
         clear clusters coordinated coordinatedV cooridnated_event cooridnated_eventDV cooridnated_eventVD
         clear segments shock group_dHPC group_vHPC K Kinfo coordinatedV_refined
-        
-        
         
     end
     disp(['-- Finishing analysis from rat #',num2str(tt) , ' --'])

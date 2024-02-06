@@ -184,12 +184,12 @@ for tt = 2:length(path)
         % Reward
         start = behavior.speed.reward(1,1);   stop = behavior.speed.reward(end,1);
         movement.reward = InvertIntervals(behavior.quiet.reward , start , stop); %keep only those higher than criteria
-%         movement.reward(movement.reward(:,2) - movement.reward(:,1) <1,:)=[]; %eliminate 1sec segments
+        %         movement.reward(movement.reward(:,2) - movement.reward(:,1) <1,:)=[]; %eliminate 1sec segments
         clear tmp start stop
         % Aversive
         start = behavior.speed.aversive(1,1);   stop = behavior.speed.aversive(end,1);
         movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
-%         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
+        %         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
         clear tmp start stop
         
         %% load sleep states
@@ -199,7 +199,7 @@ for tt = 2:length(path)
         %         REM.all(REM.all(:,2)-REM.all(:,1)<60,:) = [];
         clear x states
         
-%         NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
+        %         NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
         NREM.baseline = Restrict(NREM.all,baselineTS./1000);
         NREM.aversive = Restrict(NREM.all,aversiveTS./1000);
         NREM.reward = Restrict(NREM.all,rewardTS./1000);
@@ -212,17 +212,17 @@ for tt = 2:length(path)
         WAKE.aversive = Restrict(WAKE.all,aversiveTS./1000);
         WAKE.reward = Restrict(WAKE.all,rewardTS./1000);
         
-%         %% load coordinated ripple bursts
-%         load('coordinated_ripple_bursts.mat')
-%         coordinated_ripple_bursts = [coordinated_ripple_bursts(:,1)  coordinated_ripple_bursts(:,3)];
-%         %         [coordinated_ripple_bursts] = merge_events(coordinated_ripple_bursts, 0.05);
-%         
-%         ripple_bursts.baseline = Restrict(coordinated_ripple_bursts,baselineTS./1000);
-%         ripple_bursts.reward = Restrict(coordinated_ripple_bursts,rewardTS./1000);
-%         ripple_bursts.aversive = Restrict(coordinated_ripple_bursts,aversiveTS./1000);
-%         ripple_bursts.all = coordinated_ripple_bursts;
-%         clear coordinated_ripple_bursts
-%         
+        %         %% load coordinated ripple bursts
+        %         load('coordinated_ripple_bursts.mat')
+        %         coordinated_ripple_bursts = [coordinated_ripple_bursts(:,1)  coordinated_ripple_bursts(:,3)];
+        %         %         [coordinated_ripple_bursts] = merge_events(coordinated_ripple_bursts, 0.05);
+        %
+        %         ripple_bursts.baseline = Restrict(coordinated_ripple_bursts,baselineTS./1000);
+        %         ripple_bursts.reward = Restrict(coordinated_ripple_bursts,rewardTS./1000);
+        %         ripple_bursts.aversive = Restrict(coordinated_ripple_bursts,aversiveTS./1000);
+        %         ripple_bursts.all = coordinated_ripple_bursts;
+        %         clear coordinated_ripple_bursts
+        %
         %% Load ripples
         ripplesD = table2array(readtable('ripplesD_customized2.csv'));
         ripplesV = table2array(readtable('ripplesV_customized2.csv'));
@@ -286,7 +286,7 @@ for tt = 2:length(path)
         clear coordinatedV_refined
         
         %coordinated event
-%         cooridnated_event((cooridnated_event(:,3)-cooridnated_event(:,1)<0.04),:) = [];
+        cooridnated_event((cooridnated_event(:,3)-cooridnated_event(:,1)<0.04),:) = [];
         ripple_event.baseline = Restrict(cooridnated_event,baselineTS./1000);
         ripple_event.reward = Restrict(cooridnated_event,rewardTS./1000);
         ripple_event.aversive = Restrict(cooridnated_event,aversiveTS./1000);
@@ -308,7 +308,7 @@ for tt = 2:length(path)
         ripple_event.VD.reward = Restrict(cooridnated_eventVD,rewardTS./1000);
         ripple_event.VD.aversive = Restrict(cooridnated_eventVD,aversiveTS./1000);
         ripple_event.VD.all = cooridnated_eventVD; clear cooridnated_eventVD
-        % same but keeping the timestamps from the dorsal ripple 
+        % same but keeping the timestamps from the dorsal ripple
         ripple_event.VD.unique.baseline = Restrict(coordinatedV1,baselineTS./1000);
         ripple_event.VD.unique.reward = Restrict(coordinatedV1,rewardTS./1000);
         ripple_event.VD.unique.aversive = Restrict(coordinatedV1,aversiveTS./1000);
@@ -391,7 +391,7 @@ for tt = 2:length(path)
         clear camara shock rightvalve leftvalve
         clear ejeX ejeY dX dY dX_int dY_int
         
-
+        
         if or(numberD > 2 , numberV > 2) % Assemblies detection
             %% --- Aversive ---
             disp('Lets go for the assemblies')
@@ -604,79 +604,91 @@ for tt = 2:length(path)
                 end
                 %                 end
             end
- 
+            
             
             if TA
                 disp('Triggered assemblies activity sourrounding cooridnated events')
+                A = [ripplesD(:,1)-0.05 ripplesD(:,3)+0.05 ; ripplesV(:,1)-0.05 ripplesV(:,3)+0.05];
+                [A1 A2] = sort(A(:,1));
+                A = A(A2,:); clear A1 A2
                 % Aversive
                 if sum(cond.both.aversive) >= 1
                     condd = logical(RBA(:,end));
-%                     if RBA(:,end)>=1
-                        if aversiveTS_run(1) < rewardTS_run(1)
-                            [R.baseline] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.baseline(:,2) , 0 , 0 , []);
-                            [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.aversive(:,2) , 0 , 0 , []);
-                            
-                            if isempty(gain.both.aversive.pre)
-                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline];
-                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive];
-                            else
-                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline(:,1:size(gain.both.aversive.pre,2))];
-                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(:,1:size(gain.both.aversive.pre,2))];
-                            end
-                            
-                            clear R
+                    %                     if RBA(:,end)>=1
+                    if aversiveTS_run(1) < rewardTS_run(1)
+                        baseline = SubtractIntervals(NREM.baseline, A);
+                        [R.baseline] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.baseline(:,2) , 0 , 1 , [] , []); clear baseline
+                        baseline = SubtractIntervals(NREM.aversive, A);
+                        [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.aversive(:,2) , 0 , 1 , [] , []); clear baseline
+                        
+                        if isempty(gain.both.aversive.pre)
+                            gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline];
+                            gain.both.aversive.post = [gain.both.aversive.post ; R.aversive];
                         else
-                            [R.reward] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.reward(:,2) , 0 , 0 , []);
-                            [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.baseline(:,2) , 0 , 0 , []);
-                            
-                            if isempty(gain.both.aversive.pre)
-                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward];
-                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive];
-                            else
-                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward(:,1:size(gain.both.aversive.pre,2))];
-                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(:,1:size(gain.both.aversive.pre,2))];
-                            end
-                            clear R
+                            gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline(:,1:size(gain.both.aversive.pre,2))];
+                            gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(:,1:size(gain.both.aversive.pre,2))];
                         end
-%                     end
+                        
+                        clear R
+                    else
+                        baseline = SubtractIntervals(NREM.reward, A);
+                        [R.reward] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.reward(:,2) , 0 , 1 , [] , []); clear baseline
+                        baseline = SubtractIntervals(NREM.aversive, A);
+                        [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.baseline(:,2) , 0 , 1 , [] , []); clear baseline
+                        
+                        if isempty(gain.both.aversive.pre)
+                            gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward];
+                            gain.both.aversive.post = [gain.both.aversive.post ; R.aversive];
+                        else
+                            gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward(:,1:size(gain.both.aversive.pre,2))];
+                            gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(:,1:size(gain.both.aversive.pre,2))];
+                        end
+                        clear R
+                    end
+                    %                     end
                     clear condd
                 end
                 
                 % Reward
                 if sum(cond.both.reward) >= 1
                     condd = logical(RBR(:,end));
-%                     if RBR(:,end)>=1
-                        if aversiveTS_run(1) > rewardTS_run(1)
-                            [R.baseline] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.baseline(:,2) , 0 , 0 , []);
-                            [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.reward(:,2) , 0 , 0 , []);
-                            
-                            if isempty(gain.both.reward.pre)
-                                gain.both.reward.pre = [gain.both.reward.pre ; R.baseline];
-                                gain.both.reward.post = [gain.both.reward.post ; R.reward];
-                            else
-                                gain.both.reward.pre = [gain.both.reward.pre ; R.baseline(:,1:size(gain.both.reward.pre,2))];
-                                gain.both.reward.post = [gain.both.reward.post ; R.reward(:,1:size(gain.both.reward.pre,2))];
-                            end
-                            clear R
+                    %                     if RBR(:,end)>=1
+                    if aversiveTS_run(1) > rewardTS_run(1)
+                        baseline = SubtractIntervals(NREM.baseline, A);
+                        [R.baseline] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.baseline(:,2) , 0 , 1 , [] , []); clear baseline
+                        baseline = SubtractIntervals(NREM.reward, A);
+                        [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.reward(:,2) , 0 , 1 , [] , []); clear baseline
+                        
+                        if isempty(gain.both.reward.pre)
+                            gain.both.reward.pre = [gain.both.reward.pre ; R.baseline];
+                            gain.both.reward.post = [gain.both.reward.post ; R.reward];
                         else
-                            [R.aversive] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.aversive(:,2) , 0 , 0 , []);
-                            [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.reward(:,2) , 0 , 0 , []);
-                            
-                            if isempty(gain.both.reward.pre)
-                                gain.both.reward.pre = [gain.both.reward.pre ; R.aversive];
-                                gain.both.reward.post = [gain.both.reward.post ; R.reward];
-                            else
-                                gain.both.reward.pre = [gain.both.reward.pre ; R.aversive(:,1:size(gain.both.reward.pre,2))];
-                                gain.both.reward.post = [gain.both.reward.post ; R.reward(:,1:size(gain.both.reward.pre,2))];
-                            end
-                            clear R
+                            gain.both.reward.pre = [gain.both.reward.pre ; R.baseline(:,1:size(gain.both.reward.pre,2))];
+                            gain.both.reward.post = [gain.both.reward.post ; R.reward(:,1:size(gain.both.reward.pre,2))];
                         end
-%                     end
+                        clear R
+                    else
+                        baseline = SubtractIntervals(NREM.aversive, A);
+                        [R.aversive] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.aversive(:,2) , 0 , 1 , [] , []); clear baseline
+                        baseline = SubtractIntervals(NREM.reward, A);
+                        [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.reward(:,2) , 0 , 1 , [] , []); clear baseline
+                        
+                        if isempty(gain.both.reward.pre)
+                            gain.both.reward.pre = [gain.both.reward.pre ; R.aversive];
+                            gain.both.reward.post = [gain.both.reward.post ; R.reward];
+                        else
+                            gain.both.reward.pre = [gain.both.reward.pre ; R.aversive(:,1:size(gain.both.reward.pre,2))];
+                            gain.both.reward.post = [gain.both.reward.post ; R.reward(:,1:size(gain.both.reward.pre,2))];
+                        end
+                        clear R
+                    end
+                    %                     end
                     clear cond
                 end
+                clear A
             end
             
-     
+            
         end
         disp(' ')
         clear A aversiveTS aversiveTS_run baselineTS rewardTS rewardTS_run
@@ -858,3 +870,12 @@ fitlm(reactivation.aversive.vHPC(:,4) , reactivation.aversive.vHPC(:,1))
 plot(ans),xlim([0 60]),ylim([-1 1]),hold on
 fitlm(reactivation.reward.vHPC(:,4) , reactivation.reward.vHPC(:,1))
 plot(ans),xlim([0 60]),ylim([-1 1]),hold on
+
+%% plot ripple tunning curves
+cond = reactivation.aversive.dvHPC(:,4)>0;
+
+plot(nanmean(gain.both.aversive.pre,1)),hold on
+plot(nanmean(gain.both.aversive.post,1))
+
+plot(nanmean(gain.both.reward.pre,1)),hold on
+plot(nanmean(gain.both.reward.post,1))

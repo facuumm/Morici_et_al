@@ -57,7 +57,7 @@ for tt = 1:length(path)
             load(x(end).name); clear x
         end
         %% load assemblies patterns
-        x = dir([cd,'\dorsalventral_assemblies_reward*.mat']);
+        x = dir([cd,'\dorsalventral_assemblies_reward.mat']);
         if not(isempty(x))
             load(x(end).name)
             clear x
@@ -66,7 +66,7 @@ for tt = 1:length(path)
         end
         clear x
         
-        x = dir([cd,'\dorsalventral_assemblies_aversive*.mat']);
+        x = dir([cd,'\dorsalventral_assemblies_aversive.mat']);
         if not(isempty(x))
             load(x(end).name)
             clear x

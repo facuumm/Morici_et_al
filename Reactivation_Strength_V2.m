@@ -9,7 +9,7 @@ path = {'E:\Rat103\usable';'E:\Rat126\Ephys\in_Pyr';'E:\Rat127\Ephys\pyr';'E:\Ra
 time_criteria = 1; % minimal time to include a NREM epoch (in min)
 
 % What par of the code I want to run
-S = logical(1);   % Reactivation Strength Calculation
+S = logical(0);   % Reactivation Strength Calculation
 MUAselection = logical(0); % to select ripples by their MUA
 W = 'N'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
@@ -20,15 +20,27 @@ TA =  logical(0); % Trigger Reactivation Strength
 TPks = logical(0); %trigger CCG assemblies peaks to events
 REC = logical(0); % Assemblie Recruitment during cooridnated events
 SRC = logical(0); % If I want to calculate the tuning curve for shocks
-C = logical(1); % if I want to calculate CumSum of peaks
+C = logical(0); % if I want to calculate CumSum of peaks
 
 % for SU
 criteria_fr = 0; %criteria to include or not a SU into the analysis
 criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
 criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
 binSize = 0.025; %for qssemblie detection qnd qxctivity strength
-n_SU_V = 0;
-n_SU_D = 0;
+
+% matrices for storing #SU
+n_SU_V.pyr = [0 0 0 0 0 0];
+n_SU_V.int = [0 0 0 0 0 0];
+n_SU_D.pyr = [0 0 0 0 0 0];
+n_SU_D.int = [0 0 0 0 0 0];
+
+% matrices for storing assemblies members
+number_of_members.aversive.joint = [];
+number_of_members.aversive.dHPC = [];
+number_of_members.aversive.vHPC = [];
+number_of_members.reward.joint = [];
+number_of_members.reward.dHPC = [];
+number_of_members.reward.vHPC = [];
 
 win = 60; % time window for bin construction
 
@@ -338,11 +350,14 @@ for tt = 1:length(path)
             if Cellulartype
                 a = length(Restrict(spks(spks(:,1)==cluster,2),aversiveTS_run./1000)) / ((aversiveTS_run(2)-aversiveTS_run(1))/1000);
                 r = length(Restrict(spks(spks(:,1)==cluster,2),rewardTS_run./1000)) / ((rewardTS_run(2)-rewardTS_run(1))/1000);
+                n_SU_D.pyr(tt) = n_SU_D.pyr(tt)+1;
                 if or(a > criteria_fr ,  r > criteria_fr)
                     numberD = numberD+1;
                     clusters.all = [clusters.all ; cluster];
                     clusters.dHPC = [clusters.dHPC ; cluster];
                 end
+            else
+                n_SU_D.int(tt) = n_SU_D.int(tt)+1;
             end
             clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
         end
@@ -355,11 +370,14 @@ for tt = 1:length(path)
             if Cellulartype
                 a = length(Restrict(spks(spks(:,1)==cluster,2),aversiveTS_run./1000)) / ((aversiveTS_run(2)-aversiveTS_run(1))/1000);
                 r = length(Restrict(spks(spks(:,1)==cluster,2),rewardTS_run./1000)) / ((rewardTS_run(2)-rewardTS_run(1))/1000);
+                n_SU_V.pyr(tt) = n_SU_V.pyr(tt)+1;               
                 if or(a > criteria_fr ,  r > criteria_fr)
                     numberV = numberV+1;
                     clusters.all = [clusters.all ; cluster];
                     clusters.vHPC = [clusters.vHPC ; cluster];
                 end
+            else
+                n_SU_V.int(tt) = n_SU_V.int(tt)+1;               
             end
             clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
         end
@@ -903,7 +921,7 @@ for tt = 1:length(path)
         clear NREM REM WAKE segmentation tmp cond config
         clear spiketrains_dHPC spiketrains_vHPC opts MUA
         clear patterns Thresholded i  ii numberD numberV movement cross crossN
-        clear Spikes bins Clusters Shocks_filt Rewards_filt config n_SU_D n_SU_V
+        clear Spikes bins Clusters Shocks_filt Rewards_filt config
         clear clusters coordinated coordinated_ripple_bursts coordinatedV
         clear cooridnated_event coordinatedV_refined coordinatedV_refined
         clear ripple_bursts ripple_event ripplesD ripplesV
@@ -1184,3 +1202,9 @@ plot(nanmean(vHPCR),'b'),hold on
 ciplot(nanmean(vHPCA)-nansem(vHPCA) , nanmean(vHPCA)+nansem(vHPCA) , [1:1:100],'r'), alpha 0.5
 ciplot(nanmean(vHPCR)-nansem(vHPCR) , nanmean(vHPCR)+nansem(vHPCR) , [1:1:100],'b'), alpha 0.5
 xlim([0 60])
+
+%% plot Number of assemblies
+data = [Number_of_assemblies.reward(:,1) ; Number_of_assemblies.aversive(:,1)];
+data = [data , [1;1;1;1;1;1;2;2;2;2;2;2]];
+scatter(data(:,2),data(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 4]),hold on
+scatter([1 2 3],[nanmean(tmpB(:,1)) nanmean(tmpR(:,1)) nanmean(tmpA(:,1))],"filled"),xlim([0 4]),hold on

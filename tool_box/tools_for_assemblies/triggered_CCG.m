@@ -1,4 +1,4 @@
-function [R , t] = triggered_CCG(patterns , cond , SpikeTrain , duration , events, th , Baseline)
+function [R , t] = triggered_CCG(patterns , cond , SpikeTrain , duration, binSize , events, th , Baseline, mode)
 % This function construct a peri-event histogram using ripple peaks and
 % assemblies activity peaks. If you wanna change the output normalization,
 % please check details in PHIST function and change it in this code.
@@ -27,6 +27,8 @@ function [R , t] = triggered_CCG(patterns , cond , SpikeTrain , duration , event
 %
 % duration: int, it define in seconds the total duration of the CCG
 %
+% binSize: float, duration of binSize
+%
 % events: matrix, it contains Ripples timestamps (in sec).
 %         Example:   Begining1    Peak1    End1
 %                    Begining2    Peak2    End2
@@ -38,6 +40,8 @@ function [R , t] = triggered_CCG(patterns , cond , SpikeTrain , duration , event
 %           Example:   Begining1    End1
 %                      Begining2    End2
 %                         ...       ...
+%
+% mode: str, 'Gain', 'NormGain', 'Probability', FiringRate if is empry
 %
 % --- OUTPUT ---
 % R: matrix, contains the PHIST constructed using the inputs
@@ -63,8 +67,11 @@ a = zscore(a,1,2);
 R = [];
 for i = 1:size(a,1)
     [pks,loc] = findpeaks(a(i,:),bins,'MinPeakHeight',th);
-    
-    [p , t] = PHIST(events(:,2),loc,baseline,duration,0.01,1,'Gain');
+    if size(events,2)>1
+        [p , t] = PHIST(events(:,2),loc,baseline,duration,binSize,1,mode);
+    else
+        [p , t] = PHIST(loc,events,baseline,duration,binSize,1,mode);
+    end
     R = [R , p];
     
 end
