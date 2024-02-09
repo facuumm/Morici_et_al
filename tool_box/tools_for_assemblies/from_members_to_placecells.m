@@ -52,7 +52,7 @@ for tt = 1:length(path)
         cd(session)
         
         %% load clusters used to detect assemblies
-        x = dir([cd,'\clusters_included_in*.mat']);
+        x = dir([cd,'\SUclusters.mat']);
         if not(isempty(x))
             load(x(end).name); clear x
         end
@@ -76,28 +76,69 @@ for tt = 1:length(path)
         clear x
         if exist('TH')
             %% Definition of dHPC, vHPC or joint assemblies
-            % Aversive
-            cond1 =  sum(TH.aversive(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
-            cond2 =  sum(TH.aversive(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
-            cond.dHPC.aversive = and(cond1 , not(cond2));
-            cond.vHPC.aversive = and(cond2 , not(cond1));
-            cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
-            
-            TH.dHPC.aversive = TH.aversive(:,cond.dHPC.aversive);
-            TH.vHPC.aversive = TH.aversive(:,cond.vHPC.aversive);
-            TH.both.aversive = TH.aversive(:,cond.both.aversive);
+            if not(isempty(TH.aversive))
+                if isfield(clusters,'dHPC')
+                    cond1 =  sum(TH.aversive(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
+                    cond2 =  sum(TH.aversive(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
+                    cond.dHPC.aversive = and(cond1 , not(cond2));
+                    cond.vHPC.aversive = and(cond2 , not(cond1));
+                    cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
+                    TH.dHPC.aversive = TH.aversive(:,cond.dHPC.aversive);
+                    TH.vHPC.aversive = TH.aversive(:,cond.vHPC.aversive);
+                    TH.both.aversive = TH.aversive(:,cond.both.aversive);
+                else
+                    cond1 =  logical(zeros(1,size(TH.aversive,2))); %checking of dHPC SU
+                    cond2 =  logical(ones(1,size(TH.aversive,2))); %checking of vHPC SU
+                    cond.dHPC.aversive = and(cond1 , not(cond2));
+                    cond.vHPC.aversive = and(cond2 , not(cond1));
+                    cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
+                    TH.dHPC.aversive = TH.aversive(:,cond.dHPC.aversive);
+                    TH.vHPC.aversive = TH.aversive(:,cond.vHPC.aversive);
+                    TH.both.aversive = TH.aversive(:,cond.both.aversive);
+                end
+            else
+                cond1 =  false; %checking of dHPC SU
+                cond2 =  logical(0); %checking of vHPC SU
+                cond.dHPC.aversive = and(cond1 , not(cond2));
+                cond.vHPC.aversive = and(cond2 , not(cond1));
+                cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
+                TH.dHPC.aversive = TH.aversive(:,cond.dHPC.aversive);
+                TH.vHPC.aversive = TH.aversive(:,cond.vHPC.aversive);
+                TH.both.aversive = TH.aversive(:,cond.both.aversive);
+            end
+
             
             % Reward
-            cond1 =  sum(TH.reward(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
-            cond2 =  sum(TH.reward(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
-            cond.dHPC.reward = and(cond1 , not(cond2));
-            cond.vHPC.reward = and(cond2 , not(cond1));
-            cond.both.reward = and(cond1 , cond2); clear cond1 cond2
-            
-            TH.dHPC.reward = TH.reward(:,cond.dHPC.reward);
-            TH.vHPC.reward = TH.reward(:,cond.vHPC.reward);
-            TH.both.reward = TH.reward(:,cond.both.reward);
-            
+            if not(isempty(TH.reward))
+                if isfield(clusters,'dHPC')
+                    cond1 =  sum(TH.reward(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
+                    cond2 =  sum(TH.reward(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
+                    cond.dHPC.reward = and(cond1 , not(cond2));
+                    cond.vHPC.reward = and(cond2 , not(cond1));
+                    cond.both.reward = and(cond1 , cond2); clear cond1 cond2
+                    TH.dHPC.reward = TH.reward(:,cond.dHPC.reward);
+                    TH.vHPC.reward = TH.reward(:,cond.vHPC.reward);
+                    TH.both.reward = TH.reward(:,cond.both.reward);
+                else
+                    cond1 =  logical(zeros(1,size(TH.reward.all,2))); %checking of dHPC SU
+                    cond2 =  logical(ones(1,size(TH.reward,2))); %checking of vHPC SU
+                    cond.dHPC.reward = and(cond1 , not(cond2));
+                    cond.vHPC.reward = and(cond2 , not(cond1));
+                    cond.both.reward = and(cond1 , cond2); clear cond1 cond2
+                    TH.dHPC.reward = TH.reward(:,cond.dHPC.reward);
+                    TH.vHPC.reward = TH.reward(:,cond.vHPC.reward);
+                    TH.both.reward = TH.reward(:,cond.both.reward);
+                end
+            else
+                cond1 =  logical(0); %checking of dHPC SU
+                cond2 =  logical(0); %checking of vHPC SU
+                cond.dHPC.reward = and(cond1 , not(cond2));
+                cond.vHPC.reward = and(cond2 , not(cond1));
+                cond.both.reward = and(cond1 , cond2); clear cond1 cond2
+                TH.dHPC.reward = TH.reward(:,cond.dHPC.reward);
+                TH.vHPC.reward = TH.reward(:,cond.vHPC.reward);
+                TH.both.reward = TH.reward(:,cond.both.reward);
+            end
             clear cond
             
             %% load information of place-cell analysis
@@ -255,3 +296,60 @@ for tt = 1:length(path)
 
 end
 end
+
+
+% % dHPC aversive
+% subplot(221)
+% x = [counts.reward.dHPC ; counts.aversive.dHPC];
+% y = [ones(size(counts.reward.dHPC,1),1) ; ones(size(counts.aversive.dHPC,1),1)*2];
+% 
+% kstest(counts.reward.dHPC)
+% kstest(counts.aversive.dHPC)
+% [h p]=ttest2(counts.reward.dHPC,counts.aversive.dHPC)
+% 
+% scatter(y,x,"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),ylim([0 20]),hold on
+% scatter([1 2],[nanmean(counts.reward.dHPC) nanmean(counts.aversive.dHPC)],"filled",'jitter','on', 'jitterAmount',0.1),
+% 
+% 
+% % vHPC aversive
+% subplot(222)
+% x = [counts.reward.vHPC ; counts.aversive.vHPC];
+% y = [ones(size(counts.reward.vHPC,1),1) ; ones(size(counts.aversive.vHPC,1),1)*2];
+% 
+% kstest(counts.reward.vHPC)
+% kstest(counts.aversive.vHPC)
+% [h p]=ttest2(counts.reward.vHPC,counts.aversive.vHPC)
+% 
+% scatter(y,x,"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),ylim([0 20]),hold on
+% scatter([1 2],[nanmean(counts.reward.vHPC) nanmean(counts.aversive.vHPC)],"filled",'jitter','on', 'jitterAmount',0.1),
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% % Joint dHPC aversive
+% subplot(223)
+% x = [counts.reward.joint.dHPC ; counts.aversive.joint.dHPC];
+% y = [ones(size(counts.reward.joint.dHPC,1),1) ; ones(size(counts.aversive.joint.dHPC,1),1)*2];
+% 
+% kstest(counts.reward.joint.dHPC)
+% kstest(counts.aversive.joint.dHPC)
+% [h p]=ttest2(counts.reward.joint.dHPC,counts.aversive.joint.dHPC)
+% 
+% scatter(y,x,"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),ylim([0 20]),hold on
+% scatter([1 2],[nanmean(counts.reward.joint.dHPC) nanmean(counts.aversive.joint.dHPC)],"filled",'jitter','on', 'jitterAmount',0.1),
+% 
+% 
+% % Joint vHPC aversive
+% subplot(224)
+% x = [counts.reward.joint.vHPC ; counts.aversive.joint.vHPC];
+% y = [ones(size(counts.reward.joint.vHPC,1),1) ; ones(size(counts.aversive.joint.vHPC,1),1)*2];
+% 
+% kstest(counts.reward.joint.vHPC)
+% kstest(counts.aversive.joint.vHPC)
+% [h p]=ttest2(counts.reward.joint.vHPC,counts.aversive.joint.vHPC)
+% 
+% scatter(y,x,"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),ylim([0 20]),hold on
+% scatter([1 2],[nanmean(counts.reward.joint.vHPC) nanmean(counts.aversive.joint.vHPC)],"filled",'jitter','on', 'jitterAmount',0.1),

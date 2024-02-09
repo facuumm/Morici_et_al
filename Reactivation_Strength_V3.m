@@ -3,10 +3,10 @@ clc
 % close all
 
 %% Parameters
-path = {'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
+path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 
 % What par of the code I want to run
-S = logical(1);   % Reactivation Strength Calculation
+S = logical(0);   % Reactivation Strength Calculation
 MUAselection = logical(0); % to select ripples by their MUA
 W = 'V'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
@@ -371,7 +371,9 @@ for tt = 1:length(path)
         clear camara shock rightvalve leftvalve
         clear ejeX ejeY dX dY dX_int dY_int
         
-                
+        % to save the clusters I used for further analysis
+        save([cd,'\SUclusters.mat'],'clusters')
+        
         %% Assemblies detection
         if or(numberD > 3 , numberV > 3)
             % --- Aversive ---
@@ -494,10 +496,7 @@ for tt = 1:length(path)
             
             percentages = [percentages  ; sum(cond.dHPC.aversive) , sum(cond.dHPC.reward) , sum(sum(AR.dHPC)) , sum(cond.vHPC.aversive) , sum(cond.vHPC.reward) , sum(sum(AR.vHPC)) , sum(cond.both.aversive) , sum(cond.both.reward) , sum(sum(AR.both))];
             clear A R r p
-            
-            % to save the clusters I used for further analysis
-            %             save([cd,'\clusters_included_in_assemblies.mat'],'clusters')
-            
+
             %% SpikeTrains construction
             limits = [0 segments.Var1(end)/1000];
             events = [];

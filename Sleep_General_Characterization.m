@@ -3,7 +3,7 @@ clc
 close all
 
 %% Parameters
-path = {'E:\Rat103\usable';'E:\Rat126\Ephys\in-Pyr';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
+path = {'E:\Rat103\usable';'E:\Rat126\Ephys\in_Pyr';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 
 % for speed selection
 minimal_speed = 7; % minimal speed to detect quite periods
@@ -211,7 +211,7 @@ for tt = 1:length(path)
             
             %All
             dHPC1 = Restrict(dHPC,REM);
-            dHPC1(:,2) = dHPC1(:,2)./max(dHPC1(:,2));
+%             dHPC1(:,2) = dHPC1(:,2)./max(dHPC1(:,2));
             
             [spectrogram,f,s] = MTSpectrum(dHPC1,'frequency',1250,'range',[0 40]);
             REM_SpectrumD = [REM_SpectrumD , spectrogram'];
@@ -248,14 +248,14 @@ for tt = 1:length(path)
         end
         
         
-        if exist('vHPC')
+        if exist('vHPC1')
             
             % Detrend Signal
             [vHPC1,p] = Detrend(vHPC1);
             clear p
             
             vHPC = Restrict(vHPC1,REM);
-            vHPC(:,2) = vHPC(:,2)./max(vHPC(:,2));
+%             vHPC(:,2) = vHPC(:,2)./max(vHPC(:,2));
             
             %REM
             %All
@@ -332,20 +332,25 @@ end
 
 data = [tmpB(:,1) , ones(length(tmpB(:,1)),1) ; tmpR(:,1) , ones(length(tmpR(:,1)),1)*2 ; tmpA(:,1) , ones(length(tmpA(:,1)),1)*3] ; 
 
+% subplot(121),boxplot(data(:,1),data(:,2)),ylim([0 12])
+
 kruskalwallis(data(:,1) , data(:,2))
 figure,
 scatter(data(:,2),data(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 4]),hold on
 scatter([1 2 3],[nanmean(tmpB(:,1)) nanmean(tmpR(:,1)) nanmean(tmpA(:,1))],"filled"),xlim([0 4]),hold on
 
+kstest(tmpA(:,2))
+
 % scatter(data(:,2) , data(:,1),'filled'),xlim([0 4]),hold on
 % scatter([1 2 3] , [median(tmpB(:,1)) median(tmpR(:,1)) median(tmpA(:,1))],'filled','MarkerFaceColor','k'),xlim([0 4]),hold on
 
 data = [tmpB(:,2) , ones(length(tmpB(:,1)),1) ; tmpR(:,2) , ones(length(tmpR(:,1)),1)*2 ; tmpA(:,2) , ones(length(tmpA(:,1)),1)*3] ; 
+% subplot(122),boxplot(data(:,1),data(:,2)),ylim([0 12])
 
 kruskalwallis(data(:,1) , data(:,2))
 figure,
 scatter(data(:,2),data(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 4]),hold on
-scatter([1 2 3],[nanmean(tmpB(:,2)) nanmean(tmpR(:,2)) nanmean(tmpA(:,2))],"filled"),xlim([0 4]),hold on
+scatter([1 2 3],[nanmean(tmpB(:,2)) nanmean(tmpR(:,2)) nanmean(tmpA(:,2))],"filled"),xlim([0 4]),ylim([0 12]),hold on
 
 
 % ----- REM FIGURE -----
