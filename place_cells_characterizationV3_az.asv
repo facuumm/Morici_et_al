@@ -1025,10 +1025,10 @@ for tt = 1:length(path)
              
              %Divide spikes time in two
              spks_1 = spks_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time)));
-             pos_1 = pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
+             pos_1 = pos_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time))); 
              
              spks_2 = spks_tmp(spks_tmp>=(min(pos_tmp(:,1)+half_time)));
-             pos_2 =  pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
+             pos_2 = pos_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time))); 
             
              %Control that both groups have the same # of spk
              if size(spks_1,1)> size(spks_2,1)
@@ -1039,33 +1039,7 @@ for tt = 1:length(path)
                  spks_2 = spks_2(indx); 
              end
              
-             %Calculate remapping parameters 
-            [curve1,stats1] = FiringCurve(pos_1, spks_1 , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
-            [curve2,stats2] = FiringCurve(pos_2, spks_2, 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
-                    
-            fr_1= nanmean(curve1.rate);
-            fr_2= nanmean(curve2.rate);
-                    
-            %Fr change
-            fr_change = abs((fr_1 - fr_2)/(fr_1 + fr_2));
-
-            %Rate overlap
-            if fr_1<=fr_2 
-                overlap = fr_1/fr_2;
-            else 
-                overlap = fr_2/fr_1;
-            end
-    
-            %Spatial  corr
-            s = corrcoef(curve1.rate, curve2.rate);
-            spatial = s(1,2);
-    
-            %Peak shift 
-            shift = abs(stats1.x(1) - stats2.x(1)); 
              
-        end 
-        
-        
              %Firing curve construction
               [curveA , statsA] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4, 'minPeak' , 0.2);
               curveA_dhpc = curveA.rate; 

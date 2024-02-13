@@ -6,9 +6,9 @@ clc
 path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 
 % What par of the code I want to run
-S = logical(1);   % Reactivation Strength Calculation
+S = logical(0);   % Reactivation Strength Calculation
 MUAselection = logical(0); % to select ripples by their MUA
-W = 'N'; % to select what kind of ripples I want to check
+W = 'V'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % D= uncoordinated dorsal, V= uncoordinated ventral
 % CB = cooridnated bursts
@@ -566,7 +566,7 @@ for tt = 1:length(path)
                         templates(size(clusters.dHPC)+1:end) = 0;
                         templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
                         templates(1:size(clusters.dHPC),2) = 0;
-                        [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                        [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , templates); clear templates
                         reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
                         RBA = R; clear R
                     end
@@ -589,11 +589,12 @@ for tt = 1:length(path)
                 %                 if aversiveTS_run(1) > rewardTS_run(1)
                 if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
                     if sum(cond.both.reward)>=1
-                        templates = ones(size(patterns.all.reward,1),1);
+         
+                        templates = ones(size(patterns.all.aversive,1),1);
                         templates(size(clusters.dHPC)+1:end) = 0;
-                        templates = [templates ,  ones(size(patterns.all.reward,1),1)];
+                        templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
                         templates(1:size(clusters.dHPC),2) = 0;
-                        [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                        [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization);
                         reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
                         RBR = R; clear R
                     end

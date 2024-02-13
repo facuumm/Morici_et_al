@@ -16,18 +16,12 @@ binSize = 0.025;
 minimal_speed = 7; % minimal speed to detect quite periods
 minimal_speed_time = 2; % minimal time to detect quite periods
 
-reactivation.aversive.dvHPC = [];
-reactivation.reward.dvHPC = [];
-reactivation.aversive.dHPC = [];
-reactivation.reward.dHPC = [];
-reactivation.aversive.vHPC = [];
-reactivation.reward.vHPC = [];
-
 normalization = false; % to define if normalization over Reactivation Strength is applied or not
 th = 5; % threshold for peak detection
 
-gain.both.reward.pre = [];     gain.both.reward.post = [];
-gain.both.aversive.pre = [];   gain.both.aversive.post = [];
+
+matrix.aversive = {};
+matrix.reward = {};
 
 
 %% Main loop, to iterate across sessions
@@ -92,80 +86,80 @@ for tt = 1:length(path)
             config = 2;
         end
         
-%         %% Awake
-%         disp('Uploading digital imputs')
-%         % Load digitalin.mat
-%         load('digitalin.mat')
-%         
-%         % Behavioral calculations
-%         disp('Uploading DLC outputs')
-%         camara = ((camara(:,2)-camara(:,1))/2)+camara(:,1);
-%         % periods of movment during eacj condition
-%         if rewardTS_run(1) < aversiveTS_run(1)
-%             load('laps1.mat','posx','posy');
-%             [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
-%             pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
-%             %interpolation of dropped frames
-%             ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
-%             ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
-%             pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
-%             behavior.pos.reward = [pos];
-%             behavior.speed.reward = LinearVelocity(pos,0);
-%             behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
-%             behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
-%             clear pos camaraR posx posy
-%             load('laps2.mat','posx','posy');
-%             [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
-%             pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
-%             %interpolation of dropped frames
-%             ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
-%             ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
-%             pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
-%             behavior.pos.aversive = [pos];
-%             behavior.speed.aversive = LinearVelocity(pos,0);
-%             behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
-%             behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
-%             clear pos camaraR
-%         else
-%             load('laps2.mat','posx','posy');
-%             [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
-%             %         [camaraR2,~] = find((camara(:,1)-rewardTS_run(2)/1000)<0,1,'last'); %TimeStamp of the ending of aversive
-%             pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
-%             %interpolation of dropped frames
-%             ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
-%             ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
-%             pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
-%             behavior.pos.reward = [pos];
-%             behavior.speed.reward = LinearVelocity(pos,0);
-%             behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
-%             behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
-%             clear pos camaraR posx posy
-%             load('laps1.mat','posx','posy');
-%             [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
-%             pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
-%             %interpolation of dropped frames
-%             ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
-%             ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
-%             pos(:,2) =dX_int; pos(:,3) =dY_int; %saving corrected pos
-%             behavior.pos.aversive = [pos];
-%             behavior.speed.aversive = LinearVelocity(pos,0);
-%             behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
-%             behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
-%             clear pos camaraA posx posy
-%         end
-%         
-%         % Generation of no-movements periods
-%         % Reward
-%         start = behavior.speed.reward(1,1);   stop = behavior.speed.reward(end,1);
-%         movement.reward = InvertIntervals(behavior.quiet.reward , start , stop); %keep only those higher than criteria
-%         %         movement.reward(movement.reward(:,2) - movement.reward(:,1) <1,:)=[]; %eliminate 1sec segments
-%         clear tmp start stop
-%         % Aversive
-%         start = behavior.speed.aversive(1,1);   stop = behavior.speed.aversive(end,1);
-%         movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
-%         %         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
-%         clear tmp start stop
-%         
+        %% Awake
+        disp('Uploading digital imputs')
+        % Load digitalin.mat
+        load('digitalin.mat')
+        
+        % Behavioral calculations
+        disp('Uploading DLC outputs')
+        camara = ((camara(:,2)-camara(:,1))/2)+camara(:,1);
+        % periods of movment during eacj condition
+        if rewardTS_run(1) < aversiveTS_run(1)
+            load('laps1.mat','posx','posy');
+            [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
+            behavior.pos.reward = [pos];
+            behavior.speed.reward = LinearVelocity(pos,0);
+            behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
+            behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
+            clear pos camaraR posx posy
+            load('laps2.mat','posx','posy');
+            [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
+            behavior.pos.aversive = [pos];
+            behavior.speed.aversive = LinearVelocity(pos,0);
+            behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
+            behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
+            clear pos camaraR
+        else
+            load('laps2.mat','posx','posy');
+            [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            %         [camaraR2,~] = find((camara(:,1)-rewardTS_run(2)/1000)<0,1,'last'); %TimeStamp of the ending of aversive
+            pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
+            behavior.pos.reward = [pos];
+            behavior.speed.reward = LinearVelocity(pos,0);
+            behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
+            behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
+            clear pos camaraR posx posy
+            load('laps1.mat','posx','posy');
+            [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int; %saving corrected pos
+            behavior.pos.aversive = [pos];
+            behavior.speed.aversive = LinearVelocity(pos,0);
+            behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
+            behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
+            clear pos camaraA posx posy
+        end
+        
+        % Generation of no-movements periods
+        % Reward
+        start = behavior.speed.reward(1,1);   stop = behavior.speed.reward(end,1);
+        movement.reward = InvertIntervals(behavior.quiet.reward , start , stop); %keep only those higher than criteria
+        %         movement.reward(movement.reward(:,2) - movement.reward(:,1) <1,:)=[]; %eliminate 1sec segments
+        clear tmp start stop
+        % Aversive
+        start = behavior.speed.aversive(1,1);   stop = behavior.speed.aversive(end,1);
+        movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
+        %         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
+        clear tmp start stop
+        
         %% load sleep states
         disp('Uploading sleep scoring')
         x = dir([cd,'\*-states.mat']);    states = load([cd,'\',x.name]);    states = states.states;
@@ -305,7 +299,7 @@ for tt = 1:length(path)
             disp('Loading Reward template')
             if isfile('dorsalventral_assemblies_reward.mat')
                 load('dorsalventral_assemblies_reward.mat')
-             end
+            end
             Thresholded.reward.all = Th;
             patterns.all.reward = pat;
             clear Th pat
@@ -365,148 +359,217 @@ for tt = 1:length(path)
                 clear indD indV
             end
             
-            %% Constructing Spiketrains
-            freq = 1/binSize;
-            limits = [0 segments.Var1(end)/1000];
-            spiketrains_dHPC.aversive = cell(1,sum(cond.both.aversive));
-            spiketrains_vHPC.aversive = cell(1,sum(cond.both.aversive));
-            for i = 1:sum(cond.both.aversive)
-                [Spikes , bins , Clusters] = spike_train_construction(spks_dHPC, clusters.members.aversive.dHPC{i}, cellulartype, binSize, limits, [], false, true);
-                spiketrains_dHPC.aversive{i} = Spikes;    
-                clear Spikes Clusters
-                
-                [Spikes , bins , Clusters] = spike_train_construction(spks_vHPC, clusters.members.aversive.vHPC{i}, cellulartype, binSize, limits, [], false, true);
-                spiketrains_vHPC.aversive{i} = Spikes;    
-                clear Spikes Clusters                
-            end
-            
-            spiketrains_dHPC.reward = cell(1,sum(cond.both.reward));
-            spiketrains_vHPC.reward = cell(1,sum(cond.both.reward));
-            for i = 1:sum(cond.both.reward)
-                [Spikes , bins , Clusters] = spike_train_construction(spks_dHPC, clusters.members.reward.dHPC{i}, cellulartype, binSize, limits, [], false, true);
-                spiketrains_dHPC.reward{i} = Spikes;    
-                clear Spikes Clusters
-                
-                [Spikes , bins , Clusters] = spike_train_construction(spks_vHPC, clusters.members.reward.vHPC{i}, cellulartype, binSize, limits, [], false, true);
-                spiketrains_vHPC.reward{i} = Spikes;    
-                clear Spikes Clusters                
-            end   
-            
-            %% Correlation calculation
-            if and(size(spiketrains_vHPC.pyr,2) >= criteria_n(1),size(spiketrains_dHPC.pyr,2) >= criteria_n(2))
-                %% Binning of sessions in 100 setps sleep sessions
-                % construction of time vector
-                s = [0 : win : segments.Var1(end)/1000]; clear dt 
-                % Restriction of time vector to conditions and NREM
-                segmentation = s(InIntervals(s,sort([NREM.all;aversiveTS_run./1000;rewardTS_run./1000])));
-                % creation of iterator
-                tmp = [];
-                for i = 2 : size(segmentation,2)-1
-                    tmp = [tmp , InIntervals(bins,[segmentation(i-1) segmentation(i+1)])];
+            if or (sum(cond.both.aversive)>0 , sum(cond.both.reward)>0)
+                %% Constructing Spiketrains
+                freq = 1/binSize;
+                limits = [0 segments.Var1(end)/1000];
+                spiketrains_dHPC.aversive = cell(1,sum(cond.both.aversive));
+                spiketrains_vHPC.aversive = cell(1,sum(cond.both.aversive));
+                for i = 1:sum(cond.both.aversive)
+                    [Spikes , bins , Clusters] = spike_train_construction(spks_dHPC, clusters.members.aversive.dHPC{i}, cellulartype, binSize, limits, [], false, true);
+                    spiketrains_dHPC.aversive{i} = Spikes;
+                    clear Spikes Clusters
+                    
+                    [Spikes , bins , Clusters] = spike_train_construction(spks_vHPC, clusters.members.aversive.vHPC{i}, cellulartype, binSize, limits, [], false, true);
+                    spiketrains_vHPC.aversive{i} = Spikes;
+                    clear Spikes Clusters
                 end
-                segmentation = logical(tmp);
-                clear tmp i
+                
+                spiketrains_dHPC.reward = cell(1,sum(cond.both.reward));
+                spiketrains_vHPC.reward = cell(1,sum(cond.both.reward));
+                for i = 1:sum(cond.both.reward)
+                    [Spikes , bins , Clusters] = spike_train_construction(spks_dHPC, clusters.members.reward.dHPC{i}, cellulartype, binSize, limits, [], false, true);
+                    spiketrains_dHPC.reward{i} = Spikes;
+                    clear Spikes Clusters
+                    
+                    [Spikes , bins , Clusters] = spike_train_construction(spks_vHPC, clusters.members.reward.vHPC{i}, cellulartype, binSize, limits, [], false, true);
+                    spiketrains_vHPC.reward{i} = Spikes;
+                    clear Spikes Clusters
+                end
+                
+                %% Correlation calculation
+                %             if and(size(spiketrains_vHPC.pyr,2) >= criteria_n(1),size(spiketrains_dHPC.pyr,2) >= criteria_n(2))
+                %                 %% Binning of sessions in 100 setps sleep sessions
+                %                 % construction of time vector
+                %                 s = [0 : win : segments.Var1(end)/1000]; clear dt
+                %                 % Restriction of time vector to conditions and NREM
+                %                 segmentation = s(InIntervals(s,sort([NREM.all;aversiveTS_run./1000;rewardTS_run./1000])));
+                %                 % creation of iterator
+                %                 tmp = [];
+                %                 for i = 2 : size(segmentation,2)-1
+                %                     tmp = [tmp , InIntervals(bins,[segmentation(i-1) segmentation(i+1)])];
+                %                 end
+                %                 segmentation = logical(tmp);
+                %                 clear tmp i
+                %
+                %                 % Aversive Joint assemblies
+                %                 correlations.aversive = cell(sum(cond.both.aversive),size(segmentation,2));
+                %                 matrix.aversive = cell(sum(cond.both.aversive),1);
+                %                 for ii = 1 : sum(cond.both.aversive)
+                %                     for i = 1 : size(segmentation,2)
+                %                         x = spiketrains_dHPC.aversive{ii}(segmentation(:,i),:);
+                %                         y = spiketrains_vHPC.aversive{ii}(segmentation(:,i),:);
+                %                         correlations.aversive{ii,i} = corr(x,y);
+                %                         clear x y
+                %                     end
+                %                     clear i
+                %
+                %                     for ind1 = 1 : size(segmentation,2)
+                %                         tmpC = [];
+                %                         for ind2 = 1 : size(segmentation,2)
+                %                             x = correlations.aversive{ii,ind1};
+                %                             y = correlations.aversive{ii,ind2};
+                %                             c = corrcoef(x,y,'rows','complete');
+                %                             tmpC = [tmpC c(1,2)];
+                %                             clear x y c
+                %                         end
+                %                         matrix.aversive{ii} = [matrix.aversive{ii} ; tmpC];
+                %                         clear tmpC
+                %                     end
+                %                 end
+                %
+                %
+                %
+                %                 % Reward Joint assemblies
+                %                 correlations.reward = cell(sum(cond.both.reward),size(segmentation,2));
+                %                 matrix.reward = cell(sum(cond.both.reward),1);
+                %                 for ii = 1 : sum(cond.both.reward)
+                %                     for i = 1 : size(segmentation,2)
+                %                         x = spiketrains_dHPC.reward{ii}(segmentation(:,i),:);
+                %                         y = spiketrains_vHPC.reward{ii}(segmentation(:,i),:);
+                %                         correlations.reward{ii,i} = corr(x,y);
+                %                         clear x y
+                %                     end
+                %                     clear i
+                %
+                %                     for ind1 = 1 : size(segmentation,2)
+                %                         tmpC = [];
+                %                         for ind2 = 1 : size(segmentation,2)
+                %                             x = correlations.reward{ii,ind1};
+                %                             y = correlations.reward{ii,ind2};
+                %                             c = corrcoef(x,y,'rows','complete');
+                %                             tmpC = [tmpC c(1,2)];
+                %                             clear x y c
+                %                         end
+                %                         matrix.reward{ii} = [matrix.reward{ii} ; tmpC];
+                %                         clear tmpC
+                %                     end
+                %                 end
+                % Definition of moments to analyze
+                if aversiveTS_run(1)<rewardTS_run(1)
+                    preA = InIntervals(bins,NREM.baseline);
+                    A = InIntervals(bins,movement.aversive);
+                    postA = InIntervals(bins,NREM.aversive);
+                    
+                    preR = InIntervals(bins,NREM.aversive);
+                    R = InIntervals(bins,movement.reward);
+                    postR = InIntervals(bins,NREM.reward);
+                else
+                    preA = InIntervals(bins,NREM.reward);
+                    A = InIntervals(bins,movement.aversive);
+                    postA = InIntervals(bins,NREM.aversive);
+                    
+                    preR = InIntervals(bins,NREM.baseline);
+                    R = InIntervals(bins,movement.reward);
+                    postR = InIntervals(bins,NREM.reward);
+                end
+                
                 
                 % Aversive Joint assemblies
-                correlations.aversive = cell(sum(cond.both.aversive),size(segmentation,2));
-                matrix.aversive = cell(sum(cond.both.aversive),1);
+                correlations.aversive = cell(sum(cond.both.aversive),3);
+                temp = cell(sum(cond.both.aversive),1);
                 for ii = 1 : sum(cond.both.aversive)
-                    for i = 1 : size(segmentation,2)
-                        x = spiketrains_dHPC.aversive{ii}(segmentation(:,i),:);
-                        y = spiketrains_vHPC.aversive{ii}(segmentation(:,i),:);
+                    for i = 1 : 3
+                        if i == 1
+                            x = spiketrains_dHPC.aversive{ii}(preA,:);
+                            y = spiketrains_vHPC.aversive{ii}(preA,:);
+                        elseif i == 2
+                            x = spiketrains_dHPC.aversive{ii}(A,:);
+                            y = spiketrains_vHPC.aversive{ii}(A,:);
+                        else
+                            x = spiketrains_dHPC.aversive{ii}(postA,:);
+                            y = spiketrains_vHPC.aversive{ii}(postA,:);
+                        end
                         correlations.aversive{ii,i} = corr(x,y);
                         clear x y
                     end
                     clear i
                     
-                    for ind1 = 1 : size(segmentation,2)
+                    for ind1 = 1 : 3
                         tmpC = [];
-                        for ind2 = 1 : size(segmentation,2)
+                        for ind2 = 1 : 3
                             x = correlations.aversive{ii,ind1};
                             y = correlations.aversive{ii,ind2};
                             c = corrcoef(x,y,'rows','complete');
-                            tmpC = [tmpC c(1,2)];
+                            if size(c,2)>1
+                                tmpC = [tmpC c(1,2)];
+                            else
+                                tmpC = [tmpC c];
+                            end
                             clear x y c
                         end
-                        matrix.aversive{ii} = [matrix.aversive{ii} ; tmpC];
+                        temp{ii} = [temp{ii} ; tmpC];
                         clear tmpC
                     end
                 end
-                
-    
+                matrix.aversive = [matrix.aversive ; temp]; clear temp
                 
                 % Reward Joint assemblies
-                correlations.reward = cell(sum(cond.both.reward),size(segmentation,2));
-                matrix.reward = cell(sum(cond.both.reward),1);
+                correlations.reward = cell(sum(cond.both.reward),3);
+                temp = cell(sum(cond.both.reward),1);
                 for ii = 1 : sum(cond.both.reward)
-                    for i = 1 : size(segmentation,2)
-                        x = spiketrains_dHPC.reward{ii}(segmentation(:,i),:);
-                        y = spiketrains_vHPC.reward{ii}(segmentation(:,i),:);
+                    for i = 1 : 3
+                        if i == 1
+                            x = spiketrains_dHPC.reward{ii}(preR,:);
+                            y = spiketrains_vHPC.reward{ii}(preR,:);
+                        elseif i == 2
+                            x = spiketrains_dHPC.reward{ii}(R,:);
+                            y = spiketrains_vHPC.reward{ii}(R,:);
+                        else
+                            x = spiketrains_dHPC.reward{ii}(postR,:);
+                            y = spiketrains_vHPC.reward{ii}(postR,:);
+                        end
                         correlations.reward{ii,i} = corr(x,y);
                         clear x y
                     end
                     clear i
                     
-                    for ind1 = 1 : size(segmentation,2)
+                    for ind1 = 1 : 3
                         tmpC = [];
-                        for ind2 = 1 : size(segmentation,2)
+                        for ind2 = 1 : 3
                             x = correlations.reward{ii,ind1};
                             y = correlations.reward{ii,ind2};
                             c = corrcoef(x,y,'rows','complete');
-                            tmpC = [tmpC c(1,2)];
+                            if size(c,2)>1
+                                tmpC = [tmpC c(1,2)];
+                            else
+                                tmpC = [tmpC c];
+                            end
                             clear x y c
                         end
-                        matrix.reward{ii} = [matrix.reward{ii} ; tmpC];
+                        temp{ii} = [temp{ii} ; tmpC];
                         clear tmpC
                     end
-                end                
-                
-                
-                
-                
-                
-                
-                
-                % Normalization of the graphs
-                if aversiveTS_run(2) > rewardTS_run(2)
-                    index = [baselineTS ; rewardTS_run ; rewardTS ; aversiveTS_run ; aversiveTS] ./ 1000;
-                else
-                    index = [baselineTS ; aversiveTS_run ; aversiveTS ; rewardTS_run ; rewardTS] ./ 1000;
                 end
-                
-                tmp = (index(:,2) - index(:,1));
-                tmp(1) = tmp(1)/40;
-                tmp(2) = tmp(2)/4;
-                tmp(3) = tmp(3)/40;
-                tmp(4) = tmp(4)/4;
-                tmp(5) = tmp(5)/40;
-                index = [index(:,1) , tmp , index(:,2)]; clear tmp
-                
-                time = [];
-                for i = 1 : size(index,1)
-                    time = [time , index(i,1) : index(i,2) : index(i,3)-index(i,2)];
-                end
-                
-                tmp = [];
-                for i = 1 : size(time,2)-1
-                    ii = InIntervals(segmentation,[time(i) time(i+1)]);
-                    iii = mean(mean_cross_aversive(ii));
-                    iiii =  mean(mean_cross_reward(ii));
-                    ii = [iii ; iiii];
-                    tmp = [tmp , ii]; clear ii iii iiii
-                end
-                clear mean_cross_aversive mean_cross_reward i time index
-                
-                if aversiveTS_run(1)<rewardTS_run(1)
-                    output.aversive.first.aversive = [output.aversive.first.aversive ; tmp(1,:)];
-                    output.aversive.first.reward = [output.aversive.first.reward ; tmp(2,:)];
-                else
-                    output.aversive.second.aversive = [output.aversive.second.aversive ; tmp(1,:)];
-                    output.aversive.second.reward = [output.aversive.second.reward ; tmp(2,:)];
-                end
-                
-                
-                
+                matrix.reward = [matrix.reward ; temp]; clear temp
             end
+            clear NREM aversiveTS aversiveTS_run rewardTS rewardTS_run behavior
+            clear bins Cell_type_classification cellulartype clusters
+            clear group_dHPC group_vHPC i ii ind1 ind2 K Kinfo movement
+            clear numberD numberV patterns postA postR preA preR A R
+            clear segments spks spks_dHPC spks_vHPC spiketrains_dHPC spiketrains_vHPC
+            clear Thresholded WAKE REM correlations cond baselineTS ans
         end
     end
+end
+
+tmp = zeros(3,3);
+t = [];
+for i =1:size(matrix.reward,1)
+    if not(isnan( matrix.reward{i}))
+    tmp = tmp + matrix.reward{i};
+    end
+    t = [t ; matrix.reward{i}(1,2) matrix.reward{i}(3,2)];
+end
+
+tmp./size(matrix.reward,1)

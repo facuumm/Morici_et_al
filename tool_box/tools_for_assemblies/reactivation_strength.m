@@ -1,4 +1,4 @@
-function [R] = reactivation_strength(patterns , cond , SpikeTrain , Is , th , type , config , normalization)
+function [R] = reactivation_strength(patterns , cond , SpikeTrain , Is , th , type , config , normalization, templates)
 % This function calculate Reactivation Strength (van de Ven et al (2016)).
 % Find the peaks of the zscored assemblies strength and calculate the mean
 % during Pre sleep and Post sleep. Then, it calculates Post-Pre.
@@ -48,6 +48,9 @@ function [R] = reactivation_strength(patterns , cond , SpikeTrain , Is , th , ty
 % normalization: int, if is 1 then (mean(Post) - mean(Pre))/mean(Post+Pre)
 %                     if is 0 then (mean(Post) - mean(Pre))
 %
+% templates: 2-columns matrix, first column for dHPC and second for vHPC.
+%            for more details see assembly_activity_only_joint
+%
 % --- OUTPUT ---
 % R: column vector storing all the Reactivation Strength values for sleep
 %    and awake periods.
@@ -76,8 +79,11 @@ dt = bins(2)-bins(1); % delta time
 spks = SpikeTrain(:,2:end);
 prc = 50; % percentile to check if the Strenght is higher 
 iterations = 1; % iterations to create the surrogated distribution
-
-a = assembly_activity(patterns(:,cond) , spks');
+if not(isempty(templates))
+    a = assembly_activity_only_joint(patterns(:,cond) , spks',templates(:,1),templates(:,2));
+else
+    a = assembly_activity(patterns(:,cond) , spks');
+end
 a = zscore(a,1,2);
 R = [];
 

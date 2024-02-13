@@ -10,7 +10,7 @@ time_criteria = 1; % minimal time to include a NREM epoch (in min)
 
 % for SU
 criteria_fr = 0; %criteria to include or not a SU into the analysis
-criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
+criteria_n = [6 6]; % minimal number of neurons from each structure [vHPC dHPC]
 criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
 binSize = 0.05;
 n_SU_V = 0;
@@ -20,13 +20,8 @@ n_SU_D = 0;
 minimal_speed = 7; % minimal speed to detect quite periods
 minimal_speed_time = 2; % minimal time to detect quite periods
 
-% for EV analysis
-binning = 100; %segments I will split each sleep session
-
-
-EV.aversive.reward.dvHPC = [];   EV.reward.aversive.dvHPC = [];
 EV.aversive.dvHPCi = [];   EV.reward.dvHPCi = [];
-
+EV.aversive.dvHPC = [];   EV.reward.dvHPC = [];
 
 FiringRate.dHPC.baseline = [];
 FiringRate.dHPC.reward = [];
@@ -166,7 +161,7 @@ for tt = 1:length(path)
         REM.all = ToIntervals(states==5);    NREM.all = ToIntervals(states==3);    WAKE.all = ToIntervals(states==1);
         clear x states
         
-        NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
+%         NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
         NREM.baseline = Restrict(NREM.all,baselineTS./1000);
         NREM.aversive = Restrict(NREM.all,aversiveTS./1000);
         NREM.reward = Restrict(NREM.all,rewardTS./1000);    
@@ -207,15 +202,15 @@ for tt = 1:length(path)
         if criteria_type == 0 %pyr
             cellulartype = [K(:,1) , K(:,4)];
         elseif criteria_type == 1 % int
-            cellulartype = [K(:,1) , K(:,4)];
+            cellulartype = [K(:,1) , not(K(:,4))];
         elseif criteria_type == 2 % all
-            cellulartype = [K(:,1) , ones(length(K),1)];
+            cellulartype = [K(:,1) , ones(size(K,1),1)];
         end
         % Definition of the emotional transition
         if aversiveTS_run(1)<rewardTS_run(1)
-            cond = 1; % 1 if the order was Aversive -> Reward
+            config = 1; % 1 if the order was Aversive -> Reward
         else
-            cond = 2;% 1 if the order was Reward -> Aversive
+            config = 2;% 1 if the order was Reward -> Aversive
         end
         
         %% Constructing Spiketrains
@@ -282,66 +277,27 @@ for tt = 1:length(path)
         if and(size(spiketrains_vHPC.pyr,2) >= criteria_n(1),size(spiketrains_dHPC.pyr,2) >= criteria_n(2))
             disp('Lets go for the SUs')
             %Restricting bins inside each condition
-            tmp = Restrict(NREM.baseline,[NREM.baseline(end,2)-1800 , NREM.baseline(end,2)]);
-            is.baseline.sws2 = InIntervals(bins,tmp); clear tmp
+            is.baseline.sws = InIntervals(bins,NREM.baseline);
+            is.reward.sws = InIntervals(bins,NREM.reward);
+            is.aversive.sws = InIntervals(bins,NREM.aversive);
             
-            tmp = Restrict(NREM.reward,[NREM.reward(1,1) , NREM.reward(1,1)+1800]);
-            is.reward.sws1 = InIntervals(bins,tmp);  clear tmp
+            is.baseline.sws = InIntervals(bins,REM.baseline);
+            is.aversive.sws = InIntervals(bins,REM.aversive);
+            is.reward.sws = InIntervals(bins,REM.reward);
             
-            tmp = Restrict(NREM.reward,[NREM.reward(end,2)-1800 , NREM.reward(end,2)]);
-            is.reward.sws2 = InIntervals(bins,tmp);  clear tmp
+            is.aversive.run = InIntervals(bins,movement.aversive);
+            is.reward.run = InIntervals(bins,movement.reward);
             
-            tmp = Restrict(NREM.aversive,[NREM.aversive(1,1) , NREM.aversive(1,1)+1800]);
-            is.aversive.sws1 = InIntervals(bins,tmp);  clear tmp
-            
-            tmp = Restrict(NREM.aversive,[NREM.aversive(end,2)-1800 , NREM.aversive(end,2)]);
-            is.aversive.sws2 = InIntervals(bins,tmp);  clear tmp
-            
-            is.baseline.rem = InIntervals(bins,REM.baseline);
-            is.aversive.rem = InIntervals(bins,REM.aversive);
-            is.reward.rem = InIntervals(bins,REM.reward);
-            
-%             is.aversive.run = InIntervals(bins,movement.aversive);
-%             is.reward.run = InIntervals(bins,movement.reward);
-            
-            is.aversive.run = InIntervals(bins,aversiveTS_run./1000);
-            is.reward.run = InIntervals(bins,rewardTS_run./1000);
-            
-            
-            %% Binning of sessions in 100 setps sleep sessions
-            dt = ((baselineTS(2)-baselineTS(1))/1000)/binning;
-            baseline.bins = [baselineTS(1)/1000 : dt :baselineTS(2)/1000]; clear dt
-            tmp = [];
-            for i = 1 : size( baseline.bins,2)-1
-                tmp = [tmp , InIntervals(bins,[baseline.bins(i) baseline.bins(i)+1])];
-            end
-            baseline.bins = logical(tmp); clear tmp i
-            
-            dt = ((rewardTS(2)-rewardTS(1))/1000)/binning;
-            reward.bins = [rewardTS(1)/1000 : dt :rewardTS(2)/1000]; clear dt
-            tmp = [];
-            for i = 1 : size( reward.bins,2)-1
-                tmp = [tmp , InIntervals(bins,[reward.bins(i) reward.bins(i)+1])];
-            end
-            reward.bins = logical(tmp); clear tmp i
-            
-            
-            dt = ((aversiveTS(2)-aversiveTS(1))/1000)/binning;
-            aversive.bins = [aversiveTS(1)/1000 : dt :aversiveTS(2)/1000]; clear dt
-            tmp = [];
-            for i = 1 : size( aversive.bins,2)-1
-                tmp = [tmp , InIntervals(bins,[aversive.bins(i) aversive.bins(i)+1])];
-            end
-            aversive.bins = logical(tmp); clear tmp i          
-            
-            
+%             is.aversive.run = InIntervals(bins,aversiveTS_run./1000);
+%             is.reward.run = InIntervals(bins,rewardTS_run./1000);
+
             %%
             if and(and(~isempty(NREM.aversive),~isempty(NREM.reward)),~isempty(NREM.baseline))
                 if aversiveTS_run(1)>rewardTS_run(1)
                     %% Reward
                     % Correlation Matrix Calculation
-                    x = [spiketrains_dHPC.pyr(is.baseline.sws2,:)];
-                    y = [spiketrains_vHPC.pyr(is.baseline.sws2,:)];      
+                    x = [spiketrains_dHPC.pyr(is.baseline.sws,:)];
+                    y = [spiketrains_vHPC.pyr(is.baseline.sws,:)];      
                     [S1 , p] = corr(x,y);
 %                     S1 = S1 - diag(diag(S1));
                     clear x y p
@@ -352,8 +308,8 @@ for tt = 1:length(path)
 %                     S2 = S2 - diag(diag(S2));
                     clear x y p
                     
-                    x = [spiketrains_dHPC.pyr(is.reward.sws1,:)];
-                    y = [spiketrains_vHPC.pyr(is.reward.sws1,:)];
+                    x = [spiketrains_dHPC.pyr(is.reward.sws,:)];
+                    y = [spiketrains_vHPC.pyr(is.reward.sws,:)];
                     [S3 , p] = corr(x,y);
 %                     S3 = S3 - diag(diag(S3));
                     clear x y p
@@ -363,19 +319,18 @@ for tt = 1:length(path)
                     Sy = corrcoef(S2,S1,'rows','complete');     Sy = Sy(1,2);
                     Sz = corrcoef(S3,S1,'rows','complete');     Sz = Sz(1,2);
                     
-                    ev1 = (Sx-Sy*Sz);
-                    ev1 = (ev1/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
+                    ev = (Sx-Sy*Sz);
+                    ev = (ev/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
                     
-                    rev1 = (Sy-Sx*Sz);
-                    rev1 = (rev1/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
+                    rev = (Sy-Sx*Sz);
+                    rev = (rev/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
                     
-                    
-%                     EV.reward.dvHPC = [EV.reward.dvHPC ; rev*100 , ev*100];
+                    EV.reward.dvHPC = [EV.reward.dvHPC ; rev*100 , ev*100 tt t config];
                     clear Sx Sy Sz ev rev
                                         
                     %% Aversive
-                    x = [spiketrains_dHPC.pyr(is.reward.sws2,:)];
-                    y = [spiketrains_vHPC.pyr(is.reward.sws2,:)];
+                    x = [spiketrains_dHPC.pyr(is.reward.sws,:)];
+                    y = [spiketrains_vHPC.pyr(is.reward.sws,:)];
                     [S3 , p] = corr(x,y);
 %                     S3 = S3 - diag(diag(S3));
                     clear x y p
@@ -387,8 +342,8 @@ for tt = 1:length(path)
 %                     S4 = S4 - diag(diag(S4));
                     clear x y p
                     
-                    x = [spiketrains_dHPC.pyr(is.aversive.sws1,:)];
-                    y = [spiketrains_vHPC.pyr(is.aversive.sws1,:)];
+                    x = [spiketrains_dHPC.pyr(is.aversive.sws,:)];
+                    y = [spiketrains_vHPC.pyr(is.aversive.sws,:)];
                     [S5 , p] = corr(x,y);
 %                     S5 = S5 - diag(diag(S5));
                     clear x y p
@@ -398,16 +353,16 @@ for tt = 1:length(path)
                     Sy = corrcoef(S4,S3,'rows','complete');     Sy = Sy(1,2);
                     Sz = corrcoef(S5,S3,'rows','complete');     Sz = Sz(1,2);
                     
-                    ev2 = (Sx-Sy*Sz);
-                    ev2 = (ev2/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
+                    ev = (Sx-Sy*Sz);
+                    ev = (ev/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
                     
-                    rev2 = (Sy-Sx*Sz);
-                    rev2 = (rev2/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
+                    rev = (Sy-Sx*Sz);
+                    rev = (rev/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
                     
-%                     EV.aversive.dvHPC = [EV.aversive.dvHPC ; rev*100 , ev*100];
+                    EV.aversive.dvHPC = [EV.aversive.dvHPC ; rev*100 , ev*100 tt t config];
                     clear Sx Sy Sz ev rev
                     
-                    EV.reward.aversive.dvHPC = [EV.reward.aversive.dvHPC ; rev1 ev1 rev2 ev2];
+%                     EV.reward.aversive.dvHPC = [EV.reward.aversive.dvHPC ; rev1 ev1 rev2 ev2];
                     clear rev1 ev1 rev2 ev2
                     %% Reward in Aversive
                     Sx = corrcoef(S2,S5,'rows','complete');     Sx = Sx(1,2);
@@ -420,14 +375,14 @@ for tt = 1:length(path)
                     rev = (Sy-Sx*Sz);
                     rev = (rev/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
                     
-                    EV.reward.dvHPCi = [EV.reward.dvHPCi ; rev*100 , ev*100];
+                    EV.reward.dvHPCi = [EV.reward.dvHPCi ; rev*100 , ev*100 tt t config];
                     clear Sx Sy Sz ev rev S1 S2 S3 S4 S5                     
                     
                 else
                     %% Aversive
                     % Correlation Matrix Calculation
-                    x = [spiketrains_dHPC.pyr(is.baseline.sws2,:)];
-                    y = [spiketrains_vHPC.pyr(is.baseline.sws2,:)];
+                    x = [spiketrains_dHPC.pyr(is.baseline.sws,:)];
+                    y = [spiketrains_vHPC.pyr(is.baseline.sws,:)];
                     [S1 , p] = corr(x,y);
 %                     S1 = S1 - diag(diag(S1));
                     clear x y p
@@ -438,8 +393,8 @@ for tt = 1:length(path)
 %                     S2 = S2 - diag(diag(S2));
                     clear x y p
                     
-                    x = [spiketrains_dHPC.pyr(is.aversive.sws1,:)];
-                    y = [spiketrains_vHPC.pyr(is.aversive.sws1,:)];
+                    x = [spiketrains_dHPC.pyr(is.aversive.sws,:)];
+                    y = [spiketrains_vHPC.pyr(is.aversive.sws,:)];
                     [S3 , p] = corr(x,y);
 %                     S3 = S3 - diag(diag(S3));
                     clear x y p
@@ -449,18 +404,18 @@ for tt = 1:length(path)
                     Sy = corrcoef(S2,S1,'rows','complete');     Sy = Sy(1,2);
                     Sz = corrcoef(S3,S1,'rows','complete');     Sz = Sz(1,2);
                     
-                    ev1 = (Sx-Sy*Sz);
-                    ev1 = (ev1/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
+                    ev = (Sx-Sy*Sz);
+                    ev = (ev/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
                     
-                    rev1 = (Sy-Sx*Sz);
-                    rev1 = (rev1/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
+                    rev = (Sy-Sx*Sz);
+                    rev = (rev/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
                     
-%                     EV.aversive.dvHPC = [EV.aversive.dvHPC ; rev*100 , ev*100];
+                    EV.aversive.dvHPC = [EV.aversive.dvHPC ; rev*100 , ev*100 tt t config];
                     clear Sx Sy Sz ev rev
                     
                     %% Reward
-                    x = [spiketrains_dHPC.pyr(is.aversive.sws2,:)];
-                    y = [spiketrains_vHPC.pyr(is.aversive.sws2,:)];
+                    x = [spiketrains_dHPC.pyr(is.aversive.sws,:)];
+                    y = [spiketrains_vHPC.pyr(is.aversive.sws,:)];
                     [S3 , p] = corr(x,y);
 %                     S3 = S3 - diag(diag(S3));
                     clear x y p
@@ -472,8 +427,8 @@ for tt = 1:length(path)
 %                     S4 = S4 - diag(diag(S4));
                     clear x y p
                     
-                    x = [spiketrains_dHPC.pyr(is.reward.sws1,:)];
-                    y = [spiketrains_vHPC.pyr(is.reward.sws1,:)];
+                    x = [spiketrains_dHPC.pyr(is.reward.sws,:)];
+                    y = [spiketrains_vHPC.pyr(is.reward.sws,:)];
                     [S5 , p] = corr(x,y);
 %                     S5 = S5 - diag(diag(S5));
                     clear x y p
@@ -483,17 +438,17 @@ for tt = 1:length(path)
                     Sy = corrcoef(S4,S3,'rows','complete');     Sy = Sy(1,2);
                     Sz = corrcoef(S5,S3,'rows','complete');     Sz = Sz(1,2);
                     
-                    ev2 = (Sx-Sy*Sz);
-                    ev2 = (ev2/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
+                    ev = (Sx-Sy*Sz);
+                    ev = (ev/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
                     
-                    rev2 = (Sy-Sx*Sz);
-                    rev2 = (rev2/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
+                    rev = (Sy-Sx*Sz);
+                    rev = (rev/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
                     
-%                     EV.reward.dvHPC = [EV.reward.dvHPC ; rev*100 , ev*100];
+                    EV.reward.dvHPC = [EV.reward.dvHPC ; rev*100 , ev*100 tt t config];
                     clear Sx Sy Sz ev rev
                     
-                    EV.aversive.reward.dvHPC = [EV.aversive.reward.dvHPC ; rev1 ev1 rev2 ev2];
-                    clear rev1 ev1 rev2 ev2
+%                     EV.aversive.reward.dvHPC = [EV.aversive.reward.dvHPC ; rev1 ev1 rev2 ev2];
+%                     clear rev1 ev1 rev2 ev2
                     
                     %% Aversive in Reward
                     Sx = corrcoef(S2,S5,'rows','complete');     Sx = Sx(1,2);
@@ -506,7 +461,7 @@ for tt = 1:length(path)
                     rev = (Sy-Sx*Sz);
                     rev = (rev/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
                     
-                    EV.aversive.dvHPCi = [EV.aversive.dvHPCi ; rev*100 , ev*100];
+                    EV.aversive.dvHPCi = [EV.aversive.dvHPCi ; rev*100 , ev*100 tt t config];
                     clear Sx Sy Sz ev rev S1 S2 S3 S4 S5                     
 
                 end
@@ -523,14 +478,26 @@ for tt = 1:length(path)
     end
 end
 
-boxplot(EV.aversive.reward.dvHPC(:,3:4))
 
 figure
-subplot(1,4,1),boxplot([EV.reward.dvHPC(:,1) , EV.reward.dvHPC(:,2)]) , ylim([0 10]), [h p] =ranksum(EV.reward.dvHPC(:,1) , EV.reward.dvHPC(:,2),'tail','left')
-subplot(1,4,2),boxplot([EV.aversive.dvHPC(:,1) , EV.aversive.dvHPC(:,2)]) , ylim([0 10]), [h p] =ranksum(EV.aversive.dvHPC(:,1) , EV.aversive.dvHPC(:,2),'tail','left')
-subplot(1,4,3),boxplot([EV.reward.dvHPCi(:,1) , EV.reward.dvHPCi(:,2)]) , ylim([0 10]), [h p] =ranksum(EV.reward.dvHPCi(:,1) , EV.reward.dvHPCi(:,2),'tail','left')
-subplot(1,4,4),boxplot([EV.aversive.dvHPCi(:,1) , EV.aversive.dvHPCi(:,2)]) , ylim([0 5]), [h p] =ranksum(EV.aversive.dvHPCi(:,1) , EV.aversive.dvHPCi(:,2),'tail','left')
+subplot(1,2,1),boxplot([EV.reward.dvHPC(:,1) , EV.reward.dvHPC(:,2)]) , ylim([0 4]), [h p] =ranksum(EV.reward.dvHPC(:,1) , EV.reward.dvHPC(:,2),'tail','left')
+subplot(1,2,2),boxplot([EV.aversive.dvHPC(:,1) , EV.aversive.dvHPC(:,2)]) , ylim([0 4]), [h p] =ranksum(EV.aversive.dvHPC(:,1) , EV.aversive.dvHPC(:,2),'tail','left')
+% subplot(1,4,3),boxplot([EV.reward.dvHPCi(:,1) , EV.reward.dvHPCi(:,2)]) , ylim([0 3]), [h p] =ranksum(EV.reward.dvHPCi(:,1) , EV.reward.dvHPCi(:,2),'tail','left')
+% subplot(1,4,4),boxplot([EV.aversive.dvHPCi(:,1) , EV.aversive.dvHPCi(:,2)]) , ylim([0 3]), [h p] =ranksum(EV.aversive.dvHPCi(:,1) , EV.aversive.dvHPCi(:,2),'tail','left')
 
+% figure
+% subplot(1,2,1),scatter([ones(length(EV.reward.dvHPC(:,1)),1) ; ones(length(EV.reward.dvHPC(:,2)),1)*2],[EV.reward.dvHPC(:,1) ; EV.reward.dvHPC(:,2)],"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+% scatter([1 2] , [nanmean(EV.reward.dvHPC(:,1)) nanmean(EV.reward.dvHPC(:,2))],'filled')
+% subplot(1,2,2),scatter([ones(length(EV.aversive.dvHPC(:,1)),1) ; ones(length(EV.aversive.dvHPC(:,2)),1)*2],[EV.aversive.dvHPC(:,1) ; EV.aversive.dvHPC(:,2)],"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+% scatter([1 2] , [nanmean(EV.aversive.dvHPC(:,1)) nanmean(EV.aversive.dvHPC(:,2))],'filled')
+
+
+x = [EV.reward.dvHPC(:,1) ; EV.reward.dvHPC(:,2) ; EV.aversive.dvHPC(:,1) ; EV.aversive.dvHPC(:,2)];
+y = [ones(length([EV.reward.dvHPC(:,1) ; EV.reward.dvHPC(:,2)]),1) ; ones(length([EV.aversive.dvHPC(:,1) ; EV.aversive.dvHPC(:,2)]),1)*2];
+y = [y , [ones(length(EV.reward.dvHPC(:,1)),1) ; ones(length(EV.reward.dvHPC(:,2)),1)*2 ; ones(length(EV.aversive.dvHPC(:,1)),1) ; ones(length(EV.aversive.dvHPC(:,2)),1)*2]]
+
+[~,~,stats] = anovan(x,y,'model','interaction','varnames',{'condition','tipo'})
+[results,~,~,gnames] = multcompare(stats,"Dimension",[1 2]);
 
 x = [EV.reward.dvHPC(:,1) ; EV.reward.dvHPC(:,2) ; EV.aversive.dvHPC(:,1) ; EV.aversive.dvHPC(:,2)];
 y = {'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV'};
