@@ -12,45 +12,32 @@ time_criteria = 600; %time criteria to define the maximal time of sleep to inclu
 q = 0.25; %quantile to restrict above it ripples according to their peak amplitude
 ripples_coordinated_percentage = []; %for storing percentage of coordnated events across conditions
 ripples_coordinated_numbers = []; %for storing the number of cooridnated events all conditions pooled
-rateV = []; rateD = []; % rate
-rateVB = []; rateDB = []; % rate baseline
-rateVR = []; rateDR = []; % rate reward
-rateVA = []; rateDA = []; % rate aversive
+rate.V.all = []; rate.D.all = []; % rate
+rate.V.B = []; rate.D.B = []; % rate baseline
+rate.V.R = []; rate.D.R = []; % rate reward
+rate.V.A = []; rate.D.A = []; % rate aversive
 
-deltaB = []; deltaR = []; deltaA = []; %to store all the time delta beween dorsal-ventral ripples
-% for SU
-criteria_fr = 0; %criteria to include or not a SU into the analysis
-criteria_n = 3; % minimal number of neurons from each structure
-pval = 0.001/2; % p value to define if SU are ripple modulated
-ss = 2; %smooth level of CCG
-n_SU_V = 0;
-n_SU_D = 0;
-FR_B_V = []; FR_R_V = [];  FR_A_V = []; % Firing Rate during NREM
-FR_B_D = []; FR_R_D = [];  FR_A_D = []; % Firing Rate during NREM
-poisson_dHPC_split = []; poisson_vHPC_split = []; %poisson results split by conditions
+IRI.D.all = []; IRI.D.B = []; IRI.D.R = []; IRI.D.A = [];
+IRI.V.all = []; IRI.V.B = []; IRI.V.R = []; IRI.V.A = [];
 
+% for ripples in general
+BurstIndex.D.B = []; BurstIndex.D.R = []; BurstIndex.D.A = [];
+BurstIndex.V.B = []; BurstIndex.V.R = []; BurstIndex.V.A = [];
 
-dRipples = []; dRipplesB = []; dRipplesR = []; dRipplesA = [];
-dIRI = []; dIRIB = []; dIRIR = []; dIRIA = [];
-
-dBurstIndexB = []; dBurstIndexR = []; dBurstIndexA = [];
-vBurstIndexB = []; vBurstIndexR = []; vBurstIndexA = [];
+%for cooridnated and uncooridnated events
+BurstIndex.D.cooridnated.B = []; BurstIndex.cooridnated.D.R = []; BurstIndex.cooridnated.D.A = [];
+BurstIndex.V.cooridnated.B = []; BurstIndex.cooridnated.V.R = []; BurstIndex.cooridnated.V.A = [];
+BurstIndex.D.uncooridnated.B = []; BurstIndex.uncooridnated.D.R = []; BurstIndex.uncooridnated.D.A = [];
+BurstIndex.V.uncooridnated.B = []; BurstIndex.uncooridnated.V.R = []; BurstIndex.uncooridnated.V.A = [];
+BurstIndex.D.cooridnated.all = []; BurstIndex.V.cooridnated.all = [];
+BurstIndex.D.uncooridnated.all = []; BurstIndex.V.uncooridnated.all = [];
 
 
-vRipples = []; vRipplesB = []; vRipplesR = []; vRipplesA = [];
-vIRI = []; vIRIB = []; vIRIR = []; vIRIA = [];
+durations.D.all = []; durations.D.B = []; durations.D.R = []; durations.D.A = [];
+durations.V.all = []; durations.V.B = []; durations.V.R = []; durations.V.A = [];
 
-vRipples_coordinatedB = []; vRipples_coordinatedR = []; vRipples_coordinatedA = [];
-dRipples_coordinatedB = []; dRipples_coordinatedR = []; dRipples_coordinatedA = [];
-
-vRipples_uncoordinatedB = []; vRipples_uncoordinatedR = []; vRipples_uncoordinatedA = [];
-dRipples_uncoordinatedB = []; dRipples_uncoordinatedR = []; dRipples_uncoordinatedA = [];
-
-durationsD = []; durationsDB = []; durationsDR = []; durationsDA = [];
-durationsV = []; durationsVB = []; durationsVR = []; durationsVA = [];
-
-amplitudeD = []; amplitudeDB = []; amplitudeDR = []; amplitudeDA = [];
-amplitudeV = []; amplitudeVB = []; amplitudeVR = []; amplitudeVA = [];
+amplitude.D.all = []; amplitude.D.B = []; amplitude.D.R = []; amplitude.D.A = [];
+amplitude.V.all = []; amplitude.V.B = []; amplitude.V.R = []; amplitude.V.A = [];
 
 coordinatedD_IRI_B = []; coordinatedD_IRI_R = []; coordinatedD_IRI_A = [];
 coordinatedV_IRI_B = []; coordinatedV_IRI_R = []; coordinatedV_IRI_A = [];
@@ -60,30 +47,9 @@ dRipples_uncoordinated_single = []; vRipples_uncoordinated_single = [];
 dRipples_coordinated_single_ds = [];   vRipples_coordinated_single_ds = [];
 dRipples_uncoordinated_single_ds = []; vRipples_uncoordinated_single_ds = [];
 
-dRipples_coordinated_single_cross_with_all = []; vRipples_coordinated_single_cross_with_all = [];
-dRipples_uncoordinated_single_cross_with_all = []; vRipples_uncoordinated_single_cross_with_all = [];
-
-%coordinated against uncoordinated
-dRipples_coordinated_single_cross_with_uncoordinated = [];
-vRipples_coordinated_single_cross_with_uncoordinated = [];
-
-%Storage of BUrst Index as we discuss with GG
-Burst_Index_cooridnated_vRipples = []; Burst_Index_cooridnated_dRipples = [];
-Burst_Index_uncooridnated_vRipples = []; Burst_Index_uncooridnated_dRipples = [];
-
-Burst_Index_cooridnatedB_vRipples = []; Burst_Index_cooridnatedB_dRipples = [];
-Burst_Index_cooridnatedR_vRipples = []; Burst_Index_cooridnatedR_dRipples = [];
-Burst_Index_cooridnatedA_vRipples = []; Burst_Index_cooridnatedA_dRipples = [];
-
-Burst_Index_uncooridnatedB_vRipples = []; Burst_Index_uncooridnatedB_dRipples = [];
-Burst_Index_uncooridnatedR_vRipples = []; Burst_Index_uncooridnatedR_dRipples = [];
-Burst_Index_uncooridnatedA_vRipples = []; Burst_Index_uncooridnatedA_dRipples = [];
-
-Burst_Index_allB_vRipples = []; Burst_Index_allB_dRipples = [];
-Burst_Index_allR_vRipples = []; Burst_Index_allR_dRipples = [];
-Burst_Index_allA_vRipples = []; Burst_Index_allA_dRipples = [];
-
-
+Auto.dRipples.all = [] ; Auto.dRipples.aversive = [] ; Auto.dRipples.reward = [] ; Auto.dRipples.baseline = [] ; 
+Auto.vRipples.all = [] ; Auto.vRipples.aversive = [] ; Auto.vRipples.reward = [] ; Auto.vRipples.baseline = [] ; 
+Auto.coordinated.dRippes = []; Auto.coordinated.vRippes = []; Auto.uncoordinated.dRippes = []; Auto.uncoordinated.vRippes = [];
 
 %% Main tloop to iterate across sessions
 for tt = 1:length(path)
@@ -95,9 +61,11 @@ for tt = 1:length(path)
     subFolders = files(dirFlags);
     clear files dirFlags
     for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
         
+        disp('Uploading session time stamps')
         %Loading TS of the sessions
         x = dir([cd,'\*.cat.evt']);
         segments = readtable([cd,'\',x.name],'FileType','text');
@@ -138,249 +106,269 @@ for tt = 1:length(path)
         clear y
         
         %% Sleep
+        disp('Uploading sleep scoring')
         x = dir([cd,'\*-states.mat']);    states = load([cd,'\',x.name]);    states = states.states;
         
-        REM = ToIntervals(states==5);    NREM = ToIntervals(states==3);    WAKE = ToIntervals(states==1);
+        REM.all = ToIntervals(states==5);    NREM.all = ToIntervals(states==3);    WAKE.all = ToIntervals(states==1);
         clear x states
         
         %keep only WAKE in HomeCage
         %         WAKE = Restrict(WAKE, [aversiveTS ; rewardTS ; baselineTS] ./1000);
         
         % NREM events restriction according conditions
-        NREM_B = NREM(NREM(:,2)<baselineTS(1,2)/1000,:);
-        NREM_A = NREM(NREM(:,2)>aversiveTS(1,1)/1000 & NREM(:,2)<aversiveTS(1,2)/1000,:);
-        NREM_R = NREM(NREM(:,2)>rewardTS(1,1)/1000 & NREM(:,2)<rewardTS(1,2)/1000,:);
-        
-        
+        NREM.B = Restrict(NREM.all,baselineTS./1000);
+        NREM.R = Restrict(NREM.all,rewardTS./1000);
+        NREM.A = Restrict(NREM.all,aversiveTS./1000);
         % REM events restriction according conditions
-        REM_B = REM(REM(:,2)<baselineTS(1,2)/1000,:);
-        REM_A = REM(REM(:,2)>aversiveTS(1,1)/1000 & REM(:,2)<aversiveTS(1,2)/1000,:);
-        REM_R = REM(REM(:,2)>rewardTS(1,1)/1000 & REM(:,2)<rewardTS(1,2)/1000,:);
-        %         load('detected_ripples.mat')
+        REM.B = Restrict(REM.all,baselineTS./1000);
+        REM.R = Restrict(REM.all,rewardTS./1000);
+        REM.A = Restrict(REM.all,aversiveTS./1000);
         
         %% Upload ripples
         if isfile('ripplesD_customized2.csv')
+            disp('Uploading dRipples')
             ripplesD = table2array(readtable('ripplesD_customized2.csv'));
             D = true;
         else
+            disp('No data related to dRipples')
             D = false;
         end
         
         if isfile('ripplesV_customized2.csv')
+            disp('Uploading vRipples')
             ripplesV = table2array(readtable('ripplesV_customized2.csv'));
             V = true;
         else
+            disp('No data related to vRipples')
             V = false;
         end
         
-        %% dRipples
-        if D
-            rateD = [rateD ; length(ripplesD)/sum(NREM(:,2)-NREM(:,1))];
-            durationsD = [durationsD ; ripplesD(:,3)-ripplesD(:,1)];
-            dRipples = [dRipples ; ripplesD]; %pool of dRipples
-            amplitudeD = [amplitudeD ; ripplesD(:,4)];
+        %% ---- dRipples ----
+        if D 
+            disp('Lets analyze dRipples')
+            rate.D.all = [rate.D.all ; length(ripplesD)/sum(NREM.all(:,2)-NREM.all(:,1))];
+            durations.D.all = [durations.D.all ; ripplesD(:,3)-ripplesD(:,1)];
+            amplitude.D.all = [amplitude.D.all ; ripplesD(:,4)];
             
-            %IRI from dRipples
+            % IRI
+            % all
             tmp = diff(ripplesD(:,2)); %pool of inter-dRipples-interval
-            dIRI = [dIRI ; tmp];
+            IRI.D.all = [IRI.D.all ; tmp];
+            clear tmp
+            %Aversive
+            tmp = Restrict(ripplesD(:,2),NREM.A);
+            tmp = diff(tmp); %pool of inter-dRipples-interval
+            IRI.D.A = [IRI.D.A ; tmp];
+            clear tmp
+            %Reward
+            tmp = Restrict(ripplesD(:,2),NREM.R);
+            tmp = diff(tmp); %pool of inter-dRipples-interval
+            IRI.D.R = [IRI.D.R ; tmp];
+            clear tmp
+            %Baseline
+            tmp = Restrict(ripplesD(:,2),NREM.B);
+            tmp = diff(tmp); %pool of inter-dRipples-interval
+            IRI.D.B = [IRI.D.B ; tmp];
             clear tmp
             
-            %Separation of dRipples per condition
-            tmp = Restrict(ripplesD,NREM_B);
-            tmp1 = Restrict(ripplesD,NREM_R);
-            tmp2 = Restrict(ripplesD,NREM_A);
-            dRipplesB = [dRipplesB ; tmp];
-            dRipplesR = [dRipplesR ; tmp1];
-            dRipplesA = [dRipplesA ; tmp2];
             %Durations per condition
-            durationsDB = [durationsDB ; tmp(:,3)-tmp(:,1)];
-            durationsDR = [durationsDR ; tmp1(:,3)-tmp1(:,1)];
-            durationsDA = [durationsDA ; tmp2(:,3)-tmp2(:,1)];
+            tmp = Restrict(ripplesD,NREM.B);
+            durations.D.B = [durations.D.B ; tmp(:,3)-tmp(:,1)];
+            tmp1 = Restrict(ripplesD,NREM.R);
+            durations.D.R = [durations.D.R ; tmp1(:,3)-tmp1(:,1)];
+            tmp2 = Restrict(ripplesD,NREM.A);
+            durations.D.A = [durations.D.A ; tmp2(:,3)-tmp2(:,1)];
+
             %Amplitude per conditions
-            amplitudeDB = [amplitudeDB ; tmp(:,4)];
-            amplitudeDR = [amplitudeDR ; tmp1(:,4)];
-            amplitudeDA = [amplitudeDA ; tmp2(:,4)];
-            rateDB = [rateDB ; length(tmp)/sum(NREM_B(:,2)-NREM_B(:,1))];
-            rateDR = [rateDR ; length(tmp1)/sum(NREM_R(:,2)-NREM_R(:,1))];
-            rateDA = [rateDA ; length(tmp2)/sum(NREM_A(:,2)-NREM_A(:,1))];
-            
+            amplitude.D.B = [amplitude.D.B ; tmp(:,4)];
+            amplitude.D.R = [amplitude.D.R ; tmp1(:,4)];
+            amplitude.D.A = [amplitude.D.A ; tmp2(:,4)];
+            rate.D.B = [rate.D.B ; length(tmp)/sum(NREM.B(:,2)-NREM.B(:,1))];
+            rate.D.R = [rate.D.R ; length(tmp1)/sum(NREM.R(:,2)-NREM.R(:,1))];
+            rate.D.A = [rate.D.A ; length(tmp2)/sum(NREM.A(:,2)-NREM.A(:,1))];
             clear tmp tmp1 tmp2
             
             %dIRI per condtion
-            tmp = diff(Restrict(ripplesD(:,2),NREM_B)); %pool of inter-dRipples-interval
+            % Baselmine
+            tmp = diff(Restrict(ripplesD(:,2),NREM.B)); %pool of inter-dRipples-interval
             tmp1 = 0;
             for p = 1:length(tmp)
                 if and(tmp(p) <= 0.20 , tmp(p)>=0.00)
                     tmp1 = tmp1 + 1;
                 end
             end
-            dIRIB = [dIRIB ; tmp1/length(tmp)];
+            BurstIndex.D.B = [BurstIndex.D.B ; tmp1/length(tmp)];
             clear tmp N EDGES ii p iii tmp1
             
-            tmp = diff(Restrict(ripplesD(:,2),NREM_R)); %pool of inter-dRipples-interval
-            tmp1 = 0;
-            for p = 1:length(tmp)
-                if and(tmp(p) <= 0.2 , tmp(p)>=0.00)
-                    tmp1 = tmp1 + 1;
-                end
-            end
-            dIRIR = [dIRIR ; tmp1/length(tmp)];
-            clear tmp N EDGES ii p iii tmp1
-            
-            tmp = diff(Restrict(ripplesD(:,2),NREM_A)); %pool of inter-dRipples-interval
+            % Reward
+            tmp = diff(Restrict(ripplesD(:,2),NREM.R)); %pool of inter-dRipples-interval
             tmp1 = 0;
             for p = 1:length(tmp)
                 if and(tmp(p) <= 0.20 , tmp(p)>=0.00)
                     tmp1 = tmp1 + 1;
                 end
             end
-            dIRIA = [dIRIA ; tmp1/length(tmp)];
+            BurstIndex.D.R = [BurstIndex.D.R ; tmp1/length(tmp)];
             clear tmp N EDGES ii p iii tmp1
             
-            % Burst-Index dRipples Baseline
-            x = Restrict(ripplesD(:,2),NREM_B);
-            y = Restrict(ripplesD(:,2),NREM_B);
-            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-            [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg'); %ccg calculation
-            [i,ii] = min(abs(tttt-0.00)); %looking for the index of limits for burst calculation in time
-            [i,iii] = min(abs(tttt-0.20));
-            [i,iiii] = min(abs(tttt-0));
-            BurstD = max(ccg(ii:iii,1,1))/mean(ccg(iiii:end,1,1)); %burst index calculation
-            dBurstIndexB = [dBurstIndexB ; BurstD];
-            clear tttt ccg i ii iii iiii BurstD x y
-            
-            % Burst-Index dRipples Reward
-            x = Restrict(ripplesD(:,2),NREM_R);
-            y = Restrict(ripplesD(:,2),NREM_R);
-            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-            [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg');
-            [i,ii] = min(abs(tttt-0.00)); %looking for the index of limits for burst calculation in time
-            [i,iii] = min(abs(tttt-0.20));
-            [i,iiii] = min(abs(tttt-0));
-            BurstD = max(ccg(ii:iii,1,1))/mean(ccg(iiii:end,1,1));
-            dBurstIndexR = [dBurstIndexR ; BurstD];
-            clear tttt ccg i ii iii iiii BurstD x y
-            
-            % Burst-Index dRipples Aversive
-            x = Restrict(ripplesD(:,2),NREM_A);
-            y = Restrict(ripplesD(:,2),NREM_A);
-            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-            [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg');
-            [i,ii] = min(abs(tttt-0.00)); %looking for the index of limits for burst calculation in time
-            [i,iii] = min(abs(tttt-0.20));
-            [i,iiii] = min(abs(tttt-0));
-            BurstD = max(ccg(ii:iii,1,1))/mean(ccg(iiii:end,1,1));
-            dBurstIndexA = [dBurstIndexA ; BurstD];
-            clear tttt ccg i ii iii iiii BurstD x y
+            % Aversive
+            tmp = diff(Restrict(ripplesD(:,2),NREM.A)); %pool of inter-dRipples-interval
+            tmp1 = 0;
+            for p = 1:length(tmp)
+                if and(tmp(p) <= 0.20 , tmp(p)>=0.00)
+                    tmp1 = tmp1 + 1;
+                end
+            end
+            BurstIndex.D.A = [BurstIndex.D.A ; tmp1/length(tmp)];
+            clear tmp N EDGES ii p iii tmp1
             
             
-            %% Auto-correlogram dRipples
-            x = Restrict(ripplesD(:,2),NREM);
-            y = Restrict(ripplesD(:,2),NREM);
+            % Auto-correlogram dRipples
+            % All
+            x = Restrict(ripplesD(:,2),NREM.all);
+            y = Restrict(ripplesD(:,2),NREM.all);
             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
             [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg');
             
-            Auto_dRipples = [Auto_dRipples , ccg(:,1,1)];
+            Auto.dRipples.all = [Auto.dRipples.all , ccg(:,1,1)];
             
+            % Aversive
+            x = Restrict(ripplesD(:,2),NREM.A);
+            y = Restrict(ripplesD(:,2),NREM.A);
+            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg');
+            
+            Auto.dRipples.aversive = [Auto.dRipples.aversive , ccg(:,1,1)];
+            
+            % Reward
+            x = Restrict(ripplesD(:,2),NREM.R);
+            y = Restrict(ripplesD(:,2),NREM.R);
+            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg');
+            
+            Auto.dRipples.reward = [Auto.dRipples.reward , ccg(:,1,1)];
+            
+            % Baseline
+            x = Restrict(ripplesD(:,2),NREM.B);
+            y = Restrict(ripplesD(:,2),NREM.B);
+            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg');
+            
+            Auto.dRipples.baseline = [Auto.dRipples.baseline , ccg(:,1,1)];            
         end
-        %% vRipples
+        
+        %% ---- vRipples ----
         if V
-            rateV = [rateV ; length(ripplesV)/sum(NREM(:,2)-NREM(:,1))];
-            durationsV = [durationsV ; ripplesV(:,3)-ripplesV(:,1)];
-            vRipples = [vRipples ; ripplesV]; %pool of vRipples
-            amplitudeV = [amplitudeV ; ripplesV(:,4)];
+            disp('Lets analyze vRipples')
+            rate.V.all = [rate.V.all ; length(ripplesV)/sum(NREM.all(:,2)-NREM.all(:,1))];
+            durations.V.all = [durations.V.all ; ripplesV(:,3)-ripplesV(:,1)];
+            amplitude.V.all = [amplitude.V.all ; ripplesV(:,4)];
             
-            %IRI from dRipples
+            % IRI
+            % all
             tmp = diff(ripplesV(:,2)); %pool of inter-dRipples-interval
-            vIRI = [vIRI ; tmp];
+            IRI.V.all = [IRI.V.all ; tmp];
+            clear tmp
+            %Aversive
+            tmp = Restrict(ripplesV(:,2),NREM.A);
+            tmp = diff(tmp); %pool of inter-dRipples-interval
+            IRI.V.A = [IRI.V.A ; tmp];
+            clear tmp
+            %Reward
+            tmp = Restrict(ripplesV(:,2),NREM.R);
+            tmp = diff(tmp); %pool of inter-dRipples-interval
+            IRI.V.R = [IRI.V.R ; tmp];
+            clear tmp
+            %Baseline
+            tmp = Restrict(ripplesV(:,2),NREM.B);
+            tmp = diff(tmp); %pool of inter-dRipples-interval
+            IRI.V.B = [IRI.V.B ; tmp];
             clear tmp
             
-            %Separation of vRipples per condition
-            tmp = Restrict(ripplesV,NREM_B);
-            tmp1 = Restrict(ripplesV,NREM_R);
-            tmp2 = Restrict(ripplesV,NREM_A);
-            vRipplesB = [vRipplesB ; tmp];
-            vRipplesR = [vRipplesR ; tmp1];
-            vRipplesA = [vRipplesA ; tmp2];
             %Durations per condition
-            durationsVB = [durationsVB ; tmp(:,3)-tmp(:,1)];
-            durationsVR = [durationsVR ; tmp1(:,3)-tmp1(:,1)];
-            durationsVA = [durationsVA ; tmp2(:,3)-tmp2(:,1)];
+            tmp = Restrict(ripplesV,NREM.B);
+            durations.V.B = [durations.V.B ; tmp(:,3)-tmp(:,1)];
+            tmp1 = Restrict(ripplesV,NREM.R);
+            durations.V.R = [durations.V.R ; tmp1(:,3)-tmp1(:,1)];
+            tmp2 = Restrict(ripplesD,NREM.A);
+            durations.V.A = [durations.V.A ; tmp2(:,3)-tmp2(:,1)];
+
             %Amplitude per conditions
-            amplitudeVB = [amplitudeVB ; tmp(:,4)];
-            amplitudeVR = [amplitudeVR ; tmp1(:,4)];
-            amplitudeVA = [amplitudeVA ; tmp2(:,4)];
-            rateVB = [rateVB ; length(tmp)/sum(NREM_B(:,2)-NREM_B(:,1))];
-            rateVR = [rateVR ; length(tmp1)/sum(NREM_R(:,2)-NREM_R(:,1))];
-            rateVA = [rateVA ; length(tmp2)/sum(NREM_A(:,2)-NREM_A(:,1))];
+            amplitude.V.B = [amplitude.V.B ; tmp(:,4)];
+            amplitude.V.R = [amplitude.V.R ; tmp1(:,4)];
+            amplitude.V.A = [amplitude.V.A ; tmp2(:,4)];
+            rate.V.B = [rate.V.B ; length(tmp)/sum(NREM.B(:,2)-NREM.B(:,1))];
+            rate.V.R = [rate.V.R ; length(tmp1)/sum(NREM.R(:,2)-NREM.R(:,1))];
+            rate.V.A = [rate.V.A ; length(tmp2)/sum(NREM.A(:,2)-NREM.A(:,1))];
             clear tmp tmp1 tmp2
             
-            %vIRI per condtion
-            tmp = diff(Restrict(ripplesV(:,2),NREM_B)); %pool of inter-dRipples-interval
+            %dIRI per condtion
+            % Baselmine
+            tmp = diff(Restrict(ripplesV(:,2),NREM.B)); %pool of inter-dRipples-interval
             tmp1 = 0;
             for p = 1:length(tmp)
                 if and(tmp(p) <= 0.20 , tmp(p)>=0.00)
                     tmp1 = tmp1 + 1;
                 end
             end
-            vIRIB = [vIRIB ; tmp1/length(tmp)];
+            BurstIndex.V.B = [BurstIndex.V.B ; tmp1/length(tmp)];
             clear tmp N EDGES ii p iii tmp1
             
-            tmp = diff(Restrict(ripplesV(:,2),NREM_R)); %pool of inter-dRipples-interval
+            % Reward
+            tmp = diff(Restrict(ripplesV(:,2),NREM.R)); %pool of inter-dRipples-interval
             tmp1 = 0;
             for p = 1:length(tmp)
                 if and(tmp(p) <= 0.20 , tmp(p)>=0.00)
                     tmp1 = tmp1 + 1;
                 end
             end
-            vIRIR = [vIRIR ; tmp1/length(tmp)];
+            BurstIndex.V.R = [BurstIndex.V.R ; tmp1/length(tmp)];
             clear tmp N EDGES ii p iii tmp1
             
-            tmp = diff(Restrict(ripplesV(:,2),NREM_A)); %pool of inter-dRipples-interval
+            % Aversive
+            tmp = diff(Restrict(ripplesV(:,2),NREM.A)); %pool of inter-dRipples-interval
             tmp1 = 0;
             for p = 1:length(tmp)
                 if and(tmp(p) <= 0.20 , tmp(p)>=0.00)
                     tmp1 = tmp1 + 1;
                 end
             end
-            vIRIA = [vIRIA ; tmp1/length(tmp)];
+            BurstIndex.V.A = [BurstIndex.V.A ; tmp1/length(tmp)];
             clear tmp N EDGES ii p iii tmp1
             
-            % Burst-Index vRipples Baseline
-            x = Restrict(ripplesV(:,2),NREM_B);
-            y = Restrict(ripplesV(:,2),NREM_B);
-            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-            [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg'); %ccg calculation
-            [i,ii] = min(abs(tttt-0.0)); %looking for the index of limits for burst calculation in time
-            [i,iii] = min(abs(tttt-0.20));
-            [i,iiii] = min(abs(tttt-0));
-            BurstV = max(ccg(ii:iii,1,1))/mean(ccg(iiii:end,1,1)); %burst index calculation
-            vBurstIndexB = [vBurstIndexB ; BurstV];
-            clear tttt ccg i ii iii iiii BurstV x y
             
-            % Burst-Index vRipples Reward
-            x = Restrict(ripplesV(:,2),NREM_R);
-            y = Restrict(ripplesV(:,2),NREM_R);
+            % Auto-correlogram vRipples
+            % All
+            x = Restrict(ripplesV(:,2),NREM.all);
+            y = Restrict(ripplesV(:,2),NREM.all);
             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
             [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg');
-            [i,ii] = min(abs(tttt-0.0)); %looking for the index of limits for burst calculation in time
-            [i,iii] = min(abs(tttt-0.20));
-            [i,iiii] = min(abs(tttt-0));
-            BurstV = max(ccg(ii:iii,1,1))/mean(ccg(iiii:end,1,1));
-            vBurstIndexR = [vBurstIndexR ; BurstV];
-            clear tttt ccg i ii iii iiii BurstV x y
             
-            % Burst-Index vRipples Aversive
-            x = Restrict(ripplesV(:,2),NREM_A);
-            y = Restrict(ripplesV(:,2),NREM_A);
+            Auto.vRipples.all = [Auto.vRipples.all , ccg(:,1,1)];
+            
+            % Aversive
+            x = Restrict(ripplesV(:,2),NREM.A);
+            y = Restrict(ripplesV(:,2),NREM.A);
             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
             [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg');
-            [i,ii] = min(abs(tttt-0.0)); %looking for the index of limits for burst calculation in time
-            [i,iii] = min(abs(tttt-0.20));
-            [i,iiii] = min(abs(tttt-0));
-            BurstV = max(ccg(ii:iii,1,1))/mean(ccg(iiii:end,1,1));
-            vBurstIndexA = [vBurstIndexA ; BurstV];
-            clear tttt ccg i ii iii iiii BurstV x y
+            
+            Auto.vRipples.aversive = [Auto.vRipples.aversive , ccg(:,1,1)];
+            
+            % Reward
+            x = Restrict(ripplesV(:,2),NREM.R);
+            y = Restrict(ripplesV(:,2),NREM.R);
+            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg');
+            
+            Auto.vRipples.reward = [Auto.vRipples.reward , ccg(:,1,1)];
+            
+            % Baseline
+            x = Restrict(ripplesV(:,2),NREM.B);
+            y = Restrict(ripplesV(:,2),NREM.B);
+            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg');
+            
+            Auto.vRipples.baseline = [Auto.vRipples.baseline , ccg(:,1,1)];
         end
         
         %% Coordinated dHPC ripples
@@ -427,9 +415,9 @@ for tt = 1:length(path)
             end
             clear x tmp i
             
-            coordinatedB = Restrict(coordinated,NREM_B);    coordinatedA = Restrict(coordinated,NREM_A);    coordinatedR = Restrict(coordinated,NREM_R);
-            coordinatedB_V = Restrict(coordinatedV_refined,NREM_B);    coordinatedR_V = Restrict(coordinatedV_refined,NREM_R);    coordinatedA_V = Restrict(coordinatedV_refined,NREM_A);
-            coordinatedB_V_non_refined = Restrict(coordinatedV,NREM_B);    coordinatedR_V_non_refined  = Restrict(coordinatedV,NREM_R);    coordinatedA_V_non_refined  = Restrict(coordinatedV,NREM_A);
+            coordinatedB = Restrict(coordinated,NREM.B);    coordinatedA = Restrict(coordinated,NREM.A);    coordinatedR = Restrict(coordinated,NREM.R);
+            coordinatedB_V = Restrict(coordinatedV_refined,NREM.B);    coordinatedR_V = Restrict(coordinatedV_refined,NREM.R);    coordinatedA_V = Restrict(coordinatedV_refined,NREM.A);
+            coordinatedB_V_non_refined = Restrict(coordinatedV,NREM.B);    coordinatedR_V_non_refined  = Restrict(coordinatedV,NREM.R);    coordinatedA_V_non_refined  = Restrict(coordinatedV,NREM.A);
             %         coordinatedB_V = Restrict(coordinatedV,NREM_B);    coordinatedR_V = Restrict(coordinatedV,NREM_R);    coordinatedA_V = Restrict(coordinatedV,NREM_A);
             
             % Detection of uncoordinated ripples
@@ -471,7 +459,7 @@ for tt = 1:length(path)
                     clear tmp
                 end
             end
-            save ([cd,'\coordinated_ripple_bursts.mat'],'coordinated_ripple_bursts')
+%             save ([cd,'\coordinated_ripple_bursts.mat'],'coordinated_ripple_bursts')
             
             %         tmp = Restrict(ripplesV(:,2),NREM_B);
             %         tmp1 = Restrict(ripplesV(:,2),NREM_R);
@@ -517,7 +505,10 @@ for tt = 1:length(path)
             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
             ccg = ccg(:,1,1);
-            dRipples_coordinated_single = [dRipples_coordinated_single , ccg];
+            Auto.coordinated.dRipples = [Auto.coordinated.dRipples , ccg];
+            
+            
+            % LLEGUE ACAAAA
             
             count = 0;
             y = ripplesD(:,2);

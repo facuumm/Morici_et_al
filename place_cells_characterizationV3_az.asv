@@ -796,16 +796,23 @@ size(unique(n_total(n_total(:,1)==165,2)))
 
 sum(n_total(n_total(:,1)==165,6))
 
-%% PC stability
+%% PC stability - within 1st and 2nd 
 % 1.Compares remapping parameters between the 1st and the 2nd half of the
-% session 2. Compare timebin by timebin stability 
+% session 
 % Prev to run this section, you should have run the main loop. So, this
 % section assumes that inside each session folder, you have a dHPC_pc and
 % vHPC_pc
 % file. 
 % 
+%Temporal output
+all_stability_ave_dHPC = []; 
+all_stability_rew_dHPC = []; 
 
-for tt = 1:length(path)
+all_stability_ave_vHPC = []; 
+all_stability_rew_vHPC = []; 
+
+
+for tt = 5:length(path)
     %List of folders from the path
     files = dir(path{tt});
     % Get a logical vector that tells which is a directory.
@@ -1001,9 +1008,12 @@ for tt = 1:length(path)
         
         %% Firing maps calculation
         disp('dHPC Stability calculation')
-        
+
         load('dHPC_pc.mat'); 
-       
+        
+        temp_stability_ave_dHPC = []; 
+        temp_stability_rew_dHPC = []; 
+        
         for ii=1:size(dHPC,2)
             
             cluster = dHPC{ii}.id;
@@ -1025,453 +1035,215 @@ for tt = 1:length(path)
              
              %Divide spikes time in two
              spks_1 = spks_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time)));
-             pos_1 = pos_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time))); 
+             pos_1 = pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
              
              spks_2 = spks_tmp(spks_tmp>=(min(pos_tmp(:,1)+half_time)));
-             pos_2 = pos_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time))); 
-            
-             %Control that both groups have the same # of spk
-             if size(spks_1,1)> size(spks_2,1)
-                 indx = randperm(size(spks_1,1)); indx=indx(1:size(spks_2,1));
-                 spks_1 = spks_1(indx); 
-             elseif size(spks_1,1)< size(spks_2,1)
-                 indx = randperm(size(spks_2,1)); indx=indx(1:size(spks_1,1));
-                 spks_2 = spks_2(indx); 
-             end
-             
-             
-             %Firing curve construction
-              [curveA , statsA] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4, 'minPeak' , 0.2);
-              curveA_dhpc = curveA.rate; 
+             pos_2 =  pos_tmp(pos_tmp(:,1)>(min(pos_tmp(:,1)+half_time)),:); 
+    
+            %Calculate remapping parameters 
+            [curve1,stats1] = FiringCurve(pos_1, spks_1 , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
+            [curve2,stats2] = FiringCurve(pos_2, spks_2, 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
                     
-                    %%%Within-trial pc parameters 
-                    [withinA,withinA_tresh] = Within_pc(pos_tmp,spks_tmp,1,sigma,Xedges);
+            fr_1= nanmean(curve1.rate);
+            fr_2= nanmean(curve2.rate);
                     
-                    %Store par for between comp
-                    spks_ave = spks_tmp;
-                    pos_ave = pos_tmp;
-                    
-                    % --- Reward ---
-                    spks_tmp = Restrict(spks , movement.reward); % Restrict to movement periods
-                    pos_tmp = Restrict(behavior.pos.reward(:,1:2), movement.reward);
-                    in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
-                    spks_tmp = Restrict(spks_tmp,in_maze);
-                    pos_tmp = Restrict(pos_tmp,in_maze); 
-                    pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
-                    
-                    %Firing curve construction
-                    [curveR , statsR] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
-                    curveR_dhpc = curveR.rate;
-                    %%%Within-trial pc parameters 
-                    [withinR,withinR_tresh] = Within_pc(pos_tmp,spks_tmp,1,sigma,Xedges);
-                   
-                    %Store par for between comp
-                    spks_rew = spks_tmp;
-                    pos_rew = pos_tmp;
-                    
-                    %Subsampling pos and spk for both conditions
-                    [sub_pos_ave,sub_spk_ave,sub_pos_rew,sub_spk_rew] = Subsampling_1d(pos_ave, spks_ave,pos_rew, spks_rew,dt,Xedges,sigma);
-                    
-                    %%%PC criteria: have a PF bigger or equal to 4 bins 
-                    %if there is no PF, assigne 0 to correct assesment in
-                    %the next if
-                    if isempty(statsA.field)
-                        statsA.field=0;
-                    end 
-                     if isempty(statsR.field)
-                        statsR.field=0;
-                    end 
-                    
-                    if or(sum(statsA.field(:,:,1))>= 4 , sum(statsR.field(:,:,1))>= 4) 
-              
-                        %Subsampling remapping variables   
-                        [between_sub] = Between_pc(sub_pos_ave,sub_spk_ave,sub_pos_rew,sub_spk_rew,bin_size,sigma,Xedges);
-                        [withinA_sub,~] = Within_pc(sub_pos_ave,sub_spk_ave,1,sigma,Xedges);
-                        [withinR_sub,~] = Within_pc(sub_pos_rew,sub_spk_rew,1,sigma,Xedges);
-                        
-                        %Store firing maps
-                        pc_dHPC_par.firingMap.ave = [pc_dHPC_par.firingMap.ave;curveA_dhpc]; 
-                        pc_dHPC_par.firingMap.rew = [pc_dHPC_par.firingMap.rew;curveR_dhpc];
-                        
-                       
-                        %Sparsity: 
-                        sa = sparsity_info(curveA.rate,curveA.time);
-                        sr = sparsity_info(curveR.rate,curveR.time);
-                        %Store pc parametres 
-                        pc_dHPC_par.pc_params.ave = [pc_dHPC_par.pc_params.ave;statsA.specificity,sa,statsA.size(1),statsA.peak(1)]; 
-                        pc_dHPC_par.pc_params.rew = [pc_dHPC_par.pc_params.rew;statsR.specificity,sr,statsR.size(1),statsR.peak(1)];
-                        
-                        % Aversive 
-                        [ff,f] = max(curveA.rate);
-                        fff = [1/Xedges:1/Xedges:1];
-                        fr_ave = nanmean(curveA.rate);
-                        PC.dHPC.aversive=[PC.dHPC.aversive ; cluster , ff , fff(f),fr_ave];
-                        clear f ff fff
-                        
-                        maps_dHPC_A = [maps_dHPC_A ; curveA.rate];
-%                         maps_dHPC_SA = [maps_dHPC_SA ; curveSA.rate];
-                        map_ave = curveA.rate;
-                        peak_dHPC_A = [peak_dHPC_A ; statsA.peak(1)];
-                        field_dHPC_A = [field_dHPC_A ; statsA.fieldX(1,:)];
-                        
-                        %Rewarded 
-                        [ff,f] = max(curveR.rate);
-                        fff = [1/Xedges:1/Xedges:1];
-                        fr_rew = nanmean(curveR.rate);
-                        PC.dHPC.reward=[PC.dHPC.aversive ; cluster , ff , fff(f),fr_rew];
-                        clear f ff fff
-                        
-                        maps_dHPC_R = [maps_dHPC_R ; curveR.rate];
-%                         maps_dHPC_SR = [maps_dHPC_SR ; curveSR.rate];
-                        map_rew = curveR.rate;
-                        peak_dHPC_R = [peak_dHPC_R ; statsR.peak(1)] ;
-                        field_dHPC_R = [field_dHPC_R ; statsR.fieldX(1,:)];
-                        cluster_dHPC = [cluster_dHPC ; cluster , cond];
-                        
-                        %Store within 
-                        pc_dHPC_par.within.ave = [pc_dHPC_par.within.ave; withinA];
-                        pc_dHPC_par.within.rew = [pc_dHPC_par.within.rew; withinR];
-                        
-                        pc_dHPC_par.within.ave_sub = [pc_dHPC_par.within.ave_sub; withinA_sub];
-                        pc_dHPC_par.within.rew_sub = [pc_dHPC_par.within.rew_sub; withinR_sub];
-                        
-                        pc_dHPC_par.within.ave_tresh = [pc_dHPC_par.within.ave_tresh; withinA_tresh];
-                        pc_dHPC_par.within.rew_tresh = [pc_dHPC_par.within.rew_tresh; withinR_tresh];
-                        
-                        %Between-trial pc parameters (aversive vs. rewarded)
-                        [between] = Between_pc(pos_ave,spks_ave,pos_rew,spks_rew,bin_size,sigma,Xedges);
+            %Fr change
+            fr_change = abs((fr_1 - fr_2)/(fr_1 + fr_2));
 
-                        %Save between pc parameters 
-                        pc_dHPC_par.between = [pc_dHPC_par.between; between];
-                        pc_dHPC_par.between_sub = [pc_dHPC_par.between_sub; between_sub];
-                        
-                         %Store pc info 
-                        n.id = cluster; 
-                        n.frMap_ave = curveA.rate;
-                        n.frMap_rew = curveR.rate;
-                        n.stats_ave = statsA;
-                        n.stats_rew = statsR;
-                        n.between = between;
-                        n.between_sub = between_sub;
-                        n.within.ave = withinA; 
-                        n.within.rew = withinR;
-                        n.within.ave_sub = withinA_sub; 
-                        n.within.rew_sub = withinR_sub;
-                        dHPC{ii}= n;
-                        
-                    end
-                    clear s q curve OccMap Nspikes spks_tmp pos_tmp m curve stats sp curve1
-                    clear curveA curveR qA qR curveSA curveSR statsSA statsSR
-                end
+            %Rate overlap
+            if fr_1<=fr_2 
+                overlap = fr_1/fr_2;
+            else 
+                overlap = fr_2/fr_1;
             end
-            clear celltype tmp b cluster
+    
+            %Spatial  corr
+            s = corrcoef(curve1.rate, curve2.rate);
+            spatial = s(1,2);
+    
+            %Peak shift 
+            shift = abs(stats1.x(1) - stats2.x(1));
             
+            within1vs2 = [spatial, fr_change, overlap, shift]; 
+            
+            dHPC{ii}.within1vs2.ave =  within1vs2; 
+            temp_stability_ave_dHPC = [temp_stability_ave_dHPC;within1vs2]; 
+        
+            
+            % --- Reward ---
+            spks_tmp = Restrict(spks , movement.reward); % Restrict to movement periods
+            pos_tmp = Restrict(behavior.pos.reward(:,1:2), movement.reward);
+            in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
+            spks_tmp = Restrict(spks_tmp,in_maze);
+            pos_tmp = Restrict(pos_tmp,in_maze); 
+            pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
+                    
+            % 1st half vs 2nd half 
+            total_time = max(pos_tmp(:,1))-min(pos_tmp(:,1)); 
+            half_time = total_time/2;
+             
+             %Divide spikes time in two
+             spks_1 = spks_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time)));
+             pos_1 = pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
+             
+             spks_2 = spks_tmp(spks_tmp>=(min(pos_tmp(:,1)+half_time)));
+             pos_2 =  pos_tmp(pos_tmp(:,1)>(min(pos_tmp(:,1)+half_time)),:); 
+    
+            %Calculate remapping parameters 
+            [curve1,stats1] = FiringCurve(pos_1, spks_1 , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
+            [curve2,stats2] = FiringCurve(pos_2, spks_2, 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
+                    
+            fr_1= nanmean(curve1.rate);
+            fr_2= nanmean(curve2.rate);
+                    
+            %Fr change
+            fr_change = abs((fr_1 - fr_2)/(fr_1 + fr_2));
+
+            %Rate overlap
+            if fr_1<=fr_2 
+                overlap = fr_1/fr_2;
+            else 
+                overlap = fr_2/fr_1;
+            end
+    
+            %Spatial  corr
+            s = corrcoef(curve1.rate, curve2.rate);
+            spatial = s(1,2);
+    
+            %Peak shift 
+            shift = abs(stats1.x(1) - stats2.x(1));
+            
+            within1vs2 = [spatial, fr_change, overlap, shift]; 
+            dHPC{ii}.within1vs2.rew =  within1vs2; 
+            
+            temp_stability_rew_dHPC = [temp_stability_rew_dHPC;within1vs2]; 
+          
+             
         end
         
-        disp('vHPC Firing rate map calculation')
-        maps_vHPC_A = [];        maps_vHPC_R = [];
-        maps_vHPC_SA = [];        maps_vHPC_SR = [];
-        peak_vHPC_A = [] ;       peak_vHPC_R = [];
-        field_vHPC_A = [];       field_vHPC_R = [];
-        PC.vHPC.aversive=[];     PC.vHPC.reward=[];
-        cluster_vHPC = [];
         
-        pc_vHPC_par.within.ave = []; pc_vHPC_par.within.rew = []; 
-        pc_vHPC_par.within.ave_sub = []; pc_vHPC_par.within.rew_sub = []; 
-        pc_vHPC_par.within.ave_tresh = []; pc_vHPC_par.within.rew_tresh = []; 
-        pc_vHPC_par.between = []; pc_vHPC_par.between_sub = [];
-        pc_vHPC_par.firingMap.ave = []; 
-        pc_vHPC_par.firingMap.rew = [];
+        disp('vHPC Stability calculation')
         
-        pc_vHPC_par.pc_params.ave = []; 
-        pc_vHPC_par.pc_params.rew = [];
-        
-    for ii=1:size(group_vHPC,1)
-            cluster = group_vHPC(ii,1);
-            celltype = logical(cellulartype(cellulartype(:,1) == cluster,2));
-            
-               if celltype % check if pyr
-                
-                spks = spks_vHPC(spks_vHPC(:,1)==cluster,2); % select tspk from cluster
-              
-                % Select neurons with fr greater than tresh in aversive or reward - PC criteria 1   
-                tresh = 0.1; % hz
-                spks_tmp = Restrict(spks,movement.reward);
-                fr_rew= size(spks_tmp,1)/sum(movement.reward(:,2)-movement.reward(:,1));
-                
-                spks_tmp = Restrict(spks,movement.aversive);
-                fr_ave= size(spks_tmp,1)/sum(movement.aversive(:,2)-movement.aversive(:,1));
-                
-                if fr_rew >= tresh || fr_ave >= tresh
-                    m = 1;
-                else 
-                    m = nan;
-                end 
-                
-                if ~isnan(m)
-                    % --- Aversive ---
-                    spks_tmp = Restrict(spks , movement.aversive);
-                    pos_tmp = Restrict(behavior.pos.aversive(:,1:2) , movement.aversive); % Restrict pos to movement periods
-%                     pos_tmp = pos_tmp(and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170),:); % eliminating the extrems of the maze
-                    in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
-                    spks_tmp = Restrict(spks_tmp,in_maze);
-                    pos_tmp = Restrict(pos_tmp,in_maze); 
-                    pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
-                    
-                    %Firing curve construction
-                    [curveA , statsA] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.1);
-                    curveA_vhpc = curveA.rate;
-                    %%%Within-trial pc parameters 
-                    [withinA,withinA_tresh] = Within_pc(pos_tmp,spks_tmp,1,sigma,Xedges);
+        load('vHPC_pc.mat'); 
        
-                    %Store par for between comp
-                    spks_ave = spks_tmp;
-                    pos_ave = pos_tmp;
-                    
-                    % --- Reward ---
-                    spks_tmp = Restrict(spks , movement.reward); % Restrict to movement periods
-                    pos_tmp = Restrict(behavior.pos.reward(:,1:2) , movement.reward);
-                    in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
-                    spks_tmp = Restrict(spks_tmp,in_maze);
-                    pos_tmp = Restrict(pos_tmp,in_maze); 
-                    pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
-                    
-                    %Firing curve construction
-                    [curveR , statsR] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.1);
-                    curveR_vhpc = curveR.rate;
-                    %%%Within-trial pc parameters 
-                    [withinR,withinR_tresh] = Within_pc(pos_tmp,spks_tmp,1,sigma,Xedges);
-                    
-                    %Store par for between comp
-                    spks_rew = spks_tmp;
-                    pos_rew = pos_tmp;
-                    
-                    %Subsamplin pos and spk 
-                    [sub_pos_ave,sub_spk_ave,sub_pos_rew,sub_spk_rew] = Subsampling_1d(pos_ave, spks_ave,pos_rew, spks_rew,dt,Xedges,sigma); 
-                    
-                    %PC cirteria: have a PF of at least 4 bins 
-                    %if there is no PF, assigne 0 to correct assesment in
-                    %the next if
-                    if isempty(statsA.field)
-                        statsA.field=0;
-                    end 
-                     if isempty(statsR.field)
-                        statsR.field=0;
-                    end 
-                    
-                    if or(sum(statsA.field(:,:,1))>= 4 , sum(statsR.field(:,:,1))>= 4) 
-                        
-                        %Subsampling
-                        [between_sub] = Between_pc(sub_pos_ave,sub_spk_ave,sub_pos_rew,sub_spk_rew,bin_size,sigma,Xedges);
-                        [withinA_sub,~] = Within_pc(sub_pos_ave,sub_spk_ave,1,sigma,Xedges);
-                        [withinR_sub,~] = Within_pc(sub_pos_rew,sub_spk_rew,1,sigma,Xedges);
-                        
-                        %Store firing maps
-                        pc_vHPC_par.firingMap.ave = [pc_vHPC_par.firingMap.ave;curveA_vhpc]; 
-                        pc_vHPC_par.firingMap.rew = [pc_vHPC_par.firingMap.rew;curveR_vhpc];
-                        
-                        %Sparsity: 
-                        sa = sparsity_info(curveA.rate,curveA.time);
-                        sr = sparsity_info(curveR.rate,curveR.time);
-                        %Store pc parametres 
-                        pc_vHPC_par.pc_params.ave = [pc_vHPC_par.pc_params.ave;statsA.specificity,sa,statsA.size(1),statsA.peak(1)]; 
-                        pc_vHPC_par.pc_params.rew = [pc_vHPC_par.pc_params.rew;statsR.specificity,sr,statsR.size(1),statsR.peak(1)];
-                        
-                        % Aversive 
-                        [ff,f] = max(curveA.rate);
-                        fff = [1/Xedges:1/Xedges:1];
-                        fr_ave = nanmean(curveA.rate);
-                        PC.vHPC.aversive=[PC.vHPC.aversive ; cluster , ff , fff(f),fr_ave];
-                        clear f ff fff
-                        
-                        maps_vHPC_A = [maps_vHPC_A ; curveA.rate];
-%                         maps_dHPC_SA = [maps_dHPC_SA ; curveSA.rate];
-                        map_ave = curveA.rate;
-                        peak_vHPC_A = [peak_vHPC_A ; statsA.peak(1)];
-                        field_vHPC_A = [field_vHPC_A ; statsA.fieldX(1,:)];
-                        
-                        %Rewarded 
-                        [ff,f] = max(curveR.rate);
-                        fff = [1/Xedges:1/Xedges:1];
-                        fr_rew = nanmean(curveR.rate);
-                        PC.vHPC.reward=[PC.vHPC.aversive ; cluster , ff , fff(f),fr_rew];
-                        clear f ff fff
-                        
-                        maps_vHPC_R = [maps_vHPC_R ; curveR.rate];
-%                         maps_dHPC_SR = [maps_dHPC_SR ; curveSR.rate];
-                        map_rew = curveR.rate;
-                        peak_vHPC_R = [peak_vHPC_R ; statsR.peak(1)] ;
-                        field_vHPC_R = [field_vHPC_R ; statsR.fieldX(1,:)];
-                        cluster_dHPC = [cluster_dHPC ; cluster , cond];
-                        
-                        %Store within 
-                        pc_vHPC_par.within.ave = [pc_vHPC_par.within.ave; withinA];
-                        pc_vHPC_par.within.rew = [pc_vHPC_par.within.rew; withinR];
-                        pc_vHPC_par.within.ave_sub = [pc_vHPC_par.within.ave_sub; withinA_sub];
-                        pc_vHPC_par.within.rew_sub = [pc_vHPC_par.within.rew_sub; withinR_sub];
-                        
-                        pc_vHPC_par.within.ave_tresh = [pc_vHPC_par.within.ave_tresh; withinA_tresh];
-                        pc_vHPC_par.within.rew_tresh = [pc_vHPC_par.within.rew_tresh; withinR_tresh];
-                        
-                        %Between-trial pc parameters (aversive vs. rewarded
-                        [between] = Between_pc(pos_ave,spks_ave,pos_rew,spks_rew,bin_size,sigma,Xedges);
-                        
-                        %Save between pc parameters 
-                        pc_vHPC_par.between = [pc_vHPC_par.between; between];
-                        pc_vHPC_par.between_sub = [pc_vHPC_par.between_sub; between_sub];
-                        
-                        %Save pc info 
-                        n.id = cluster; 
-                        n.frMap_ave = curveA.rate;
-                        n.frMap_rew = curveR.rate;
-                        n.stats_ave = statsA;
-                        n.stats_rew = statsR;
-                        n.between = between;
-                        n.between_sub = between_sub;
-                        n.within.ave = withinA; 
-                        n.within.rew = withinR;
-                        n.within.ave_sub = withinA_sub; 
-                        n.within.rew_sub = withinR_sub;
-                        vHPC{ii} = n; 
-                        
-                        clear fr_ave fr_rew map_ave map_rew
-                    end
-                    clear s q curve OccMap Nspikes spks_tmp pos_tmp m curve stats sp curve1
-                    clear curveA curveR qA qR curveSA curveSR statsSA statsSR
-                end
-            end
-            clear celltype tmp b cluster
-            
-    end
+        temp_stability_ave_vHPC = []; 
+        temp_stability_rew_vHPC = []; 
         
-
-    %% Save PC INFO 
-    if ~isempty(dHPC)
-        dHPC = dHPC(~cellfun('isempty',dHPC));
-        save([cd,'\dHPC_pc.mat'],'dHPC'); 
-    end
-    if ~isempty(vHPC)
-        vHPC = vHPC(~cellfun('isempty',vHPC));
-        save([cd,'\vHPC_pc.mat'],'vHPC'); 
-    end
+        for ii=1:size(vHPC,2)
+            
+            cluster = vHPC{ii}.id;
   
-            %% Saving data
-            disp('Saving outputs')
-            if not(exist('pc_all','var'))
-%                 maps.dHPC.aversive = maps_dHPC_A;
-%                 maps.vHPC.aversive = maps_vHPC_A;
-%                 maps.dHPC.reward   = maps_dHPC_R;
-%                 maps.vHPC.reward   = maps_vHPC_R;
-%                 maps.dHPC.aversiveS = maps_dHPC_SA;
-%                 maps.vHPC.aversiveS = maps_vHPC_SA;
-%                 maps.dHPC.rewardS   = maps_dHPC_SR;
-%                 maps.vHPC.rewardS   = maps_vHPC_SR;
-%                 peak.dHPC.aversive = peak_dHPC_A;
-%                 peak.vHPC.aversive = peak_vHPC_A;
-%                 peak.dHPC.reward   = peak_dHPC_R;
-%                 peak.vHPC.reward   = peak_vHPC_R;
-%                 field.dHPC.aversive = field_dHPC_A;
-%                 field.vHPC.aversive = field_vHPC_A;
-%                 field.dHPC.reward   = field_dHPC_R;
-%                 field.vHPC.reward   = field_vHPC_R;
-%                 clus.dHPC = cluster_dHPC;
-%                 clus.vHPC = cluster_vHPC;
-                
-                pc_all.dHPC.within.A =  pc_dHPC_par.within.ave;
-                pc_all.dHPC.within.R =  pc_dHPC_par.within.rew;
-                pc_all.dHPC.within.A_sub =  pc_dHPC_par.within.ave_sub;
-                pc_all.dHPC.within.R_sub =  pc_dHPC_par.within.rew_sub;
-                pc_all.dHPC.within.Atresh = pc_dHPC_par.within.ave_tresh;
-                pc_all.dHPC.within.Rtresh = pc_dHPC_par.within.rew_tresh;
-                pc_all.dHPC.between =   pc_dHPC_par.between;
-                pc_all.dHPC.between_sub =   pc_dHPC_par.between_sub; 
-                pc_all.dHPC.firingMap.ave = pc_dHPC_par.firingMap.ave; 
-                pc_all.dHPC.firingMap.rew = pc_dHPC_par.firingMap.rew;
-                pc_all.dHPC.pc_params.ave=pc_dHPC_par.pc_params.ave; 
-                pc_all.dHPC.pc_params.rew=pc_dHPC_par.pc_params.rew;
-                
-                pc_all.vHPC.within.A =  pc_vHPC_par.within.ave;
-                pc_all.vHPC.within.R =  pc_vHPC_par.within.rew;
-                pc_all.vHPC.within.A_sub =  pc_vHPC_par.within.ave_sub;
-                pc_all.vHPC.within.R_sub =  pc_vHPC_par.within.rew_sub;
-                pc_all.vHPC.within.Atresh = pc_vHPC_par.within.ave_tresh;
-                pc_all.vHPC.within.Rtresh = pc_vHPC_par.within.rew_tresh;
-                pc_all.vHPC.between =  pc_vHPC_par.between; 
-                pc_all.vHPC.between_sub =  pc_vHPC_par.between_sub; 
-                pc_all.vHPC.firingMap.ave = pc_vHPC_par.firingMap.ave; 
-                pc_all.vHPC.firingMap.rew = pc_vHPC_par.firingMap.rew;
-                pc_all.vHPC.pc_params.ave=pc_vHPC_par.pc_params.ave; 
-                pc_all.vHPC.pc_params.rew=pc_vHPC_par.pc_params.rew;
-                
-            else
-%                 maps.dHPC.aversive = [maps.dHPC.aversive ; maps_dHPC_A];
-%                 maps.vHPC.aversive = [maps.vHPC.aversive ; maps_vHPC_A];
-%                 maps.dHPC.reward   = [maps.dHPC.reward ; maps_dHPC_R];
-%                 maps.vHPC.reward   = [maps.vHPC.reward ; maps_vHPC_R];
-%                 maps.dHPC.aversiveS = [maps.dHPC.aversiveS ; maps_dHPC_SA];
-%                 maps.vHPC.aversiveS = [maps.vHPC.aversiveS ; maps_vHPC_SA];
-%                 maps.dHPC.rewardS   = [maps.dHPC.rewardS ; maps_dHPC_SR];
-%                 maps.vHPC.rewardS   = [maps.vHPC.rewardS ; maps_vHPC_SR];                
-%                 peak.dHPC.aversive = [peak.dHPC.aversive ; peak_dHPC_A];
-%                 peak.vHPC.aversive = [peak.vHPC.aversive ; peak_vHPC_A];
-%                 peak.dHPC.reward   = [peak.dHPC.reward ; peak_dHPC_R];
-%                 peak.vHPC.reward   = [peak.vHPC.reward ; peak_vHPC_R];
-%                 field.dHPC.aversive = [field.dHPC.aversive ; field_dHPC_A];
-%                 field.vHPC.aversive = [field.vHPC.aversive ; field_vHPC_A];
-%                 field.dHPC.reward   = [field.dHPC.reward ; field_dHPC_R];
-%                 field.vHPC.reward   = [field.vHPC.reward ; field_vHPC_R];
-%                 clus.dHPC = [clus.dHPC ; cluster_dHPC];
-%                 clus.vHPC = [clus.vHPC ; cluster_vHPC]; 
-                
-                pc_all.dHPC.within.A = [pc_all.dHPC.within.A ; pc_dHPC_par.within.ave];
-                pc_all.dHPC.within.R  = [pc_all.dHPC.within.R ; pc_dHPC_par.within.rew];
-                pc_all.dHPC.within.A_sub = [pc_all.dHPC.within.A_sub ; pc_dHPC_par.within.ave_sub];
-                pc_all.dHPC.within.R_sub  = [pc_all.dHPC.within.R_sub ; pc_dHPC_par.within.rew_sub];
-                pc_all.dHPC.between = [ pc_all.dHPC.between;  pc_dHPC_par.between]; 
-                pc_all.dHPC.between_sub = [pc_all.dHPC.between_sub;  pc_dHPC_par.between_sub]; 
-                pc_all.dHPC.within.Atresh = [pc_all.dHPC.within.Atresh; pc_dHPC_par.within.ave_tresh];
-                pc_all.dHPC.within.Rtresh = [pc_all.dHPC.within.Rtresh; pc_dHPC_par.within.rew_tresh];
-                pc_all.dHPC.firingMap.ave = [ pc_all.dHPC.firingMap.ave;pc_dHPC_par.firingMap.ave]; 
-                pc_all.dHPC.firingMap.rew = [pc_all.dHPC.firingMap.rew;pc_dHPC_par.firingMap.rew];
-                pc_all.dHPC.pc_params.ave=[pc_all.dHPC.pc_params.ave;pc_dHPC_par.pc_params.ave]; 
-                pc_all.dHPC.pc_params.rew=[pc_all.dHPC.pc_params.rew;pc_dHPC_par.pc_params.rew];
-                
-                pc_all.vHPC.within.A = [pc_all.vHPC.within.A ; pc_vHPC_par.within.ave];
-                pc_all.vHPC.within.R  = [pc_all.vHPC.within.R ; pc_vHPC_par.within.rew];
-                pc_all.vHPC.within.A_sub = [pc_all.vHPC.within.A_sub ; pc_vHPC_par.within.ave_sub];
-                pc_all.vHPC.within.R_sub  = [pc_all.vHPC.within.R_sub ; pc_vHPC_par.within.rew_sub];
-                pc_all.vHPC.between = [ pc_all.vHPC.between;  pc_vHPC_par.between];
-                pc_all.vHPC.between_sub = [ pc_all.vHPC.between_sub;  pc_vHPC_par.between_sub];
-                pc_all.vHPC.within.Atresh = [pc_all.vHPC.within.Atresh; pc_vHPC_par.within.ave_tresh];
-                pc_all.vHPC.within.Rtresh = [pc_all.vHPC.within.Rtresh; pc_vHPC_par.within.rew_tresh];
-                pc_all.vHPC.firingMap.ave = [pc_all.vHPC.firingMap.ave;pc_vHPC_par.firingMap.ave]; 
-                pc_all.vHPC.firingMap.rew = [pc_all.vHPC.firingMap.rew;pc_vHPC_par.firingMap.rew];
-                pc_all.vHPC.pc_params.ave=[pc_all.vHPC.pc_params.ave;pc_vHPC_par.pc_params.ave]; 
-                pc_all.vHPC.pc_params.rew=[pc_all.vHPC.pc_params.rew;pc_vHPC_par.pc_params.rew];
-                
+            spks = spks_vHPC(spks_vHPC(:,1)==cluster,2); % select tspk from cluster
+              
+            % --- Aversive ---
+             spks_tmp = Restrict(spks , movement.aversive); % Restrict spikes to movement periods
+             pos_tmp = Restrict(behavior.pos.aversive(:,1:2) , movement.aversive); % Restrict pos to movement periods
+             in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
+             spks_tmp = Restrict(spks_tmp,in_maze);
+             pos_tmp = Restrict(pos_tmp,in_maze); 
+             pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
+                    
+             
+             % 1st half vs 2nd half 
+             total_time = max(pos_tmp(:,1))-min(pos_tmp(:,1)); 
+             half_time = total_time/2;
+             
+             %Divide spikes time in two
+             spks_1 = spks_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time)));
+             pos_1 = pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
+             
+             spks_2 = spks_tmp(spks_tmp>=(min(pos_tmp(:,1)+half_time)));
+             pos_2 =  pos_tmp(pos_tmp(:,1)>(min(pos_tmp(:,1)+half_time)),:); 
+    
+            %Calculate remapping parameters 
+            [curve1,stats1] = FiringCurve(pos_1, spks_1 , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
+            [curve2,stats2] = FiringCurve(pos_2, spks_2, 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
+                    
+            fr_1= nanmean(curve1.rate);
+            fr_2= nanmean(curve2.rate);
+                    
+            %Fr change
+            fr_change = abs((fr_1 - fr_2)/(fr_1 + fr_2));
+
+            %Rate overlap
+            if fr_1<=fr_2 
+                overlap = fr_1/fr_2;
+            else 
+                overlap = fr_2/fr_1;
             end
-        clear specificity_dHPC_A specificity_dHPC_R specificity_vHPC_A specificity_vHPC_R
-        clear field_dHPC_A field_dHPC_R field_vHPC_A field_vHPC_R
-        clear peak_dHPC_A peak_dHPC_R peak_vHPC_A peak_vHPC_R
-        clear maps_dHPC_A maps_dHPC_R maps_vHPC_A maps_vHPC_R
-        clear aversiveTS aversiveTS_run rewardTS rewardTS_run baselineTS
-        clear behavior camara Cell_type_classification cellulartype cluster
-        clear group_dHPC group_vHPC K Kinfo leftvalve rightvalve movement R
-        clear Rewards_filt Shocks_filt spks_dHPC spks_vHPC r rZ
-        clear cluster cluster_dHPC cluster_vHPC coordinated coordinatedV coordinatedV_refined
-        clear camaraA count dX dX_int dY dY_int gc grps i ii MUA segments tmp WAKE REM NREM
-        clear ripple_bursts ripplesD ripplesV x w position_shocks posx posy ejeX ejeY PC replay Replay limits
-        disp(['-- Finished folder #' , num2str(t) , ' from rat #' , num2str(tt) , ' ---'])
-        disp('  ')
-    end
-    disp(['-------- Finished rat#' , num2str(tt) , ' --------'])
-    disp(' ')
-end
+    
+            %Spatial  corr
+            s = corrcoef(curve1.rate, curve2.rate);
+            spatial = s(1,2);
+    
+            %Peak shift 
+            shift = abs(stats1.x(1) - stats2.x(1));
+            
+            within1vs2 = [spatial, fr_change, overlap, shift]; 
+            
+            vHPC{ii}.within1vs2.ave =  within1vs2; 
+            temp_stability_ave_vHPC = [temp_stability_ave_vHPC;within1vs2];
+            % --- Reward ---
+            spks_tmp = Restrict(spks , movement.reward); % Restrict to movement periods
+            pos_tmp = Restrict(behavior.pos.reward(:,1:2), movement.reward);
+            in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
+            spks_tmp = Restrict(spks_tmp,in_maze);
+            pos_tmp = Restrict(pos_tmp,in_maze); 
+            pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
+                    
+            % 1st half vs 2nd half 
+            total_time = max(pos_tmp(:,1))-min(pos_tmp(:,1)); 
+            half_time = total_time/2;
+             
+             %Divide spikes time in two
+             spks_1 = spks_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time)));
+             pos_1 = pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
+             
+             spks_2 = spks_tmp(spks_tmp>=(min(pos_tmp(:,1)+half_time)));
+             pos_2 =  pos_tmp(pos_tmp(:,1)>(min(pos_tmp(:,1)+half_time)),:); 
+    
+            %Calculate remapping parameters 
+            [curve1,stats1] = FiringCurve(pos_1, spks_1 , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
+            [curve2,stats2] = FiringCurve(pos_2, spks_2, 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
+                    
+            fr_1= nanmean(curve1.rate);
+            fr_2= nanmean(curve2.rate);
+                    
+            %Fr change
+            fr_change = abs((fr_1 - fr_2)/(fr_1 + fr_2));
 
-save('W:\Remapping-analysis-Facu\pc_all_within_between.mat', 'pc_all');
+            %Rate overlap
+            if fr_1<=fr_2 
+                overlap = fr_1/fr_2;
+            else 
+                overlap = fr_2/fr_1;
+            end
+    
+            %Spatial  corr
+            s = corrcoef(curve1.rate, curve2.rate);
+            spatial = s(1,2);
+    
+            %Peak shift 
+            shift = abs(stats1.x(1) - stats2.x(1));
+            
+            within1vs2 = [spatial, fr_change, overlap, shift]; 
+            vHPC{ii}.within1vs2.rew =  within1vs2; 
+            temp_stability_rew_vHPC = [temp_stability_rew_vHPC;within1vs2];
+             
+        end 
+        
+        %Store 
+        all_stability_ave_dHPC = [all_stability_ave_dHPC; temp_stability_ave_dHPC];  
+        all_stability_rew_dHPC = [all_stability_rew_dHPC; temp_stability_rew_dHPC]; 
+        
+        all_stability_ave_vHPC = [all_stability_ave_vHPC; temp_stability_ave_vHPC];  
+        all_stability_rew_vHPC = [all_stability_rew_vHPC; temp_stability_rew_vHPC]; 
+        
+    end 
+    
+ end      
 
-
-
+save('W:\Remapping-analysis-Facu\pc_all_stability_within.mat', 'all_stability_ave_dHPC', 'all_stability_rew_dHPC', 'all_stability_ave_vHPC', 'all_stability_rew_vHPC');
 
 
 %% Scatter plot between within 
