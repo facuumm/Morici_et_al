@@ -44,7 +44,7 @@ Number_of_assemblies.aversive = [];
 Number_of_assemblies.reward = [];
 
 %% Main loop, to iterate across sessions
-for tt = 1:length(path)
+for tt = 2:length(path)
     %List of folders from the path
     files = dir(path{tt});
     % Get a logical vector that tells which is a directory.
@@ -281,7 +281,6 @@ for tt = 1:length(path)
             ripple_event.VD.aversive = Restrict(cooridnated_eventVD,aversiveTS./1000);
             ripple_event.VD.all = cooridnated_eventVD;
         elseif RD
-            
             % Store events time stamps
             % dRipples
             ripples.dHPC.baseline = Restrict(ripplesD , NREM.baseline);
@@ -500,7 +499,7 @@ for tt = 1:length(path)
             %% SpikeTrains construction
             limits = [0 segments.Var1(end)/1000];
             events = [];
-            [Spikes , bins , Clusters] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, true, true);
+            [Spikes , bins , Clusters] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false, true);
             clear limits events
             
             if S

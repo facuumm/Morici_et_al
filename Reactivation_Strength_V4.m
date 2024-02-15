@@ -8,7 +8,7 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
 MUAselection = logical(0); % to select ripples by their MUA
-W = 'N'; % to select what kind of ripples I want to check
+W = 'E'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % D= uncoordinated dorsal, V= uncoordinated ventral
 % CB = cooridnated bursts
@@ -380,23 +380,6 @@ for tt = 2:length(path)
             if isfile('dorsalventral_assemblies_aversive.mat')
                 disp('Loading Aversive template')
                 load('dorsalventral_assemblies_aversive.mat')
-            else
-                disp('Detection of assemblies using Aversive template')
-                % --- Options for assemblies detection ---
-                opts.Patterns.method = 'ICA';
-                opts.threshold.method= 'MarcenkoPastur';
-                opts.Patterns.number_of_iterations= 500;
-                opts.threshold.permutations_percentile = 0.9;
-                opts.threshold.number_of_permutations = 500;
-                opts.Patterns.number_of_iterations = 500;
-                opts.Members.method = 'Sqrt';
-                
-                limits = aversiveTS_run./1000;
-                events = [];
-                events = movement.aversive;
-                [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
-                [Th , pat] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
-                save([cd,'\dorsalventral_assemblies_aversive.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
             end
             
             Thresholded.aversive.all = Th;
@@ -431,23 +414,6 @@ for tt = 2:length(path)
             disp('Loading Reward template')
             if isfile('dorsalventral_assemblies_reward.mat')
                 load('dorsalventral_assemblies_reward.mat')
-            else
-                disp('Detection of assemblies using Rewarded template')
-                % --- Options for assemblies detection ---
-                opts.Patterns.method = 'ICA';
-                opts.threshold.method= 'MarcenkoPastur';
-                opts.Patterns.number_of_iterations= 500;
-                opts.threshold.permutations_percentile = 0.9;
-                opts.threshold.number_of_permutations = 500;
-                opts.Patterns.number_of_iterations = 500;
-                opts.Members.method = 'Sqrt';
-                
-                limits = rewardTS_run./1000;
-                events = [];
-                events = movement.reward;
-                [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
-                [Th , pat] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
-                save([cd,'\dorsalventral_assemblies_reward.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
             end
             
             Thresholded.reward.all = Th;
@@ -558,14 +524,13 @@ for tt = 2:length(path)
                 is.reward = InIntervals(bins,rewardTS_run./1000);
                 
                 % Reactivation Strenght
-                %                 if aversiveTS_run(1) < rewardTS_run(1)
                 if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
                     if sum(cond.both.aversive)>=1
                         templates = ones(size(patterns.all.aversive,1),1);
                         templates(size(clusters.dHPC)+1:end) = 0;
                         templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
                         templates(1:size(clusters.dHPC),2) = 0;
-                        [R] = reactivation_strength_control(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , Thresholded.aversive.all , clusters); clear templates
+                        [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
                         reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
                         RBA = R; clear R
                     end
@@ -582,17 +547,15 @@ for tt = 2:length(path)
                     reactivation.aversive.vHPC = [reactivation.aversive.vHPC ; R];
                     RVA = R; clear R
                 end
-                %                 end
                 
                 
-                %                 if aversiveTS_run(1) > rewardTS_run(1)
                 if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
                     if sum(cond.both.reward)>=1
                         templates = ones(size(patterns.all.reward,1),1);
                         templates(size(clusters.dHPC)+1:end) = 0;
                         templates = [templates ,  ones(size(patterns.all.reward,1),1)];
                         templates(1:size(clusters.dHPC),2) = 0;
-                        [R] = reactivation_strength_control(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                        [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
                         reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
                         RBR = R; clear R
                     end
@@ -609,7 +572,6 @@ for tt = 2:length(path)
                     reactivation.reward.vHPC = [reactivation.reward.vHPC ; R];
                     RVR = R; clear R
                 end
-                %                 end
             end
             
             %% Triggered assemblies activity
@@ -711,17 +673,12 @@ save([cd,'\Reactivation_Strength_Data_Normalized_REM.mat'] , 'reactivation')
 %% Plot Strenght Reactivation
 %  for joint assemblies
 figure
-x = logical(reactivation.reward.dvHPC(:,6));
-y = logical(reactivation.aversive.dvHPC(:,6));
-
-% reactivation.reward.dvHPC(isnan(reactivation.reward.dvHPC(:,1)),:) = [];
-% reactivation.aversive.dvHPC(isnan(reactivation.aversive.dvHPC(:,1)),:) = [];
 x = reactivation.reward.dvHPC(:,1);
 y = reactivation.aversive.dvHPC(:,1);
 
 kstest(x)
 kstest(y)
-[h, p] = ttest2(x,y,'tail','left')  
+[h, p] = ranksum(x,y,'tail','left')  
 [h, p] = ttest(y)
 [h, p] = ttest(x)
 
@@ -732,7 +689,6 @@ kstest(y)
 
 xx = [1 2];
 yy = [nanmean(x) nanmean(y)];
-% err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 err = [nansem(x) nansem(y)];
 
 subplot(131),
@@ -743,21 +699,16 @@ er.LineStyle = 'none';
 hold off
 
 %  for dHPC assemblies
-x = logical(reactivation.reward.dHPC(:,6));
-y = logical(reactivation.aversive.dHPC(:,6));
-% reactivation.reward.dHPC(isnan(reactivation.reward.dHPC(:,1)),:) = [];
-% reactivation.aversive.dHPC(isnan(reactivation.aversive.dHPC(:,1)),:) = [];
 x = reactivation.reward.dHPC(:,1);
 y = reactivation.aversive.dHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = kstest2(x,y,'Tail','larger')  
+[h, p] = ranksum(x,y,'tail','left')  
 [h, p] = ttest(y)
 [h, p] = ttest(x)
 
 xx = [1 2];
 yy = [nanmean(x) nanmean(y)];
-% err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 err = [nansem(x) nansem(y)];
 
 subplot(132),
@@ -768,21 +719,16 @@ er.LineStyle = 'none';
 hold off
 
 %  for vHPC assemblies
-x = logical(reactivation.reward.vHPC(:,6));
-y = logical(reactivation.aversive.vHPC(:,6));
-% reactivation.reward.vHPC(isnan(reactivation.reward.vHPC(:,1)),:) = [];
-% reactivation.aversive.vHPC(isnan(reactivation.aversive.vHPC(:,1)),:) = [];
 x = reactivation.reward.vHPC(:,1);
 y = reactivation.aversive.vHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = kstest2(x,y,'Tail','larger')  
+[h, p] = ranksum(x,y,'tail','left')  
 [h, p] = ttest(y)
 [h, p] = ttest(x)
 
 xx = [1 2];
 yy = [nanmean(x) nanmean(y)];
-% err = [(std(x)/sqrt(length(x))) (std(y)/sqrt(length(y)))];
 err = [nansem(x) nansem(y)];
 
 subplot(133),
@@ -791,6 +737,76 @@ er = errorbar(xx,yy,err);ylim([-3 3])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
+
+
+%% Plot Peaks of activation
+%  for joint assemblies
+figure
+x = reactivation.reward.dvHPC(:,7);
+y = reactivation.aversive.dvHPC(:,7);
+
+kstest(x)
+kstest(y)
+[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = ttest(y)
+[h, p] = ttest(x)
+
+% grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
+% Y = [x;y];
+% scatter(grps,Y,'filled'),hold on
+% scatter([1 2] , [nanmedian(x) nanmedian(y)],'filled'),xlim([0 3])
+
+xx = [1 2];
+yy = [nanmean(x) nanmean(y)];
+err = [nansem(x) nansem(y)];
+
+subplot(131),
+bar(xx,yy),hold on
+er = errorbar(xx,yy,err);ylim([-0.2 0.2])
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';
+hold off
+
+%  for dHPC assemblies
+x = reactivation.reward.dHPC(:,7);
+y = reactivation.aversive.dHPC(:,7);
+kstest(x)
+kstest(y)
+[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = ttest(y)
+[h, p] = ttest(x)
+
+xx = [1 2];
+yy = [nanmean(x) nanmean(y)];
+err = [nansem(x) nansem(y)];
+
+subplot(132),
+bar(xx,yy),hold on
+er = errorbar(xx,yy,err);ylim([-0.2 0.2])
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';
+hold off
+
+%  for vHPC assemblies
+x = reactivation.reward.vHPC(:,7);
+y = reactivation.aversive.vHPC(:,7);
+kstest(x)
+kstest(y)
+[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = ttest(y)
+[h, p] = ttest(x)
+
+xx = [1 2];
+yy = [nanmean(x) nanmean(y)];
+err = [nansem(x) nansem(y)];
+
+subplot(133),
+bar(xx,yy),hold on
+er = errorbar(xx,yy,err);ylim([-0.2 0.2])
+er.Color = [0 0 0];                            
+er.LineStyle = 'none';
+hold off
+
 
 %% Plot cumulative distribution
 %  for joint assemblies

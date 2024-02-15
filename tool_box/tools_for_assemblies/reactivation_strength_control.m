@@ -1,4 +1,4 @@
-function [R] = reactivation_strength(patterns , cond , SpikeTrain , Is , th , type , config , normalization, templates)
+function [R] = reactivation_strength_control(patterns , cond , SpikeTrain , Is , th , type , config , normalization, threshold , clusters)
 % This function calculate Reactivation Strength (van de Ven et al (2016)).
 % Find the peaks of the zscored assemblies strength and calculate the mean
 % during Pre sleep and Post sleep. Then, it calculates Post-Pre.
@@ -79,18 +79,21 @@ dt = bins(2)-bins(1); % delta time
 spks = SpikeTrain(:,2:end);
 prc = 50; % percentile to check if the Strenght is higher 
 iterations = 1; % iterations to create the surrogated distribution
-if not(isempty(templates))
-    a = assembly_activity_only_joint(patterns(:,cond) , spks',templates(:,1),templates(:,2));
-else
-    a = assembly_activity(patterns(:,cond) , spks');
-end
+
+threshold = threshold(:,cond);
+
+a = assembly_activity(patterns(:,cond) , spks');
 a = zscore(a,1,2);
 R = [];
 
 for i = 1:size(a,1)
     
-%      st = nanstd(a(i,:));
-%      m = nanmean(a(i,:));
+    v = zeros(size(threshold,1),1);
+    v(size(clusters.dHPC,1)+1:end,1) = threshold(size(clusters.dHPC,1)+1:end,i);
+    d = zeros(size(threshold,1),1);
+    d(1:size(clusters.dHPC,1),1) = threshold(1:size(clusters.dHPC,1),i);    
+    
+    sum(spks(:,logical(v')),2)
     
     % using the time vector for plotting
     [pks.baseline,loc.baseline] = findpeaks(a(i,Is.baseline),bins(Is.baseline),'MinPeakHeight',th);
@@ -161,43 +164,39 @@ for i = 1:size(a,1)
         if config == 1
             if normalization
                 strength = (nanmean(pks.aversive) - nanmean(pks.baseline))/(nanmean([pks.aversive , pks.baseline]));
-                strength1 = (length(pks.aversive) - length(pks.baseline))/(sum([length(pks.aversive) , length(pks.baseline)]));
                 FR.pre = size(pks.baseline,2)/(sum(Is.baseline)*dt);
                 FR.post = size(pks.aversive,2)/(sum(Is.aversive)*dt);
                 
 %                 R = [R ; strength nanmean(pks.runaversive) nanmean(pks.runreward) strength>prctile(surrogated,prc)];
-                R = [R ; strength FR.pre FR.post nanmean(pks.runaversive) nanmean(pks.runreward) strength > m strength1];
-                clear strength FR strength1
+                R = [R ; strength FR.pre FR.post nanmean(pks.runaversive) nanmean(pks.runreward) strength > m];
+                clear strength FR
             else
                 strength = (nanmean(pks.aversive) - nanmean(pks.baseline));
-                strength1 = (length(pks.aversive) - length(pks.baseline))/(sum([length(pks.aversive) , length(pks.baseline)]));
                 FR.pre = size(pks.baseline,2)/(sum(Is.baseline)*dt);
                 FR.post = size(pks.aversive,2)/(sum(Is.aversive)*dt);
                 
 %                 R = [R ;  nanmean(pks.runaversive) nanmean(pks.runreward) strength>prctile(surrogated,prc)];
-                R = [R ; strength FR.pre FR.post nanmean(pks.runaversive) nanmean(pks.runreward) strength > m strength1];
-                clear strength FR strength1
+                R = [R ; strength FR.pre FR.post nanmean(pks.runaversive) nanmean(pks.runreward) strength > m];
+                clear strength FR
             end
         else
             if normalization
                 strength = (nanmean(pks.aversive) - nanmean(pks.reward))/(nanmean([pks.aversive , pks.reward]));
-                strength1 = (length(pks.aversive) - length(pks.reward))/(sum([length(pks.aversive) , length(pks.reward)]));
                 FR.pre = size(pks.reward,2)/(sum(Is.reward)*dt);
                 FR.post = size(pks.aversive,2)/(sum(Is.aversive)*dt);
                 
 %                 R = [R ; strength nanmean(pks.runaversive) nanmean(pks.runreward) strength>prctile(surrogated,prc)];
-                R = [R ; strength FR.pre FR.post nanmean(pks.runaversive) nanmean(pks.runreward) strength > m strength1];
+                R = [R ; strength FR.pre FR.post nanmean(pks.runaversive) nanmean(pks.runreward) strength > m];
                 clear strength FR
             else
                 strength = (nanmean(pks.aversive) - nanmean(pks.reward));
-                strength1 = (length(pks.aversive) - length(pks.reward))/(sum([length(pks.aversive) , length(pks.reward)]));
                 FR.pre = size(pks.reward,2)/(sum(Is.reward)*dt);
                 FR.post = size(pks.aversive,2)/(sum(Is.aversive)*dt);
                 
                 %                 R = [R ; strength nanmean(pks.runaversive) nanmean(pks.runreward) strength>prctile(surrogated,prc)];
-                R = [R ; strength FR.pre FR.post nanmean(pks.runaversive) nanmean(pks.runreward) strength > m strength1];
+                R = [R ; strength FR.pre FR.post nanmean(pks.runaversive) nanmean(pks.runreward) strength > m];
 
-                clear strength FR strength1
+                clear strength FR
             end
         end
         
@@ -207,38 +206,36 @@ for i = 1:size(a,1)
                 strength = (nanmean(pks.reward) - nanmean(pks.baseline))/(nanmean([pks.reward , pks.baseline]));
                 FR.pre = size(pks.baseline,2)/(sum(Is.baseline)*dt);
                 FR.post = size(pks.reward,2)/(sum(Is.reward)*dt);
-                strength1 = (length(pks.reward) - length(pks.baseline))/(sum([length(pks.reward) , length(pks.baseline)]));
+                
 %                 R = [R ; strength nanmean(pks.runreward) nanmean(pks.runaversive) strength>prctile(surrogated,prc)];
-                R = [R ; strength FR.pre FR.post nanmean(pks.runreward) nanmean(pks.runaversive) strength > m strength1];
-                clear strength FR strength1
+                R = [R ; strength FR.pre FR.post nanmean(pks.runreward) nanmean(pks.runaversive) strength > m];
+                clear strength FR
             else
                 strength = (nanmean(pks.reward) - nanmean(pks.baseline));
                 FR.pre = size(pks.baseline,2)/(sum(Is.baseline)*dt);
                 FR.post = size(pks.reward,2)/(sum(Is.reward)*dt);
-                strength1 = (length(pks.reward) - length(pks.baseline))/(sum([length(pks.reward) , length(pks.baseline)]));
+                
 %                 R = [R ; strength nanmean(pks.runreward) nanmean(pks.runaversive) strength>prctile(surrogated,prc)];
-                R = [R ; strength FR.pre FR.post nanmean(pks.runreward) nanmean(pks.runaversive) strength > m strength1];
-                clear strength FR strength1
+                R = [R ; strength FR.pre FR.post nanmean(pks.runreward) nanmean(pks.runaversive) strength > m];
+                clear strength FR
             end
         else
             if normalization
                 strength = (nanmean(pks.reward) - nanmean(pks.aversive))/(nanmean([pks.reward , pks.aversive]));
-                strength1 = (length(pks.reward) - length(pks.aversive))/(sum([length(pks.reward) , length(pks.aversive)]));
                 FR.pre = size(pks.aversive,2)/(sum(Is.aversive)*dt);
                 FR.post = size(pks.reward,2)/(sum(Is.reward)*dt);
                 
 %                 R = [R ; strength nanmean(pks.runreward) nanmean(pks.runaversive) strength>prctile(surrogated,prc)];
-                R = [R ; strength FR.pre FR.post  nanmean(pks.runreward) nanmean(pks.runaversive) strength > m strength1];
-                clear strength FR strength1
+                R = [R ; strength FR.pre FR.post  nanmean(pks.runreward) nanmean(pks.runaversive) strength > m];
+                clear strength FR
             else
                 strength = (nanmean(pks.reward) - nanmean(pks.aversive));
-                strength1 = (length(pks.reward) - length(pks.aversive))/(sum([length(pks.reward) , length(pks.aversive)]));
                 FR.pre = size(pks.aversive,2)/(sum(Is.aversive)*dt);
                 FR.post = size(pks.reward,2)/(sum(Is.reward)*dt);
                 
 %                 R = [R ; strength nanmean(pks.runreward) nanmean(pks.runaversive) strength>prctile(surrogated,prc)];
-                R = [R ; strength FR.pre FR.post  nanmean(pks.runreward) nanmean(pks.runaversive) strength > m strength1];
-                clear strength FR strength1
+                R = [R ; strength FR.pre FR.post  nanmean(pks.runreward) nanmean(pks.runaversive) strength > m];
+                clear strength FR
             end
         end
     end
