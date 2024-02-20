@@ -1028,17 +1028,23 @@ for tt = 5:length(path)
              pos_tmp = Restrict(pos_tmp,in_maze); 
              pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
                     
-             
              % 1st half vs 2nd half 
-             total_time = max(pos_tmp(:,1))-min(pos_tmp(:,1)); 
-             half_time = total_time/2;
+             half_tresh = round((size(pos_tmp,1))/2);
              
-             %Divide spikes time in two
-             spks_1 = spks_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time)));
-             pos_1 = pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
+             % Dividing spks and pos by half_tresh
+             pos_1=pos_tmp(1:half_tresh,:); 
+             pos_2= pos_tmp(half_tresh+1:end,:); 
+             spks_1 = spks_tmp(spks_tmp<pos_tmp(half_tresh,1));
+             spks_2 = spks_tmp(spks_tmp>pos_tmp(half_tresh,1));
              
-             spks_2 = spks_tmp(spks_tmp>=(min(pos_tmp(:,1)+half_time)));
-             pos_2 =  pos_tmp(pos_tmp(:,1)>(min(pos_tmp(:,1)+half_time)),:); 
+             %Dividing by time -> not valid if unequal exploration
+%              total_time = max(pos_tmp(:,1))-min(pos_tmp(:,1)); 
+%              half_time = total_time/2;
+             %Divide spikes time in two by time 
+%              spks_1 = spks_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time)));
+%              pos_1 = pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
+%              spks_2 = spks_tmp(spks_tmp>=(min(pos_tmp(:,1)+half_time)));
+%              pos_2 =  pos_tmp(pos_tmp(:,1)>(min(pos_tmp(:,1)+half_time)),:); 
     
             %Calculate remapping parameters 
             [curve1,stats1] = FiringCurve(pos_1, spks_1 , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
@@ -1078,17 +1084,24 @@ for tt = 5:length(path)
             pos_tmp = Restrict(pos_tmp,in_maze); 
             pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
                     
+%             % 1st half vs 2nd half 
+%             total_time = max(pos_tmp(:,1))-min(pos_tmp(:,1)); 
+%             half_time = total_time/2;
+%             %Divide spikes time in two
+%             spks_1 = spks_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time)));
+%             pos_1 = pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
+%             spks_2 = spks_tmp(spks_tmp>=(min(pos_tmp(:,1)+half_time)));
+%             pos_2 =  pos_tmp(pos_tmp(:,1)>(min(pos_tmp(:,1)+half_time)),:); 
+
             % 1st half vs 2nd half 
-            total_time = max(pos_tmp(:,1))-min(pos_tmp(:,1)); 
-            half_time = total_time/2;
+             half_tresh = round((size(pos_tmp,1))/2);
              
-             %Divide spikes time in two
-             spks_1 = spks_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time)));
-             pos_1 = pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
-             
-             spks_2 = spks_tmp(spks_tmp>=(min(pos_tmp(:,1)+half_time)));
-             pos_2 =  pos_tmp(pos_tmp(:,1)>(min(pos_tmp(:,1)+half_time)),:); 
-    
+             % Dividing spks and pos by half_tresh
+             pos_1=pos_tmp(1:half_tresh,:); 
+             pos_2= pos_tmp(half_tresh+1:end,:); 
+             spks_1 = spks_tmp(spks_tmp<pos_tmp(half_tresh,1));
+             spks_2 = spks_tmp(spks_tmp>pos_tmp(half_tresh,1));
+                  
             %Calculate remapping parameters 
             [curve1,stats1] = FiringCurve(pos_1, spks_1 , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
             [curve2,stats2] = FiringCurve(pos_2, spks_2, 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
@@ -1121,6 +1134,9 @@ for tt = 5:length(path)
              
         end
         
+        %Store 
+        all_stability_ave_dHPC = [all_stability_ave_dHPC; temp_stability_ave_dHPC];  
+        all_stability_rew_dHPC = [all_stability_rew_dHPC; temp_stability_rew_dHPC]; 
         
         disp('vHPC Stability calculation')
         
@@ -1142,18 +1158,27 @@ for tt = 5:length(path)
              spks_tmp = Restrict(spks_tmp,in_maze);
              pos_tmp = Restrict(pos_tmp,in_maze); 
              pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
-                    
-             
+              
              % 1st half vs 2nd half 
-             total_time = max(pos_tmp(:,1))-min(pos_tmp(:,1)); 
-             half_time = total_time/2;
+             half_tresh = round((size(pos_tmp,1))/2);
              
-             %Divide spikes time in two
-             spks_1 = spks_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time)));
-             pos_1 = pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
+             % Dividing spks and pos by half_tresh
+             pos_1=pos_tmp(1:half_tresh,:); 
+             pos_2= pos_tmp(half_tresh+1:end,:); 
+             spks_1 = spks_tmp(spks_tmp<pos_tmp(half_tresh,1));
+             spks_2 = spks_tmp(spks_tmp>pos_tmp(half_tresh,1));
+                   
              
-             spks_2 = spks_tmp(spks_tmp>=(min(pos_tmp(:,1)+half_time)));
-             pos_2 =  pos_tmp(pos_tmp(:,1)>(min(pos_tmp(:,1)+half_time)),:); 
+%              % 1st half vs 2nd half 
+%              total_time = max(pos_tmp(:,1))-min(pos_tmp(:,1)); 
+%              half_time = total_time/2;
+%              
+%              %Divide spikes time in two
+%              spks_1 = spks_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time)));
+%              pos_1 = pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
+%              
+%              spks_2 = spks_tmp(spks_tmp>=(min(pos_tmp(:,1)+half_time)));
+%              pos_2 =  pos_tmp(pos_tmp(:,1)>(min(pos_tmp(:,1)+half_time)),:); 
     
             %Calculate remapping parameters 
             [curve1,stats1] = FiringCurve(pos_1, spks_1 , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
@@ -1190,17 +1215,26 @@ for tt = 5:length(path)
             spks_tmp = Restrict(spks_tmp,in_maze);
             pos_tmp = Restrict(pos_tmp,in_maze); 
             pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
-                    
-            % 1st half vs 2nd half 
-            total_time = max(pos_tmp(:,1))-min(pos_tmp(:,1)); 
-            half_time = total_time/2;
              
-             %Divide spikes time in two
-             spks_1 = spks_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time)));
-             pos_1 = pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
+             % 1st half vs 2nd half 
+             half_tresh = round((size(pos_tmp,1))/2);
              
-             spks_2 = spks_tmp(spks_tmp>=(min(pos_tmp(:,1)+half_time)));
-             pos_2 =  pos_tmp(pos_tmp(:,1)>(min(pos_tmp(:,1)+half_time)),:); 
+             % Dividing spks and pos by half_tresh
+             pos_1=pos_tmp(1:half_tresh,:); 
+             pos_2= pos_tmp(half_tresh+1:end,:); 
+             spks_1 = spks_tmp(spks_tmp<pos_tmp(half_tresh,1));
+             spks_2 = spks_tmp(spks_tmp>pos_tmp(half_tresh,1));
+             
+%             % 1st half vs 2nd half 
+%             total_time = max(pos_tmp(:,1))-min(pos_tmp(:,1)); 
+%             half_time = total_time/2;
+%              
+%              %Divide spikes time in two
+%              spks_1 = spks_tmp(spks_tmp<(min(pos_tmp(:,1)+half_time)));
+%              pos_1 = pos_tmp(pos_tmp(:,1)<(min(pos_tmp(:,1)+half_time)),:); 
+%              
+%              spks_2 = spks_tmp(spks_tmp>=(min(pos_tmp(:,1)+half_time)));
+%              pos_2 =  pos_tmp(pos_tmp(:,1)>(min(pos_tmp(:,1)+half_time)),:); 
     
             %Calculate remapping parameters 
             [curve1,stats1] = FiringCurve(pos_1, spks_1 , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 2 , 'minPeak' , 0.1);
@@ -1232,10 +1266,8 @@ for tt = 5:length(path)
              
         end 
         
+         
         %Store 
-        all_stability_ave_dHPC = [all_stability_ave_dHPC; temp_stability_ave_dHPC];  
-        all_stability_rew_dHPC = [all_stability_rew_dHPC; temp_stability_rew_dHPC]; 
-        
         all_stability_ave_vHPC = [all_stability_ave_vHPC; temp_stability_ave_vHPC];  
         all_stability_rew_vHPC = [all_stability_rew_vHPC; temp_stability_rew_vHPC]; 
         
@@ -1245,6 +1277,27 @@ for tt = 5:length(path)
 
 save('W:\Remapping-analysis-Facu\pc_all_stability_within.mat', 'all_stability_ave_dHPC', 'all_stability_rew_dHPC', 'all_stability_ave_vHPC', 'all_stability_rew_vHPC');
 
+%Plot + stats stability 1st vs 2nd 
+%c1 = spatial c2= fr_change c3=  overlap c4: pf shift 
+
+data = [all_stability_ave_dHPC,ones(size(all_stability_ave_dHPC,1),1);...
+    all_stability_rew_dHPC,ones(size(all_stability_rew_dHPC,1),1)*2];
+
+data = [all_stability_ave_vHPC,ones(size(all_stability_ave_vHPC,1),1);...
+    all_stability_rew_vHPC,ones(size(all_stability_rew_vHPC,1),1)*2];
+
+figure, 
+x = data(:,5);
+y= data(:,1);%Change the column number (1-4) to choose which variable to plot 
+scatter(x,y,"filled",'jitter','on', 'jitterAmount',0.1) , xlim([0 2]), % ylim([-0.8 1])
+title('Stability 1st vs 2nd - dHPC')
+ylabel('Spatial Correlation')
+hold on
+x = [1 2];
+y = [nanmedian(data(data(:,5)==1,1)) , nanmedian(data(data(:,5)==2,1))]; % select the same c than y 
+scatter(x,y, "filled") , xlim([0 3]), hold on
+
+[h p] = ranksum(data(data(:,5)==1,1) , data(data(:,5)==2,1))
 
 %% Scatter plot between within 
 %data: 

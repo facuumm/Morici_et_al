@@ -13,8 +13,6 @@ path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\
 %% Output 
 pv_corr.dhpc = []; 
 pv_corr.vhpc = []; 
-%%
-doplot=1
 %% Accumulated population vector correlation 
 for tt = 1:length(path)
     
@@ -45,15 +43,9 @@ for tt = 1:length(path)
                 end
                 if doplot==1
                     figure(1)
-                    subplot(2,2,1)
-                    imagesc(squeeze(pv_ave_dhpc)')
-                    ylabel('Neurons')
-                    subplot(2,2,2)
-                    imagesc(squeeze(pv_rew_dhpc)')
-                    xlabel('Space')
-                    
+                    subplot()
                 end
-                %%
+                return
                 % Vector bin correlation - dorsal
                 sesion_corr = NaN(60,1);
                 for c=1:size(pv_ave_dhpc,2) %Iterate through all the bins
@@ -68,9 +60,7 @@ for tt = 1:length(path)
                 end 
                 temp_dhpc = [temp_dhpc;sesion_corr];
                 
-%                 clear pv_ave_dhpc pv_rew_dhpc pv_ave pv_rew
-                
-                return
+                clear pv_ave_dhpc pv_rew_dhpc pv_ave pv_rew
             end
         end 
         

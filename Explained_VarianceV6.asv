@@ -281,9 +281,9 @@ for tt = 1:length(path)
             is.reward.sws = InIntervals(bins,NREM.reward);
             is.aversive.sws = InIntervals(bins,NREM.aversive);
             
-            is.baseline.rem = InIntervals(bins,REM.baseline);
-            is.aversive.rem = InIntervals(bins,REM.aversive);
-            is.reward.rem = InIntervals(bins,REM.reward);
+%             is.baseline.sws = InIntervals(bins,REM.baseline);
+%             is.aversive.sws = InIntervals(bins,REM.aversive);
+%             is.reward.sws = InIntervals(bins,REM.reward);
             
             is.aversive.run = InIntervals(bins,movement.aversive);
             is.reward.run = InIntervals(bins,movement.reward);
@@ -478,22 +478,33 @@ for tt = 1:length(path)
     end
 end
 
+save([cd,'\Explained_Variance_NREM.mat'] , 'EV')
 
 figure
-subplot(1,2,1),boxplot([EV.reward.dvHPC(:,1) , EV.reward.dvHPC(:,2)]) , ylim([0 3]), [h p] =ranksum(EV.reward.dvHPC(:,1) , EV.reward.dvHPC(:,2),'tail','left')
-subplot(1,2,2),boxplot([EV.aversive.dvHPC(:,1) , EV.aversive.dvHPC(:,2)]) , ylim([0 3]), [h p] =ranksum(EV.aversive.dvHPC(:,1) , EV.aversive.dvHPC(:,2),'tail','left')
+subplot(1,2,1),boxplot([EV.reward.dvHPC(:,1) , EV.reward.dvHPC(:,2)]) , ylim([0 4]), [h p] =ranksum(EV.reward.dvHPC(:,1) , EV.reward.dvHPC(:,2),'tail','left'),hold on
+x = [[EV.reward.dvHPC(:,1) ; EV.reward.dvHPC(:,2)] , [ones(length(EV.reward.dvHPC),1) ; ones(length(EV.reward.dvHPC),1)*2]];
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1)
+
+subplot(1,2,2),boxplot([EV.aversive.dvHPC(:,1) , EV.aversive.dvHPC(:,2)]) , ylim([0 4]), [h p] =ranksum(EV.aversive.dvHPC(:,1) , EV.aversive.dvHPC(:,2),'tail','left'),hold on
+x = [[EV.aversive.dvHPC(:,1) ; EV.aversive.dvHPC(:,2)] , [ones(length(EV.aversive.dvHPC),1) ; ones(length(EV.aversive.dvHPC),1)*2]];
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1)
+
 % subplot(1,4,3),boxplot([EV.reward.dvHPCi(:,1) , EV.reward.dvHPCi(:,2)]) , ylim([0 3]), [h p] =ranksum(EV.reward.dvHPCi(:,1) , EV.reward.dvHPCi(:,2),'tail','left')
 % subplot(1,4,4),boxplot([EV.aversive.dvHPCi(:,1) , EV.aversive.dvHPCi(:,2)]) , ylim([0 3]), [h p] =ranksum(EV.aversive.dvHPCi(:,1) , EV.aversive.dvHPCi(:,2),'tail','left')
 
+% figure
+% subplot(1,2,1),scatter([ones(length(EV.reward.dvHPC(:,1)),1) ; ones(length(EV.reward.dvHPC(:,2)),1)*2],[EV.reward.dvHPC(:,1) ; EV.reward.dvHPC(:,2)],"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+% scatter([1 2] , [nanmean(EV.reward.dvHPC(:,1)) nanmean(EV.reward.dvHPC(:,2))],'filled')
+% subplot(1,2,2),scatter([ones(length(EV.aversive.dvHPC(:,1)),1) ; ones(length(EV.aversive.dvHPC(:,2)),1)*2],[EV.aversive.dvHPC(:,1) ; EV.aversive.dvHPC(:,2)],"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+% scatter([1 2] , [nanmean(EV.aversive.dvHPC(:,1)) nanmean(EV.aversive.dvHPC(:,2))],'filled')
 
-subplot(1,2,1),scatter([ones(length(EV.reward.dvHPC(:,1)),1) ; ones(length(EV.reward.dvHPC(:,2)),1)*2],[EV.reward.dvHPC(:,1) ; EV.reward.dvHPC(:,2)],"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
-scatter([1 2] [nanmean(EV.reward.dvHPC(:,1)) nanmean(EV.reward.dvHPC(:,2))])
 
-% x = [EV.reward.dvHPC(:,1) ; EV.reward.dvHPC(:,2) ; EV.aversive.dvHPC(:,1) ; EV.aversive.dvHPC(:,2)];
-% y = [ones(length([EV.reward.dvHPC(:,1) ; EV.reward.dvHPC(:,2)]),1) ; ones(length([EV.aversive.dvHPC(:,1) ; EV.aversive.dvHPC(:,2)]),1)*2];
-% y = [y , [ones(length(EV.reward.dvHPC(:,1)),1) ; ones(length(EV.reward.dvHPC(:,2)),1)*2 ; ones(length(EV.aversive.dvHPC(:,1)),1) ; ones(length(EV.aversive.dvHPC(:,2)),1)*2]]
-% 
-% anovan(x,y,'model','interaction','varnames',{'condition','tipo'})
+x = [EV.reward.dvHPC(:,1) ; EV.reward.dvHPC(:,2) ; EV.aversive.dvHPC(:,1) ; EV.aversive.dvHPC(:,2)];
+y = [ones(length([EV.reward.dvHPC(:,1) ; EV.reward.dvHPC(:,2)]),1) ; ones(length([EV.aversive.dvHPC(:,1) ; EV.aversive.dvHPC(:,2)]),1)*2];
+y = [y , [ones(length(EV.reward.dvHPC(:,1)),1) ; ones(length(EV.reward.dvHPC(:,2)),1)*2 ; ones(length(EV.aversive.dvHPC(:,1)),1) ; ones(length(EV.aversive.dvHPC(:,2)),1)*2]]
+
+[~,~,stats] = anovan(x,y,'model','interaction','varnames',{'condition','tipo'})
+[results,~,~,gnames] = multcompare(stats,"Dimension",[1 2]);
 
 x = [EV.reward.dvHPC(:,1) ; EV.reward.dvHPC(:,2) ; EV.aversive.dvHPC(:,1) ; EV.aversive.dvHPC(:,2)];
 y = {'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'REV';'EV';'EV';'EV';'EV';'EV';'EV';'EV';'EV'};

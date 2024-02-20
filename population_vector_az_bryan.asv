@@ -35,8 +35,21 @@ for tt = 1:length(path)
         cd(session)
         cd 'Spikesorting'
         
+        temp=[0 0]
         if isfile('dHPC_pc.mat')
             load('dHPC_pc.mat');
+            temp(1) = size(dHPC,2);
+        end
+        if isfile('vHPC_pc.mat')
+            load('vHPC_pc.mat');
+            temp(1) = size(dHPC,2);
+        end
+        min_neurons = min(size(dHPC,2),size(vHPC,2));
+        
+        if isempty(min_neurons)
+            continue
+        end
+        if isfile('dHPC_pc.mat')
             if size(dHPC,2)>=5 
                 %Create rate map stacks 
                 for n=1:size(dHPC,2)

@@ -8,12 +8,12 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
 MUAselection = logical(0); % to select ripples by their MUA
-W = 'N'; % to select what kind of ripples I want to check
+W = 'E'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % D= uncoordinated dorsal, V= uncoordinated ventral
 % CB = cooridnated bursts
 % N= NREM, R= REM
-TA =  logical(0); % Trigger Reactivation Strength
+TA =  logical(1); % Trigger Reactivation Strength
 
 % for SU
 criteria_fr = 0; %criteria to include or not a SU into the analysis
@@ -32,7 +32,7 @@ reactivation.reward.dHPC = [];
 reactivation.aversive.vHPC = [];
 reactivation.reward.vHPC = [];
 
-normalization = false; % to define if normalization over Reactivation Strength is applied or not
+normalization = true; % to define if normalization over Reactivation Strength is applied or not
 th = 5; % threshold for peak detection
 
 gain.both.reward.pre = [];     gain.both.reward.post = [];
@@ -44,7 +44,7 @@ Number_of_assemblies.aversive = [];
 Number_of_assemblies.reward = [];
 
 %% Main loop, to iterate across sessions
-for tt = 1:length(path)
+for tt = 2:length(path)
     %List of folders from the path
     files = dir(path{tt});
     % Get a logical vector that tells which is a directory.
@@ -484,6 +484,10 @@ for tt = 1:length(path)
                         is.sws.baseline = InIntervals(bins,[ripple_event.baseline(:,1) ripple_event.baseline(:,3)]);
                         is.sws.reward = InIntervals(bins,[ripple_event.reward(:,1) ripple_event.reward(:,3)]);
                         is.sws.aversive = InIntervals(bins,[ripple_event.aversive(:,1) ripple_event.aversive(:,3)]);
+                        
+                        ripple_event.filtered.baseline = ripple_event.baseline;
+                        ripple_event.filtered.aversive = ripple_event.aversive;
+                        ripple_event.filtered.reward = ripple_event.reward;
                     end
                 elseif strcmp(W,'CB')
                     % coordinated event
@@ -578,71 +582,71 @@ for tt = 1:length(path)
             if TA
                 disp('Triggered assemblies activity sourrounding cooridnated events')
                 % Aversive
-                if RBA(:,end)>=1
-                    condd = logical(RBA(:,end));
+%                 if RBA(:,end)>=1
+%                     condd = logical(RBA(:,end));
                     if sum(cond.both.aversive) >= 1
                         if aversiveTS_run(1) < rewardTS_run(1)
-                            [R.baseline] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.baseline , 0 , 1);
-                            [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 0 , 1);
+                            [R.baseline] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 0.2 , ripple_event.filtered.baseline , 0 , 0 , [] , []);
+                            [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 0.2 , ripple_event.filtered.aversive , 0 , 0 , [] , []);
                             
                             if isempty(gain.both.aversive.pre)
-                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline(condd,:)];
-                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(condd,:)];
+                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline];
+                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive];
                             else
-                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline(condd,1:size(gain.both.aversive.pre,2))];
-                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(condd,1:size(gain.both.aversive.pre,2))];
+                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline(:,1:size(gain.both.aversive.pre,2))];
+                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(:,1:size(gain.both.aversive.pre,2))];
                             end
                             
                             clear R
                         else
-                            [R.reward] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 1);
-                            [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 0 , 1);
+                            [R.reward] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 1 , [] , []);
+                            [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 0 , 0 , [] , []);
                             
                             if isempty(gain.both.aversive.pre)
-                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward(condd,:)];
-                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(condd,:)];
+                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward];
+                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive];
                             else
-                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward(condd,1:size(gain.both.aversive.pre,2))];
-                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(condd,1:size(gain.both.aversive.pre,2))];
+                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward(:,1:size(gain.both.aversive.pre,2))];
+                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(:,1:size(gain.both.aversive.pre,2))];
                             end
                             clear R
                         end
-                    end
-                    clear condd
+%                     end
+%                     clear condd
                 end
                 
                 % Reward
-                if RBR(:,end)>=1
-                    condd = logical(RBR(:,end));
+%                 if RBR(:,end)>=1
+%                     condd = logical(RBR(:,end));
                     if sum(cond.both.reward) >= 1
                         if aversiveTS_run(1) > rewardTS_run(1)
-                            [R.baseline] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.baseline , 0 , 1);
-                            [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 1);
+                            [R.baseline] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.baseline , 0 , 0 , [] , []);
+                            [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 0 , [] , []);
                             
                             if isempty(gain.both.reward.pre)
-                                gain.both.reward.pre = [gain.both.reward.pre ; R.baseline(condd,:)];
-                                gain.both.reward.post = [gain.both.reward.post ; R.reward(condd,:)];
+                                gain.both.reward.pre = [gain.both.reward.pre ; R.baseline];
+                                gain.both.reward.post = [gain.both.reward.post ; R.reward];
                             else
-                                gain.both.reward.pre = [gain.both.reward.pre ; R.baseline(condd,1:size(gain.both.reward.pre,2))];
-                                gain.both.reward.post = [gain.both.reward.post ; R.reward(condd,1:size(gain.both.reward.pre,2))];
+                                gain.both.reward.pre = [gain.both.reward.pre ; R.baseline(:,1:size(gain.both.reward.pre,2))];
+                                gain.both.reward.post = [gain.both.reward.post ; R.reward(:,1:size(gain.both.reward.pre,2))];
                             end
                             clear R
                         else
-                            [R.aversive] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 0 , 1);
-                            [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 1);
+                            [R.aversive] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 0 , 0 , [] , []);
+                            [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 0 , [] , []);
                             
                             if isempty(gain.both.reward.pre)
-                                gain.both.reward.pre = [gain.both.reward.pre ; R.aversive(condd,:)];
-                                gain.both.reward.post = [gain.both.reward.post ; R.reward(condd,:)];
+                                gain.both.reward.pre = [gain.both.reward.pre ; R.aversive];
+                                gain.both.reward.post = [gain.both.reward.post ; R.reward];
                             else
-                                gain.both.reward.pre = [gain.both.reward.pre ; R.aversive(condd,1:size(gain.both.reward.pre,2))];
-                                gain.both.reward.post = [gain.both.reward.post ; R.reward(condd,1:size(gain.both.reward.pre,2))];
+                                gain.both.reward.pre = [gain.both.reward.pre ; R.aversive(:,1:size(gain.both.reward.pre,2))];
+                                gain.both.reward.post = [gain.both.reward.post ; R.reward(:,1:size(gain.both.reward.pre,2))];
                             end
                             clear R
                         end
                     end
-                    clear cond
-                end
+%                     clear cond
+%                 end
             end
             
             
@@ -668,7 +672,7 @@ for tt = 1:length(path)
     
 end
 
-save([cd,'\Reactivation_Strength_Data_Normalized_REM.mat'] , 'reactivation')
+save([cd,'\Reactivation_Strength_Data_Normalized_noncoordinates_vRipples.mat'] , 'reactivation')
 
 %% Plot Strenght Reactivation
 %  for joint assemblies
@@ -678,135 +682,161 @@ y = reactivation.aversive.dvHPC(:,1);
 
 kstest(x)
 kstest(y)
-[h, p] = ttest2(x,y,'tail','left')  
-[h, p] = ttest(y)
-[h, p] = ttest(x)
-
-% grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
-% Y = [x;y];
-% scatter(grps,Y,'filled'),hold on
-% scatter([1 2] , [nanmedian(x) nanmedian(y)],'filled'),xlim([0 3])
-
-xx = [1 2];
-yy = [nanmean(x) nanmean(y)];
-err = [nansem(x) nansem(y)];
+[h, p] = ranksum(x,y)  
+[h, p] = signrank(y,0)
+[h, p] = signrank(x,0)
 
 subplot(131),
-bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-1 1])
-er.Color = [0 0 0];                            
-er.LineStyle = 'none';
-hold off
+grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
+Y = [x;y];
+scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
+
+% xx = [1 2];
+% yy = [nanmean(x) nanmean(y)];
+% err = [nansem(x) nansem(y)];
+% 
+% subplot(131),
+% bar(xx,yy),hold on
+% er = errorbar(xx,yy,err);ylim([-3 3])
+% er.Color = [0 0 0];                            
+% er.LineStyle = 'none';
+% hold off
 
 %  for dHPC assemblies
 x = reactivation.reward.dHPC(:,1);
 y = reactivation.aversive.dHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = kstest2(x,y,'Tail','larger')  
-[h, p] = ttest(y)
-[h, p] = ttest(x)
-
-xx = [1 2];
-yy = [nanmean(x) nanmean(y)];
-err = [nansem(x) nansem(y)];
+[h, p] = ranksum(x,y)  
+[h, p] = signrank(y,0)
+[h, p] = signrank(x,0)
 
 subplot(132),
-bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-1 1])
-er.Color = [0 0 0];                            
-er.LineStyle = 'none';
-hold off
+grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
+Y = [x;y];
+scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
+
+% xx = [1 2];
+% yy = [nanmean(x) nanmean(y)];
+% err = [nansem(x) nansem(y)];
+% 
+% subplot(132),
+% bar(xx,yy),hold on
+% er = errorbar(xx,yy,err);ylim([-3 3])
+% er.Color = [0 0 0];                            
+% er.LineStyle = 'none';
+% hold off
 
 %  for vHPC assemblies
 x = reactivation.reward.vHPC(:,1);
 y = reactivation.aversive.vHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = kstest2(x,y,'Tail','larger')  
-[h, p] = ttest(y)
-[h, p] = ttest(x)
-
-xx = [1 2];
-yy = [nanmean(x) nanmean(y)];
-err = [nansem(x) nansem(y)];
+[h, p] = ranksum(x,y)  
+[h, p] = signrank(y,0)
+[h, p] = signrank(x,0)
 
 subplot(133),
-bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-1 1])
-er.Color = [0 0 0];                            
-er.LineStyle = 'none';
-hold off
+grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
+Y = [x;y];
+scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
+
+% xx = [1 2];
+% yy = [nanmean(x) nanmean(y)];
+% err = [nansem(x) nansem(y)];
+% 
+% subplot(133),
+% bar(xx,yy),hold on
+% er = errorbar(xx,yy,err);ylim([-3 3])
+% er.Color = [0 0 0];                            
+% er.LineStyle = 'none';
+% hold off
 
 
-%% Plot Strenght Reactivation
+%% Plot Peaks of activation
 %  for joint assemblies
 figure
-x = reactivation.reward.dvHPC(:,1);
-y = reactivation.aversive.dvHPC(:,1);
-
+x = reactivation.reward.dvHPC(:,7);
+y = reactivation.aversive.dvHPC(:,7);
 kstest(x)
 kstest(y)
-[h, p] = ttest2(x,y,'tail','left')  
-[h, p] = ttest(y)
-[h, p] = ttest(x)
+[h, p] = ranksum(x,y)  
+[h, p] = signrank(y,0)
+[h, p] = signrank(x,0)
 
-% grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
-% Y = [x;y];
-% scatter(grps,Y,'filled'),hold on
-% scatter([1 2] , [nanmedian(x) nanmedian(y)],'filled'),xlim([0 3])
-
-xx = [1 2];
-yy = [nanmean(x) nanmean(y)];
-err = [nansem(x) nansem(y)];
 
 subplot(131),
-bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-1 1])
-er.Color = [0 0 0];                            
-er.LineStyle = 'none';
-hold off
+grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
+Y = [x;y];
+scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
+
+% xx = [1 2];
+% yy = [nanmean(x) nanmean(y)];
+% err = [nansem(x) nansem(y)];
+% 
+% subplot(131),
+% bar(xx,yy),hold on
+% er = errorbar(xx,yy,err);ylim([-3 3])
+% er.Color = [0 0 0];                            
+% er.LineStyle = 'none';
+% hold off
 
 %  for dHPC assemblies
-x = reactivation.reward.dHPC(:,1);
-y = reactivation.aversive.dHPC(:,1);
+x = reactivation.reward.dHPC(:,7);
+y = reactivation.aversive.dHPC(:,7);
 kstest(x)
 kstest(y)
-[h, p] = kstest2(x,y,'Tail','larger')  
-[h, p] = ttest(y)
-[h, p] = ttest(x)
+[h, p] = ranksum(x,y)  
+[h, p] = signrank(y,0)
+[h, p] = signrank(x,0)
 
-xx = [1 2];
-yy = [nanmean(x) nanmean(y)];
-err = [nansem(x) nansem(y)];
 
 subplot(132),
-bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-1 1])
-er.Color = [0 0 0];                            
-er.LineStyle = 'none';
-hold off
+grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
+Y = [x;y];
+scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
+
+% xx = [1 2];
+% yy = [nanmean(x) nanmean(y)];
+% err = [nansem(x) nansem(y)];
+% 
+% subplot(132),
+% bar(xx,yy),hold on
+% er = errorbar(xx,yy,err);ylim([-3 3])
+% er.Color = [0 0 0];                            
+% er.LineStyle = 'none';
+% hold off
 
 %  for vHPC assemblies
-x = reactivation.reward.vHPC(:,1);
-y = reactivation.aversive.vHPC(:,1);
+x = reactivation.reward.vHPC(:,7);
+y = reactivation.aversive.vHPC(:,7);
 kstest(x)
 kstest(y)
-[h, p] = kstest2(x,y,'Tail','larger')  
-[h, p] = ttest(y)
-[h, p] = ttest(x)
-
-xx = [1 2];
-yy = [nanmean(x) nanmean(y)];
-err = [nansem(x) nansem(y)];
+[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = signrank(y,0,'tail','right')
+[h, p] = signrank(x,0,'tail','left')
 
 subplot(133),
-bar(xx,yy),hold on
-er = errorbar(xx,yy,err);ylim([-1 1])
-er.Color = [0 0 0];                            
-er.LineStyle = 'none';
-hold off
+grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
+Y = [x;y];
+scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
 
+% xx = [1 2];
+% yy = [nanmean(x) nanmean(y)];
+% err = [nansem(x) nansem(y)];
+% 
+% subplot(133),
+% bar(xx,yy),hold on
+% er = errorbar(xx,yy,err);ylim([-3 3])
+% er.Color = [0 0 0];                            
+% er.LineStyle = 'none';
+% hold off
 
 
 %% Plot cumulative distribution
@@ -891,8 +921,8 @@ boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 0.8])
 %% Plot Correlations
 figure
 subplot(131)
-scatter(reactivation.reward.dvHPC(:,4) , reactivation.reward.dvHPC(:,1),'filled','b'),hold on,xlim([0 60]),ylim([-10 10])
-% scatter(reactivation.aversive.dvHPC(:,4) , reactivation.aversive.dvHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-10 10])
+scatter(reactivation.reward.dvHPC(:,4) , reactivation.reward.dvHPC(:,1),'filled','b'),hold on,ylim([-0.5 0.5]),xlim([0 60])
+scatter(reactivation.aversive.dvHPC(:,4) , reactivation.aversive.dvHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-0.5 0.5])
 
 subplot(132)
 scatter(reactivation.reward.dHPC(:,4) , reactivation.reward.dHPC(:,1),'filled','b'),hold on,xlim([0 60]),ylim([-10 10])

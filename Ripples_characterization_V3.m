@@ -23,6 +23,7 @@ IRI.V.all = []; IRI.V.B = []; IRI.V.R = []; IRI.V.A = [];
 % for ripples in general
 BurstIndex.D.B = []; BurstIndex.D.R = []; BurstIndex.D.A = [];
 BurstIndex.V.B = []; BurstIndex.V.R = []; BurstIndex.V.A = [];
+BurstIndex.D.all = []; BurstIndex.V.all = [];
 
 %for cooridnated and uncooridnated events
 BurstIndex.D.coordinated.B = []; BurstIndex.D.coordinated.R = []; BurstIndex.D.coordinated.A = [];
@@ -256,7 +257,21 @@ for tt = 1:length(path)
             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
             [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg');
             
-            Auto.dRipples.baseline = [Auto.dRipples.baseline , ccg(:,1,1)];            
+            Auto.dRipples.baseline = [Auto.dRipples.baseline , ccg(:,1,1)];    
+            
+            % Burdt Index
+            count = 0;
+            y = ripplesD(:,2); %exclude coordinated + associated ripples
+            for s = 1 : length(ripplesD(:,2))
+                seed = ripplesD(s,2);
+                tmp = sum(and(y > seed-0.1 , y < seed+0.1));
+                if tmp>1
+                    count = count + 1;
+                end
+            end
+            BurstIndex.D.all = [BurstIndex.D.all ; count/length(x)];
+            clear ccg time x y count
+            
         end
         
         %% ---- vRipples ----
@@ -371,6 +386,19 @@ for tt = 1:length(path)
             [ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg');
             
             Auto.vRipples.baseline = [Auto.vRipples.baseline , ccg(:,1,1)];
+            
+            % Burdt Index
+            count = 0;
+            y = ripplesV(:,2); %exclude coordinated + associated ripples
+            for s = 1 : length(ripplesV(:,2))
+                seed = ripplesV(s,2);
+                tmp = sum(and(y > seed-0.1 , y < seed+0.1));
+                if tmp>1
+                    count = count + 1;
+                end
+            end
+            BurstIndex.V.all = [BurstIndex.V.all ; count/length(x)];
+            clear ccg time x y count
         end
         
         %% Coordinated dHPC ripples
@@ -464,7 +492,7 @@ for tt = 1:length(path)
 % %             save ([cd,'\coordinated_ripple_bursts.mat'],'coordinated_ripple_bursts')
             
             %% For storing number of coordinated events
-            ripples_coordinated_numbers = [ripples_coordinated_numbers ; length(coordinated) , length(ripplesD) , length(coordinatedV) , length(ripplesV)];
+            ripples_coordinated_numbers = [ripples_coordinated_numbers ; length(coordinated) , length(ripplesD) , length(coordinatedV_refined) , length(ripplesV) , length(Restrict(coordinated,NREM.B)) , length(Restrict(ripplesD,NREM.B)) , length(Restrict(coordinated,NREM.R)) , length(Restrict(ripplesD,NREM.R)) , length(Restrict(coordinated,NREM.A)) , length(Restrict(ripplesD,NREM.A)) , length(Restrict(coordinatedV_refined,NREM.B)) , length(Restrict(ripplesV,NREM.B)) , length(Restrict(coordinatedV_refined,NREM.R)) , length(Restrict(ripplesV,NREM.R)) , length(Restrict(coordinatedV_refined,NREM.A)) , length(Restrict(ripplesV,NREM.A))];
             
             %% Autoccorelogram coordionated and uncooridnated without subsampling
             % Burst Index calculation as we discuss with GG
@@ -480,7 +508,7 @@ for tt = 1:length(path)
             y = ripplesD(:,2);
             for s = 1 : length(x)
                 seed = x(s);
-                tmp = sum(and(y > seed-0.2 , y < seed+0.2));
+                tmp = sum(and(y > seed-0.1 , y < seed+0.1));
                 if tmp>1
                     count = count + 1;
                 end
@@ -500,7 +528,7 @@ for tt = 1:length(path)
             y = ripplesV(:,2);
             for s = 1 : length(x)
                 seed = x(s);
-                tmp = sum(and(y > seed-0.2 , y < seed+0.2));
+                tmp = sum(and(y > seed-0.1 , y < seed+0.1));
                 if tmp>1
                     count = count + 1;
                 end
@@ -520,7 +548,7 @@ for tt = 1:length(path)
             y = ripplesD(:,2); %exclude coordinated + associated ripples
             for s = 1 : length(x)
                 seed = x(s);
-                tmp = sum(and(y > seed-0.2 , y < seed+0.2));
+                tmp = sum(and(y > seed-0.1 , y < seed+0.1));
                 if tmp>1
                     count = count + 1;
                 end
@@ -540,7 +568,7 @@ for tt = 1:length(path)
             y = ripplesV(:,2);%exclude coordinated + associated ripples
             for s = 1 : length(x)
                 seed = x(s);
-                tmp = sum(and(y > seed-0.2 , y < seed+0.2));
+                tmp = sum(and(y > seed-0.1 , y < seed+0.1));
                 if tmp>1
                     count = count + 1;
                 end
@@ -978,293 +1006,81 @@ plot(tttt,mean(Auto.vRipples.baseline./sum(Auto.vRipples.baseline),2),'k'),hold 
 plot(tttt,mean(Auto.vRipples.aversive./sum(Auto.vRipples.aversive),2),'r'),xlim([-1 1]),hold on
 plot(tttt,mean(Auto.vRipples.reward./sum(Auto.vRipples.reward),2),'b'),xlim([-1 1]),ylim([0 0.0055]),hold on
 
-
-% plot(tttt,mean(Auto.dRipples.all./max(Auto.dRipples.all),2),'k'),hold on
-% plot(tttt,mean(Auto.vRipples.all./max(Auto.vRipples.all),2),'r'),xlim([-1 1])
-
-
-%% Cross-Correlograms
-% dorsal-ventral Ripples per condition
-x = dRipples(:,2);
-y = vRipples(:,2);
-[s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-[ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',1,'mode','ccg');
-ccg = ccg(:,1,2)%./sum(ccg(:,1,2));
-figure,plot(tttt,ccg,'k','LineWidth',2),hold on
-% ax = gca; % axes handle
-% ax.YAxis.Exponent = 0;
-xline(0,'--')
-
-% dorsal-ventral Ripples per condition
-x = dRipplesB(:,2);
-y = vRipplesB(:,2);
-[s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-[ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',2,'mode','ccg');
-ccg = ccg(:,1,2)./sum(ccg(:,1,2));
-figure,plot(tttt,ccg,'k','LineWidth',2),hold on
-ax = gca; % axes handle
-ax.YAxis.Exponent = 0;
-
-% dorsal-ventral Ripples
-x = dRipplesR(:,2);
-y = vRipplesR(:,2);
-[s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-[ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',2,'mode','ccg');
-ccg = ccg(:,1,2)./sum(ccg(:,1,2));
-plot(tttt,ccg,'b','LineWidth',2)
-ax = gca; % axes handle
-ax.YAxis.Exponent = 0;
-
-% dorsal-ventral Ripples
-x = dRipplesA(:,2);
-y = vRipplesA(:,2);
-[s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-[ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',2,'mode','ccg');
-ccg = ccg(:,1,2)./sum(ccg(:,1,2));
-plot(tttt,ccg,'r','LineWidth',2)
-ax = gca; % axes handle
-ax.YAxis.Exponent = 0;
-
-
-%% Cross-Correlograms
-% dorsal-ventral coordinated and uncoordinated Ripples
-data = [dRipples_coordinatedB ; dRipples_coordinatedR ; dRipples_coordinatedA];
-data1 = [dRipples_uncoordinatedB ; dRipples_uncoordinatedR ; dRipples_uncoordinatedA];
-data2 = [vRipples_coordinatedB ; vRipples_coordinatedR ; vRipples_coordinatedA];
-data3 = [vRipples_uncoordinatedB ; vRipples_uncoordinatedR ; vRipples_uncoordinatedA];
-x = unique(data2(:,2));
-y =  unique(data3(:,2));
-[s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-[ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',2,'mode','ccg');
-ccg = ccg(:,1,2)./sum(ccg(:,1,2));
-figure,plot(tttt,ccg,'r','LineWidth',2),hold on
-% ax = gca; % axes handle
-% ax.YAxis.Exponent = 0;
-xline(0,'--')
-
-x = unique(data2(:,2));
-y =  unique(data3(:,2));
-[s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-[ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',2,'mode','ccg');
-ccg = ccg(:,1,2)./sum(ccg(:,1,2));
-plot(tttt,ccg,'r','LineWidth',2),hold on
-% ax = gca; % axes handle
-% ax.YAxis.Exponent = 0;
-xline(0,'--')
-
-% dorsal-ventral coordinated Ripples
-x = unique(data(:,2));
-y =  unique(data2(:,2));
-[s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-[ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',2,'mode','ccg');
-ccg = ccg(:,1,2)./sum(ccg(:,1,2));
-figure,plot(tttt,ccg,'b','LineWidth',2),hold on
-% ax = gca; % axes handle
-% ax.YAxis.Exponent = 0;
-xline(0,'--')
-
-
-% dorsal-ventral coordinated Ripples per condition
-data = [dRipples_uncoordinatedB];
-data1 = [dRipples_uncoordinatedB];
-x = unique(data(:,2));
-y =  unique(data1(:,2));
-[s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-[ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',1,'smooth',2,'mode','ccg');
-ccg = ccg(:,1,1)./sum(ccg(:,1,1));
-figure,plot(tttt,ccg,'k','LineWidth',2),hold on
-% ax = gca; % axes handle
-% ax.YAxis.Exponent = 0;
-xline(0,'--')
-
-% dorsal-ventral coordinated Ripples per condition
-data = [dRipples_uncoordinatedR];
-data1 = [dRipples_uncoordinatedR];
-x = unique(data(:,2));
-y =  unique(data1(:,2));
-[s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-[ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',1,'smooth',2,'mode','ccg');
-ccg = ccg(:,1,1)./sum(ccg(:,1,1));
-plot(tttt,ccg,'b','LineWidth',2),hold on
-% ax = gca; % axes handle
-% ax.YAxis.Exponent = 0;
-xline(0,'--')
-
-% dorsal-ventral coordinated Ripples per condition
-data = [dRipples_uncoordinatedA];
-data1 = [dRipples_uncoordinatedA];
-x = unique(data(:,2));
-y =  unique(data1(:,2));
-[s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-[ccg,tttt] = CCG(s,ids,'binSize',0.01,'duration',1,'smooth',2,'mode','ccg');
-ccg = ccg(:,1,1)./sum(ccg(:,1,1));
-plot(tttt,ccg,'r','LineWidth',2),hold on
-% ax = gca; % axes handle
-% ax.YAxis.Exponent = 0;
-xline(0,'--')
-
-%% IRI
-tmp1 = dIRI;
-tmp2 = vIRI;
-
-[y,x]=histcounts(tmp1,100,'BinLimits',[0 1],'Normalization','probability')
-% plot(x(2:end),Smooth(y,2),'r','LineWidth',2),xlim([0.015 0.1]),hold on
-bar(x(2:end),Smooth(y,2),'FaceColor','r','FaceAlpha',0.5,'EdgeColor','none'),hold on
-clear x y
-
-[y,x]=histcounts(tmp2,100,'BinLimits',[0 1],'Normalization','probability')
-% plot(x(2:end),Smooth(y,2),'b','LineWidth',2),xlim([0.015 0.1])
-bar(x(2:end),Smooth(y,2),'FaceColor','b','FaceAlpha',0.5,'EdgeColor','none')%,xlim([0.015 0.1])
-clear x y tmp1 tmp2
-
-
-% IRI distributions per conditions
-tmp1 = diff(vRipplesB(:,2));
-% tmp1(tmp1>2) = [];
-tmp2 = diff(vRipplesR(:,2));
-% tmp2(tmp2>2) = [];
-tmp3 = diff(vRipplesA(:,2));
-% tmp3(tmp3>2) = [];
-
-[y,x]=histcounts(tmp1,200,'BinLimits',[0 1],'Normalization','probability')
-figure,plot(x(2:end),Smooth(y,1),'k','LineWidth',2),hold on
-% bar(x(2:end),y,'FaceColor','k','FaceAlpha',0.5),hold on
-clear x y
-
-[y,x]=histcounts(tmp2,200,'BinLimits',[0 1],'Normalization','probability')
-plot(x(2:end),Smooth(y,1),'b','LineWidth',2),hold on
-% bar(x(2:end),y,'FaceColor','b','FaceAlpha',0.5),hold on
-clear x y
-
-[y,x]=histcounts(tmp3,200,'BinLimits',[0 1],'Normalization','probability')
-plot(x(2:end),Smooth(y,1),'r','LineWidth',2)
-% bar(x(2:end),y,'FaceColor','r','FaceAlpha',0.5),hold on
-clear x y
-
-
-% IRI distributions per conditions
-tmp1 = diff(dRipplesB(:,2));
-% tmp1(tmp1>2) = [];
-tmp2 = diff(dRipplesR(:,2));
-% tmp2(tmp2>2) = [];
-tmp3 = diff(dRipplesA(:,2));
-% tmp3(tmp3>2) = [];
-
-[y,x]=histcounts(tmp1,200,'BinLimits',[0 1],'Normalization','probability')
-figure,plot(x(2:end),Smooth(y,1),'k','LineWidth',2),hold on
-% bar(x(2:end),y,'FaceColor','k','FaceAlpha',0.5),hold on
-clear x y
-
-[y,x]=histcounts(tmp2,200,'BinLimits',[0 1],'Normalization','probability')
-plot(x(2:end),Smooth(y,1),'b','LineWidth',2),hold on
-% bar(x(2:end),y,'FaceColor','b','FaceAlpha',0.5),hold on
-clear x y
-
-[y,x]=histcounts(tmp3,200,'BinLimits',[0 1],'Normalization','probability')
-plot(x(2:end),Smooth(y,1),'r','LineWidth',2)
-% bar(x(2:end),y,'FaceColor','r','FaceAlpha',0.5),hold on
-clear x y
-
-% Plot cummulative IRI graph
-figure,boxplot([dIRIB dIRIR dIRIA vIRIB vIRIR vIRIA])
-data = [dIRIB dIRIR dIRIA vIRIB vIRIR vIRIA];
-
-%% Durations
-tmp1 = dRipples(:,3)-dRipples(:,1);
-tmp2 = vRipples(:,3)-vRipples(:,1);
-
-[y,x]=histcounts(tmp1,100,'BinLimits',[0 0.1],'Normalization','probability')
-% plot(x(2:end),Smooth(y,2),'r','LineWidth',2),xlim([0.015 0.1]),hold on
-bar(x(2:end),Smooth(y,2),'FaceColor','r','FaceAlpha',0.5,'EdgeColor','none'),hold on
-clear x y
-
-[y,x]=histcounts(tmp2,100,'BinLimits',[0 0.1],'Normalization','probability')
-% plot(x(2:end),Smooth(y,2),'b','LineWidth',2),xlim([0.015 0.1])
-bar(x(2:end),Smooth(y,2),'FaceColor','b','FaceAlpha',0.5,'EdgeColor','none'),xlim([0.015 0.1])
-clear x y tmp1 tmp2
-
-%% Ripples cooridnated
-data = [dRipples_coordinatedB dRipples_coordinatedR dRipples_coordinatedA vRipples_coordinatedB vRipples_coordinatedR vRipples_coordinatedA];
-figure,boxplot(data)
-[p,t,stats] = anova1(data);
-[c,m,h,nms] = multcompare(stats);
-
-%% burst
-figure,boxplot([dBurstIndexB dBurstIndexR dBurstIndexA vBurstIndexB vBurstIndexR vBurstIndexA])
-
-figure,boxplot([rateD rateV])
-
-
-%% Burst Index of coordinated dorsal and ventral ripples (if is positive means that dRipples occure first)
-
-data = [Burst_Index_uncooridnated_dRipples , Burst_Index_cooridnated_dRipples Burst_Index_uncooridnated_vRipples , Burst_Index_cooridnated_vRipples];
-figure,boxplot(data)
-
-% per condition
-% just coordinated
-data = [Burst_Index_cooridnatedB_dRipples , Burst_Index_cooridnatedR_dRipples , Burst_Index_cooridnatedA_dRipples Burst_Index_cooridnatedB_vRipples , Burst_Index_cooridnatedR_vRipples , Burst_Index_cooridnatedA_vRipples];
-subplot(1,3,1),boxplot(data),ylim([0 0.8])
-% anova1(data)
-
-% just uncoordinated
-data = [Burst_Index_uncooridnatedB_dRipples , Burst_Index_uncooridnatedR_dRipples , Burst_Index_uncooridnatedA_dRipples Burst_Index_uncooridnatedB_vRipples , Burst_Index_uncooridnatedR_vRipples , Burst_Index_uncooridnatedA_vRipples];
-subplot(1,3,2),boxplot(data),ylim([0 0.8])
-% anova1(data)
-
-
-% just coordinated
-data = [Burst_Index_allB_dRipples , Burst_Index_allR_dRipples , Burst_Index_allA_dRipples Burst_Index_allB_vRipples , Burst_Index_allR_vRipples , Burst_Index_allA_vRipples];
-subplot(1,3,3),boxplot(data)
-% anova1(data)
-
-%% Correlograms session by session
-% Autocorrelograms without subsampling
-x = sum(dRipples_coordinated_single,2)./sum(sum(dRipples_coordinated_single));
-y = sum(dRipples_uncoordinated_single,2)./sum(sum(dRipples_uncoordinated_single));
-figure,subplot(4,2,1),plot([-1:0.01:1],x)
+%% Plotting Inter-Ripple-Interval
+figure
+histogram(IRI.D.all,[0 : 0.01 : 1],'Normalization','probability')
 hold on
-plot([-1:0.01:1],y),ylim([0 0.02])
-clear x y
+histogram(IRI.V.all,[0 : 0.01 : 1],'Normalization','probability')
+xlim([0 1])
 
-x = sum(vRipples_coordinated_single,2)./sum(sum(vRipples_coordinated_single));
-y = sum(vRipples_uncoordinated_single,2)./sum(sum(vRipples_uncoordinated_single));
-subplot(4,2,2),plot([-1:0.01:1],x)
+%% Plotting BurstIndex
+figure
+x = [[BurstIndex.D.all ; BurstIndex.V.all] , [ones(length(BurstIndex.D.all),1) ; ones(length(BurstIndex.V.all),1)*2]];
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+scatter([1 2] , [nanmean(BurstIndex.D.all) nanmean(BurstIndex.V.all)],'filled'),ylim([0 2])
+[h p] = ranksum(BurstIndex.D.all , BurstIndex.V.all)
+
+
+%% Plotting Ripple durations
+figure
+histogram(durations.D.all,[0.015 : 0.005 : 0.1],'Normalization','probability')
 hold on
-plot([-1:0.01:1],y),ylim([0 0.02])
+histogram(durations.V.all,[0.015 : 0.005 : 0.1],'Normalization','probability')
+xlim([0.015 0.1])
 
-% Autocorrelograms session by session with subsampling
-x = sum(dRipples_coordinated_single_ds,2)./sum(sum(dRipples_coordinated_single_ds));
-y = sum(dRipples_uncoordinated_single_ds,2)./sum(sum(dRipples_uncoordinated_single_ds));
-subplot(4,2,3),plot([-1:0.01:1],x)
-hold on
-plot([-1:0.01:1],y),ylim([0 0.02])
-clear x y
 
-x = sum(vRipples_coordinated_single_ds,2)./sum(sum(vRipples_coordinated_single_ds));
-y = sum(vRipples_uncoordinated_single_ds,2)./sum(sum(vRipples_uncoordinated_single_ds));
-subplot(4,2,4),plot([-1:0.01:1],x)
-hold on
-plot([-1:0.01:1],y),ylim([0 0.02])
+%% Plot Auto-Cooridnated
+figure
+subplot(121)
+x = Auto.coordinated.dRipples ./ sum(Auto.coordinated.dRipples);
+plot(time,mean(x,2)),hold on
+x = Auto.uncoordinated.dRipples ./ sum(Auto.uncoordinated.dRipples);
+plot(time,mean(x,2)),ylim([0 0.018])
 
-% Correlograms session by session without subsampling
-x = sum(dRipples_coordinated_single_cross_with_all,2)./sum(sum(dRipples_coordinated_single_cross_with_all));
-y = sum(dRipples_uncoordinated_single_cross_with_all,2)./sum(sum(dRipples_uncoordinated_single_cross_with_all));
-subplot(4,2,5),plot([-1:0.01:1],x)
-hold on
-plot([-1:0.01:1],y),ylim([0 0.02])
-clear x y
+subplot(122)
+x = Auto.coordinated.vRipples ./ sum(Auto.coordinated.vRipples);
+plot(time,mean(x,2)),hold on
+x = Auto.uncoordinated.vRipples ./ sum(Auto.uncoordinated.vRipples);
+plot(time,mean(x,2)),ylim([0 0.018])
 
-x = sum(vRipples_coordinated_single_cross_with_all,2)./sum(sum(vRipples_coordinated_single_cross_with_all));
-y = sum(vRipples_uncoordinated_single_cross_with_all,2)./sum(sum(vRipples_uncoordinated_single_cross_with_all));
-subplot(4,2,6),plot([-1:0.01:1],x)
-hold on
-plot([-1:0.01:1],y),ylim([0 0.02])
 
-%% Correlograms session by session with subsampling
-x = sum(dRipples_coordinated_single_cross_with_uncoordinated,2)./sum(sum(dRipples_coordinated_single_cross_with_uncoordinated));
-subplot(4,2,7),plot([-1:0.01:1],x), ylim([0 0.02])
-clear x y
+figure
+subplot(121)
+x = [[BurstIndex.D.uncoordinated.all ; BurstIndex.D.coordinated.all] , [ones(length(BurstIndex.D.uncoordinated.all),1) ; ones(length(BurstIndex.D.coordinated.all),1)*2]];
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+scatter([1 2] , [nanmean(BurstIndex.D.uncoordinated.all) nanmean(BurstIndex.D.coordinated.all)],'filled'),ylim([0 0.4])
+[h p] = ranksum(BurstIndex.D.uncoordinated.all , BurstIndex.D.coordinated.all,'tail','left')
 
-x = sum(vRipples_coordinated_single_cross_with_uncoordinated,2)./sum(sum(vRipples_coordinated_single_cross_with_uncoordinated));
-subplot(4,2,8),plot([-1:0.01:1],x),ylim([0 0.02])
-clear x y
+subplot(122)
+x = [[BurstIndex.V.uncoordinated.all ; BurstIndex.V.coordinated.all] , [ones(length(BurstIndex.V.uncoordinated.all),1) ; ones(length(BurstIndex.V.coordinated.all),1)*2]];
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+scatter([1 2] , [nanmean(BurstIndex.V.uncoordinated.all) nanmean(BurstIndex.V.coordinated.all)],'filled'),ylim([0 0.4])
+[h p] = ranksum(BurstIndex.V.uncoordinated.all , BurstIndex.V.coordinated.all,'tail','left')
+
+
+
+%% plot percentage 
+figure
+x = [ (ripples_coordinated_numbers(:,1) ./ ripples_coordinated_numbers(:,2))*100 ;  (ripples_coordinated_numbers(:,3) ./ ripples_coordinated_numbers(:,4))*100];
+x = [x , [ones(40,1) ; ones(40,1)*2]];
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+scatter([1 2] , [nanmean((ripples_coordinated_numbers(:,1) ./ ripples_coordinated_numbers(:,2))*100) nanmean((ripples_coordinated_numbers(:,3) ./ ripples_coordinated_numbers(:,4))*100)],'filled')%,ylim([0 0.4])
+boxplot(x(:,1),x(:,2)),ylim([0 70])
+% [h p] = ranksum((ripples_coordinated_numbers(:,1) ./ ripples_coordinated_numbers(:,2))*100 ,  (ripples_coordinated_numbers(:,3) ./ ripples_coordinated_numbers(:,4))*100)
+
+figure,
+subplot(121)
+x = [ (ripples_coordinated_numbers(:,5) ./ ripples_coordinated_numbers(:,6))*100 ;  (ripples_coordinated_numbers(:,7) ./ ripples_coordinated_numbers(:,8))*100;  (ripples_coordinated_numbers(:,9) ./ ripples_coordinated_numbers(:,10))*100];
+x = [x , [ones(40,1) ; ones(40,1)*2 ; ones(40,1)*3]];
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 4]),hold on
+scatter([1 2 3] , [nanmean((ripples_coordinated_numbers(:,5) ./ ripples_coordinated_numbers(:,6))*100) ;  nanmean((ripples_coordinated_numbers(:,7) ./ ripples_coordinated_numbers(:,8))*100) ;  nanmean((ripples_coordinated_numbers(:,9) ./ ripples_coordinated_numbers(:,10))*100)],'filled'),ylim([0 70])
+boxplot(x(:,1),x(:,2)),ylim([0 70])
+% [h p] = kruskalwallis(x(:,1) , x(:,2))
+
+subplot(122)
+x = [ (ripples_coordinated_numbers(:,11) ./ ripples_coordinated_numbers(:,12))*100 ;  (ripples_coordinated_numbers(:,13) ./ ripples_coordinated_numbers(:,14))*100;  (ripples_coordinated_numbers(:,15) ./ ripples_coordinated_numbers(:,16))*100];
+x = [x , [ones(40,1) ; ones(40,1)*2 ; ones(40,1)*3]];
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 4]),hold on
+scatter([1 2 3] , [nanmean((ripples_coordinated_numbers(:,11) ./ ripples_coordinated_numbers(:,12))*100) ;  nanmean((ripples_coordinated_numbers(:,13) ./ ripples_coordinated_numbers(:,14))*100) ;  nanmean((ripples_coordinated_numbers(:,15) ./ ripples_coordinated_numbers(:,16))*100)],'filled'),ylim([0 70])
+boxplot(x(:,1),x(:,2)),ylim([0 70])
+% [h p] = kruskalwallis(x(:,1) , x(:,2))

@@ -35,23 +35,28 @@ for tt = 1:length(path)
         cd(session)
         cd 'Spikesorting'
         
+        temp = [0 0];
         if isfile('dHPC_pc.mat')
             load('dHPC_pc.mat');
+            temp(1) = size(dHPC,2);
+        end
+        if isfile('vHPC_pc.mat')
+            load('vHPC_pc.mat');
+            temp(2) = size(vHPC,2);
+        end
+        min_neurons = min(temp);
+        
+        if min_neurons==0 | min_neurons <5
+            continue
+        end
+        pv_ave_dhpc=[];
+        pv_rew_dhpc=[];
+        if isfile('dHPC_pc.mat')
             if size(dHPC,2)>=5 
                 %Create rate map stacks 
-                for n=1:size(dHPC,2)
+                for n=1:min_neurons%size(dHPC,2)
                     pv_ave_dhpc(:,:,n) = dHPC{n}.frMap_ave; 
                     pv_rew_dhpc(:,:,n) = dHPC{n}.frMap_rew;
-                end
-                if doplot==1
-                    figure(1)
-                    subplot(2,2,1)
-                    imagesc(squeeze(pv_ave_dhpc)')
-                    ylabel('Neurons')
-                    subplot(2,2,2)
-                    imagesc(squeeze(pv_rew_dhpc)')
-                    xlabel('Space')
-                    
                 end
                 %%
                 % Vector bin correlation - dorsal
@@ -70,15 +75,17 @@ for tt = 1:length(path)
                 
 %                 clear pv_ave_dhpc pv_rew_dhpc pv_ave pv_rew
                 
-                return
+                
             end
         end 
         
+        pv_ave_vhpc=[];
+        pv_rew_vhpc=[];
         if isfile('vHPC_pc.mat')
             load('vHPC_pc.mat');
             if size(vHPC,2)>=5
                 %Create rate map stacks 
-                for n=1:size(vHPC,2)
+                for n=1:min_neurons%size(vHPC,2)
                     pv_ave_vhpc(:,:,n) = vHPC{n}.frMap_ave; 
                     pv_rew_vhpc(:,:,n) = vHPC{n}.frMap_rew;
                 end 
@@ -90,11 +97,31 @@ for tt = 1:length(path)
                     pv_ave = squeeze(pv_ave_vhpc(1,c,:));
             
                     pv_rew = squeeze(pv_rew_vhpc(1,c,:));
-            
+                    
                     %Correlation between ave vector bin and rew vector bin
                     cor = corrcoef(pv_ave, pv_rew,'Rows','pairwise');
                     sesion_corr(c,1) = cor(1,2);    
                 end 
+                
+                
+                if doplot==1
+                    figure(1)
+                    subplot(2,2,1)
+                    imagesc(squeeze(pv_ave_dhpc)')
+                    ylabel('Neurons')
+                    subplot(2,2,2)
+                    imagesc(squeeze(pv_rew_dhpc)')
+                    xlabel('Space')
+                    figure(1)
+                    subplot(2,2,3)
+                    imagesc(squeeze(pv_ave_vhpc)')
+                    ylabel('Neurons')
+                    subplot(2,2,4)
+                    imagesc(squeeze(pv_rew_vhpc)')
+                    xlabel('Space')
+                    pause()
+                end
+                
                 temp_vhpc = [temp_vhpc;sesion_corr];  
                 
                 clear pv_ave_vhpc pv_rew_vhpc pv_ave pv_rew

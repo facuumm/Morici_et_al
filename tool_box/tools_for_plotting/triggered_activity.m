@@ -60,7 +60,7 @@ function [R] = triggered_activity(patterns , cond , SpikeTrain , limits , events
 bins = SpikeTrain(:,1);
 spks = SpikeTrain(:,2:end);
 dt = bins(2)-bins(1);
-win = round(2/dt);
+win = round(limits/dt);
 check = (limits*2)/dt; % construct the maximun of points for each curve
 
 a = assembly_activity(patterns(:,cond) , spks');
@@ -72,9 +72,12 @@ end
 if normalization % normalization
     a = zscore(a,1,2);
 end
+
+
 is = [];
 for i = 1:length(events)
-    is = [is , InIntervals(bins , [events(i)-limits , events(i)+limits])];
+    [h p] = min(abs(events(i,2)-bins));
+    is = [is , p];
 end
 
 if not(isempty(baseline))
@@ -84,11 +87,9 @@ end
 
 R = [];
 for i = 1:size(a,1)
-    
     tmp = [];
     for ii = 1:size(events)
-        [~ , t] = min(abs(bins-events(ii)));
-        
+        t = is(ii);
         if and(t-win>1 , t+win<size(bins,1))
           tmp = [tmp ; a(i,t-win : t+win)];
         end
