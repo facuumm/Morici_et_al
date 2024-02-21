@@ -34,6 +34,7 @@ reactivation.reward.vHPC = [];
 
 normalization = true; % to define if normalization over Reactivation Strength is applied or not
 th = 5; % threshold for peak detection
+iterations = 100; % number of iterations for downsampling
 
 gain.both.reward.pre = [];     gain.both.reward.post = [];
 gain.both.aversive.pre = [];   gain.both.aversive.post = [];
@@ -539,19 +540,16 @@ for tt = 2:length(path)
                 
                 %% Reactivation Strenght
                 if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
+                    % Joint Aversive Assemblies
                     if sum(cond.both.aversive)>=1
                         if and(not(strcmp(W,'V')) , not(strcmp(W,'D')))
-                            templates = ones(size(patterns.all.aversive,1),1);
-                            templates(size(clusters.dHPC)+1:end) = 0;
-                            templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
-                            templates(1:size(clusters.dHPC),2) = 0;
                             [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
                             reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
                             RBA = R; clear R
                         elseif strcmp(W,'D')
                             if length(ripples.dHPC.uncoordinated.all) > length(ripples.dHPC.coordinated.all)
                                 tmp = [];
-                                for i = 1:100
+                                for i = 1:iterations
                                     r = randperm(length(ripples.dHPC.uncoordinated.all));
                                     r = ripples.dHPC.uncoordinated.all(r(1:length(ripples.dHPC.coordinated.all)),:);
                                     r = sort([r(:,1) r(:,3)]);
@@ -567,53 +565,399 @@ for tt = 2:length(path)
                                 for i = 1 : size(tmp,1)
                                     r = [];
                                     for ii = 1 : size(tmp,2)
-                                        squeeze(tmp,(i , ii , :))
+                                        r = [r , nanmean(squeeze(tmp(i,ii,:)))];
                                     end
+                                    R = [R ; r]; clear r
                                 end
+                                reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
+                                RBA = R; clear R
                             else
+                                [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                                reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
+                                RBA = R; clear R
                             end
                         elseif strcmp(W,'V')
-                            
+                            if length(ripples.vHPC.uncoordinated.all) > length(ripples.vHPC.coordinated.all)
+                                tmp = [];
+                                for i = 1:iterations
+                                    r = randperm(length(ripples.vHPC.uncoordinated.all));
+                                    r = ripples.vHPC.uncoordinated.all(r(1:length(ripples.vHPC.coordinated.all)),:);
+                                    r = sort([r(:,1) r(:,3)]);
+                                    is.sws.baseline = InIntervals(bins,Restrict(r,NREM.baseline));
+                                    is.sws.reward = InIntervals(bins,Restrict(r,NREM.reward));
+                                    is.sws.aversive = InIntervals(bins,Restrict(r,NREM.aversive));
+                                    [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                                    tmp(:,:,i) = R;
+                                    clear R r
+                                end
+                                
+                                R = [];
+                                for i = 1 : size(tmp,1)
+                                    r = [];
+                                    for ii = 1 : size(tmp,2)
+                                        r = [r , nanmean(squeeze(tmp(i,ii,:)))];
+                                    end
+                                    R = [R ; r]; clear r
+                                end
+                                reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
+                                RBA = R; clear R
+                            else
+                                [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                                reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
+                                RBA = R; clear R
+                            end
                         end
                     end
                 end
                 
+                % dHPC Aversive Assemblies
                 if sum(cond.dHPC.aversive)>=1
-                    [R] = reactivation_strength(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []);
-                    reactivation.aversive.dHPC = [reactivation.aversive.dHPC ; R];
-                    RDA = R; clear R
-                end
-                
-                if sum(cond.vHPC.aversive)>=1
-                    [R] = reactivation_strength(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []);
-                    reactivation.aversive.vHPC = [reactivation.aversive.vHPC ; R];
-                    RVA = R; clear R
-                end
-                
-                
-                if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
-                    if sum(cond.both.reward)>=1
-                        templates = ones(size(patterns.all.reward,1),1);
-                        templates(size(clusters.dHPC)+1:end) = 0;
-                        templates = [templates ,  ones(size(patterns.all.reward,1),1)];
-                        templates(1:size(clusters.dHPC),2) = 0;
-                        [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
-                        reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
-                        RBR = R; clear R
+                    if and(not(strcmp(W,'V')) , not(strcmp(W,'D')))
+                        [R] = reactivation_strength(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                        reactivation.aversive.dHPC = [reactivation.aversive.dHPC ; R];
+                        RDA = R; clear R
+                    elseif strcmp(W,'D')
+                        if length(ripples.dHPC.uncoordinated.all) > length(ripples.dHPC.coordinated.all)
+                            tmp = [];
+                            for i = 1:iterations
+                                r = randperm(length(ripples.dHPC.uncoordinated.all));
+                                r = ripples.dHPC.uncoordinated.all(r(1:length(ripples.dHPC.coordinated.all)),:);
+                                r = sort([r(:,1) r(:,3)]);
+                                is.sws.baseline = InIntervals(bins,Restrict(r,NREM.baseline));
+                                is.sws.reward = InIntervals(bins,Restrict(r,NREM.reward));
+                                is.sws.aversive = InIntervals(bins,Restrict(r,NREM.aversive));
+                                [R] = reactivation_strength(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                                tmp(:,:,i) = R;
+                                clear R r
+                            end
+                            
+                            R = [];
+                            for i = 1 : size(tmp,1)
+                                r = [];
+                                for ii = 1 : size(tmp,2)
+                                    r = [r , nanmean(squeeze(tmp(i,ii,:)))];
+                                end
+                                R = [R ; r]; clear r
+                            end
+                            reactivation.aversive.dHPC = [reactivation.aversive.dHPC ; R];
+                            RDA = R; clear R
+                        else
+                            [R] = reactivation_strength(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                            reactivation.aversive.dHPC = [reactivation.aversive.dHPC ; R];
+                            RDA = R; clear R
+                        end
+                    elseif strcmp(W,'V')
+                        if length(ripples.vHPC.uncoordinated.all) > length(ripples.vHPC.coordinated.all)
+                            tmp = [];
+                            for i = 1:iterations
+                                r = randperm(length(ripples.vHPC.uncoordinated.all));
+                                r = ripples.vHPC.uncoordinated.all(r(1:length(ripples.vHPC.coordinated.all)),:);
+                                r = sort([r(:,1) r(:,3)]);
+                                is.sws.baseline = InIntervals(bins,Restrict(r,NREM.baseline));
+                                is.sws.reward = InIntervals(bins,Restrict(r,NREM.reward));
+                                is.sws.aversive = InIntervals(bins,Restrict(r,NREM.aversive));
+                                [R] = reactivation_strength(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                                tmp(:,:,i) = R;
+                                clear R r
+                            end
+                            
+                            R = [];
+                            for i = 1 : size(tmp,1)
+                                r = [];
+                                for ii = 1 : size(tmp,2)
+                                    r = [r , nanmean(squeeze(tmp(i,ii,:)))];
+                                end
+                                R = [R ; r]; clear r
+                            end
+                            reactivation.aversive.dHPC = [reactivation.aversive.dHPC ; R];
+                            RDA = R; clear R
+                        else
+                            [R] = reactivation_strength(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                            reactivation.aversive.dHPC = [reactivation.aversive.dHPC ; R];
+                            RDA = R; clear R
+                        end
                     end
                 end
                 
-                if sum(cond.dHPC.reward)>=1
-                    [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []);
-                    reactivation.reward.dHPC = [reactivation.reward.dHPC ; R];
-                    RDR = R; clear R
+                % vHPC Aversive Assemblies
+                if sum(cond.vHPC.aversive)>=1
+                    if and(not(strcmp(W,'V')) , not(strcmp(W,'D')))
+                        [R] = reactivation_strength(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                        reactivation.aversive.vHPC = [reactivation.aversive.vHPC ; R];
+                        RVA = R; clear R
+                    elseif strcmp(W,'D')
+                        if length(ripples.dHPC.uncoordinated.all) > length(ripples.dHPC.coordinated.all)
+                            tmp = [];
+                            for i = 1:iterations
+                                r = randperm(length(ripples.dHPC.uncoordinated.all));
+                                r = ripples.dHPC.uncoordinated.all(r(1:length(ripples.dHPC.coordinated.all)),:);
+                                r = sort([r(:,1) r(:,3)]);
+                                is.sws.baseline = InIntervals(bins,Restrict(r,NREM.baseline));
+                                is.sws.reward = InIntervals(bins,Restrict(r,NREM.reward));
+                                is.sws.aversive = InIntervals(bins,Restrict(r,NREM.aversive));
+                                [R] = reactivation_strength(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                                tmp(:,:,i) = R;
+                                clear R r
+                            end
+                            
+                            R = [];
+                            for i = 1 : size(tmp,1)
+                                r = [];
+                                for ii = 1 : size(tmp,2)
+                                    r = [r , nanmean(squeeze(tmp(i,ii,:)))];
+                                end
+                                R = [R ; r]; clear r
+                            end
+                            reactivation.aversive.vHPC = [reactivation.aversive.vHPC ; R];
+                            RVA = R; clear R
+                        else
+                            [R] = reactivation_strength(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                            reactivation.aversive.vHPC = [reactivation.aversive.vHPC ; R];
+                            RVA = R; clear R
+                        end
+                    elseif strcmp(W,'V')
+                        if length(ripples.vHPC.uncoordinated.all) > length(ripples.vHPC.coordinated.all)
+                            tmp = [];
+                            for i = 1:iterations
+                                r = randperm(length(ripples.vHPC.uncoordinated.all));
+                                r = ripples.vHPC.uncoordinated.all(r(1:length(ripples.vHPC.coordinated.all)),:);
+                                r = sort([r(:,1) r(:,3)]);
+                                is.sws.baseline = InIntervals(bins,Restrict(r,NREM.baseline));
+                                is.sws.reward = InIntervals(bins,Restrict(r,NREM.reward));
+                                is.sws.aversive = InIntervals(bins,Restrict(r,NREM.aversive));
+                                [R] = reactivation_strength(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                                tmp(:,:,i) = R;
+                                clear R r
+                            end
+                            
+                            R = [];
+                            for i = 1 : size(tmp,1)
+                                r = [];
+                                for ii = 1 : size(tmp,2)
+                                    r = [r , nanmean(squeeze(tmp(i,ii,:)))];
+                                end
+                                R = [R ; r]; clear r
+                            end
+                            reactivation.aversive.vHPC = [reactivation.aversive.vHPC ; R];
+                            RVA = R; clear R
+                        else
+                            [R] = reactivation_strength(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                            reactivation.aversive.vHPC = [reactivation.aversive.vHPC ; R];
+                            RVA = R; clear R
+                        end
+                    end
                 end
                 
-                if sum(cond.vHPC.reward)>=1
-                    [R] = reactivation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []);
-                    reactivation.reward.vHPC = [reactivation.reward.vHPC ; R];
-                    RVR = R; clear R
+                %%
+                % Joint Reward Assemblies
+                if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
+                    if sum(cond.both.reward)>=1
+                        if and(not(strcmp(W,'V')) , not(strcmp(W,'D')))
+                            [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                            reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
+                            RBR = R; clear R
+                        elseif strcmp(W,'D')
+                            if length(ripples.dHPC.uncoordinated.all) > length(ripples.dHPC.coordinated.all)
+                                tmp = [];
+                                for i = 1:iterations
+                                    r = randperm(length(ripples.dHPC.uncoordinated.all));
+                                    r = ripples.dHPC.uncoordinated.all(r(1:length(ripples.dHPC.coordinated.all)),:);
+                                    r = sort([r(:,1) r(:,3)]);
+                                    is.sws.baseline = InIntervals(bins,Restrict(r,NREM.baseline));
+                                    is.sws.reward = InIntervals(bins,Restrict(r,NREM.reward));
+                                    is.sws.aversive = InIntervals(bins,Restrict(r,NREM.aversive));
+                                    [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                                    tmp(:,:,i) = R;
+                                    clear R r
+                                end
+                                
+                                R = [];
+                                for i = 1 : size(tmp,1)
+                                    r = [];
+                                    for ii = 1 : size(tmp,2)
+                                        r = [r , nanmean(squeeze(tmp(i,ii,:)))];
+                                    end
+                                    R = [R ; r]; clear r
+                                end
+                                reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
+                                RBR = R; clear R
+                            else
+                                [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                                reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
+                                RBR = R; clear R
+                            end
+                        elseif strcmp(W,'V')
+                            if length(ripples.vHPC.uncoordinated.all) > length(ripples.vHPC.coordinated.all)
+                                tmp = [];
+                                for i = 1:iterations
+                                    r = randperm(length(ripples.vHPC.uncoordinated.all));
+                                    r = ripples.vHPC.uncoordinated.all(r(1:length(ripples.vHPC.coordinated.all)),:);
+                                    r = sort([r(:,1) r(:,3)]);
+                                    is.sws.baseline = InIntervals(bins,Restrict(r,NREM.baseline));
+                                    is.sws.reward = InIntervals(bins,Restrict(r,NREM.reward));
+                                    is.sws.aversive = InIntervals(bins,Restrict(r,NREM.aversive));
+                                    [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                                    tmp(:,:,i) = R;
+                                    clear R r
+                                end
+                                
+                                R = [];
+                                for i = 1 : size(tmp,1)
+                                    r = [];
+                                    for ii = 1 : size(tmp,2)
+                                        r = [r , nanmean(squeeze(tmp(i,ii,:)))];
+                                    end
+                                    R = [R ; r]; clear r
+                                end
+                                reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
+                                RBR = R; clear R
+                            else
+                                [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                                reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
+                                RBR = R; clear R
+                            end
+                        end
+                    end
                 end
+                
+                % dHPC Aversive Assemblies
+                if sum(cond.dHPC.reward)>=1
+                    if and(not(strcmp(W,'V')) , not(strcmp(W,'D')))
+                        [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                        reactivation.reward.dHPC = [reactivation.reward.dHPC ; R];
+                        RDR = R; clear R
+                    elseif strcmp(W,'D')
+                        if length(ripples.dHPC.uncoordinated.all) > length(ripples.dHPC.coordinated.all)
+                            tmp = [];
+                            for i = 1:iterations
+                                r = randperm(length(ripples.dHPC.uncoordinated.all));
+                                r = ripples.dHPC.uncoordinated.all(r(1:length(ripples.dHPC.coordinated.all)),:);
+                                r = sort([r(:,1) r(:,3)]);
+                                is.sws.baseline = InIntervals(bins,Restrict(r,NREM.baseline));
+                                is.sws.reward = InIntervals(bins,Restrict(r,NREM.reward));
+                                is.sws.aversive = InIntervals(bins,Restrict(r,NREM.aversive));
+                                [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                                tmp(:,:,i) = R;
+                                clear R r
+                            end
+                            
+                            R = [];
+                            for i = 1 : size(tmp,1)
+                                r = [];
+                                for ii = 1 : size(tmp,2)
+                                    r = [r , nanmean(squeeze(tmp(i,ii,:)))];
+                                end
+                                R = [R ; r]; clear r
+                            end
+                            reactivation.reward.dHPC = [reactivation.reward.dHPC ; R];
+                            RDR = R; clear R
+                        else
+                            [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                            reactivation.reward.dHPC = [reactivation.reward.dHPC ; R];
+                            RDR = R; clear R
+                        end
+                    elseif strcmp(W,'V')
+                        if length(ripples.vHPC.uncoordinated.all) > length(ripples.vHPC.coordinated.all)
+                            tmp = [];
+                            for i = 1:iterations
+                                r = randperm(length(ripples.vHPC.uncoordinated.all));
+                                r = ripples.vHPC.uncoordinated.all(r(1:length(ripples.vHPC.coordinated.all)),:);
+                                r = sort([r(:,1) r(:,3)]);
+                                is.sws.baseline = InIntervals(bins,Restrict(r,NREM.baseline));
+                                is.sws.reward = InIntervals(bins,Restrict(r,NREM.reward));
+                                is.sws.aversive = InIntervals(bins,Restrict(r,NREM.aversive));
+                                [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                                tmp(:,:,i) = R;
+                                clear R r
+                            end
+                            
+                            R = [];
+                            for i = 1 : size(tmp,1)
+                                r = [];
+                                for ii = 1 : size(tmp,2)
+                                    r = [r , nanmean(squeeze(tmp(i,ii,:)))];
+                                end
+                                R = [R ; r]; clear r
+                            end
+                            reactivation.reward.dHPC = [reactivation.reward.dHPC ; R];
+                            RDR = R; clear R
+                        else
+                            [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                            reactivation.reward.dHPC = [reactivation.reward.dHPC ; R];
+                            RDR = R; clear R
+                        end
+                    end
+                end
+                
+                % vHPC reward Assemblies
+                if sum(cond.vHPC.reward)>=1
+                    if and(not(strcmp(W,'V')) , not(strcmp(W,'D')))
+                        [R] = reactivation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                        reactivation.reward.vHPC = [reactivation.reward.vHPC ; R];
+                        RVR = R; clear R
+                    elseif strcmp(W,'D')
+                        if length(ripples.dHPC.uncoordinated.all) > length(ripples.dHPC.coordinated.all)
+                            tmp = [];
+                            for i = 1:iterations
+                                r = randperm(length(ripples.dHPC.uncoordinated.all));
+                                r = ripples.dHPC.uncoordinated.all(r(1:length(ripples.dHPC.coordinated.all)),:);
+                                r = sort([r(:,1) r(:,3)]);
+                                is.sws.baseline = InIntervals(bins,Restrict(r,NREM.baseline));
+                                is.sws.reward = InIntervals(bins,Restrict(r,NREM.reward));
+                                is.sws.aversive = InIntervals(bins,Restrict(r,NREM.aversive));
+                                [R] = reactivation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                                tmp(:,:,i) = R;
+                                clear R r
+                            end
+                            
+                            R = [];
+                            for i = 1 : size(tmp,1)
+                                r = [];
+                                for ii = 1 : size(tmp,2)
+                                    r = [r , nanmean(squeeze(tmp(i,ii,:)))];
+                                end
+                                R = [R ; r]; clear r
+                            end
+                            reactivation.reward.vHPC = [reactivation.reward.vHPC ; R];
+                            RVR = R; clear R
+                        else
+                            [R] = reactivation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                            reactivation.reward.vHPC = [reactivation.reward.vHPC ; R];
+                            RVR = R; clear R
+                        end
+                    elseif strcmp(W,'V')
+                        if length(ripples.vHPC.uncoordinated.all) > length(ripples.vHPC.coordinated.all)
+                            tmp = [];
+                            for i = 1:iterations
+                                r = randperm(length(ripples.vHPC.uncoordinated.all));
+                                r = ripples.vHPC.uncoordinated.all(r(1:length(ripples.vHPC.coordinated.all)),:);
+                                r = sort([r(:,1) r(:,3)]);
+                                is.sws.baseline = InIntervals(bins,Restrict(r,NREM.baseline));
+                                is.sws.reward = InIntervals(bins,Restrict(r,NREM.reward));
+                                is.sws.aversive = InIntervals(bins,Restrict(r,NREM.aversive));
+                                [R] = reactivation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                                tmp(:,:,i) = R;
+                                clear R r
+                            end
+                            
+                            R = [];
+                            for i = 1 : size(tmp,1)
+                                r = [];
+                                for ii = 1 : size(tmp,2)
+                                    r = [r , nanmean(squeeze(tmp(i,ii,:)))];
+                                end
+                                R = [R ; r]; clear r
+                            end
+                            reactivation.reward.vHPC = [reactivation.reward.vHPC ; R];
+                            RVR = R; clear R
+                        else
+                            [R] = reactivation_strength(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                            reactivation.reward.vHPC = [reactivation.reward.vHPC ; R];
+                            RVR = R; clear R
+                        end
+                    end
+                end
+                
             end
             
             %% Triggered assemblies activity

@@ -8,12 +8,12 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
 MUAselection = logical(0); % to select ripples by their MUA
-W = 'E'; % to select what kind of ripples I want to check
+W = 'V'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % D= uncoordinated dorsal, V= uncoordinated ventral
 % CB = cooridnated bursts
 % N= NREM, R= REM
-TA =  logical(1); % Trigger Reactivation Strength
+TA =  logical(0); % Trigger Reactivation Strength
 
 % for SU
 criteria_fr = 0; %criteria to include or not a SU into the analysis
@@ -257,10 +257,14 @@ for tt = 2:length(path)
             ripples.vHPC.reward = Restrict(ripplesV , NREM.reward);
             ripples.vHPC.aversive = Restrict(ripplesV , NREM.aversive);
             % coordinated dRipples
+            ripples.dHPC.coordinated.all = coordinated;
+            ripples.dHPC.uncoordinated.all = ripplesD(not(ismember(ripplesD(:,2) , coordinated(:,2))),:);
             ripples.dHPC.coordinated.baseline = Restrict(coordinated , NREM.baseline);
             ripples.dHPC.coordinated.reward = Restrict(coordinated , NREM.reward);
             ripples.dHPC.coordinated.aversive = Restrict(coordinated , NREM.aversive);
             % coordinated vRipples
+            ripples.vHPC.coordinated.all = coordinatedV_refined;
+            ripples.vHPC.uncoordinated.all = ripplesV(not(ismember(ripplesV(:,2) , coordinatedV_refined(:,2))),:);
             ripples.vHPC.coordinated.baseline = Restrict(coordinatedV_refined , NREM.baseline);
             ripples.vHPC.coordinated.reward = Restrict(coordinatedV_refined , NREM.reward);
             ripples.vHPC.coordinated.aversive = Restrict(coordinatedV_refined , NREM.aversive);
@@ -496,27 +500,33 @@ for tt = 2:length(path)
                     is.sws.aversive = InIntervals(bins,ripple_bursts.aversive);
                 elseif strcmp(W,'D')
                     tmp = not(ismember(ripples.dHPC.baseline(:,2) , ripples.dHPC.coordinated.baseline(:,2)));
+                    ripples.dHPC.uncoordinated.baseline = [ripples.dHPC.baseline(tmp,1) ripples.dHPC.baseline(tmp,3)];
                     tmp = [ripples.dHPC.baseline(tmp,1) ripples.dHPC.baseline(tmp,3)];
                     is.sws.baseline = InIntervals(bins,tmp); clear tmp
                     
                     tmp = not(ismember(ripples.dHPC.reward(:,2) , ripples.dHPC.coordinated.reward(:,2)));
+                    ripples.dHPC.uncoordinated.reward = [ripples.dHPC.reward(tmp,1) ripples.dHPC.reward(tmp,3)];
                     tmp = [ripples.dHPC.reward(tmp,1) ripples.dHPC.reward(tmp,3)];
                     is.sws.reward = InIntervals(bins,tmp); clear tmp
                     
                     tmp = not(ismember(ripples.dHPC.aversive(:,2) , ripples.dHPC.coordinated.aversive(:,2)));
+                    ripples.dHPC.uncoordinated.aversive = [ripples.dHPC.aversive(tmp,1) ripples.dHPC.aversive(tmp,3)];
                     tmp = [ripples.dHPC.aversive(tmp,1) ripples.dHPC.aversive(tmp,3)];
                     is.sws.aversive = InIntervals(bins,tmp); clear tmp
                     
                 elseif strcmp(W,'V')
                     tmp = not(ismember(ripples.vHPC.baseline(:,2) , ripples.vHPC.coordinated.baseline(:,2)));
+                    ripples.vHPC.uncoordinated.baseline = [ripples.vHPC.baseline(tmp,1) ripples.vHPC.baseline(tmp,3)];
                     tmp = [ripples.vHPC.baseline(tmp,1) ripples.vHPC.baseline(tmp,3)];
                     is.sws.baseline = InIntervals(bins,tmp); clear tmp
                     
                     tmp = not(ismember(ripples.vHPC.reward(:,2) , ripples.vHPC.coordinated.reward(:,2)));
+                    ripples.vHPC.uncoordinated.reward = [ripples.vHPC.reward(tmp,1) ripples.vHPC.reward(tmp,3)];
                     tmp = [ripples.vHPC.reward(tmp,1) ripples.vHPC.reward(tmp,3)];
                     is.sws.reward = InIntervals(bins,tmp); clear tmp
                     
                     tmp = not(ismember(ripples.vHPC.aversive(:,2) , ripples.vHPC.coordinated.aversive(:,2)));
+                    ripples.vHPC.uncoordinated.aversive = [ripples.vHPC.aversive(tmp,1) ripples.vHPC.aversive(tmp,3)];
                     tmp = [ripples.vHPC.aversive(tmp,2)-0.2 ripples.vHPC.aversive(tmp,2)+0.2];
                     is.sws.aversive = InIntervals(bins,tmp); clear tmp
                 end
@@ -527,16 +537,48 @@ for tt = 2:length(path)
                 is.aversive = InIntervals(bins,aversiveTS_run./1000);
                 is.reward = InIntervals(bins,rewardTS_run./1000);
                 
-                % Reactivation Strenght
+                %% Reactivation Strenght
                 if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
                     if sum(cond.both.aversive)>=1
-                        templates = ones(size(patterns.all.aversive,1),1);
-                        templates(size(clusters.dHPC)+1:end) = 0;
-                        templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
-                        templates(1:size(clusters.dHPC),2) = 0;
-                        [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
-                        reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
-                        RBA = R; clear R
+                        if and(not(strcmp(W,'V')) , not(strcmp(W,'D')))
+                            templates = ones(size(patterns.all.aversive,1),1);
+                            templates(size(clusters.dHPC)+1:end) = 0;
+                            templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
+                            templates(1:size(clusters.dHPC),2) = 0;
+                            [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                            reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
+                            RBA = R; clear R
+                        elseif strcmp(W,'D')
+                            if length(ripples.dHPC.uncoordinated.all) > length(ripples.dHPC.coordinated.all)
+                                tmp = [];
+                                for i = 1:100
+                                    r = randperm(length(ripples.dHPC.uncoordinated.all));
+                                    r = ripples.dHPC.uncoordinated.all(r(1:length(ripples.dHPC.coordinated.all)),:);
+                                    r = sort([r(:,1) r(:,3)]);
+                                    is.sws.baseline = InIntervals(bins,Restrict(r,NREM.baseline));
+                                    is.sws.reward = InIntervals(bins,Restrict(r,NREM.reward));
+                                    is.sws.aversive = InIntervals(bins,Restrict(r,NREM.aversive));
+                                    [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                                    tmp(:,:,i) = R;
+                                    clear R r
+                                end
+                                
+                                R = [];
+                                for i = 1 : size(tmp,1)
+                                    r = [];
+                                    for ii = 1 : size(tmp,2)
+                                        r = [r , nanmean(squeeze(tmp(i,ii,:)))];
+                                    end
+                                    R = [R ; r]; clear r
+                                end
+                                reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
+                                RBA = R; clear R
+                            else
+                                
+                            end
+                        elseif strcmp(W,'V')
+                            
+                        end
                     end
                 end
                 
@@ -876,202 +918,79 @@ cdfplot(y)%,xlim([-0.6 0.6])
 figure
 x = reactivation.aversive.dvHPC(:,2);
 y = reactivation.aversive.dvHPC(:,3);
-[h p] = kstest2(x,y,'Tail','larger')
+[h p] = kstest2(x,y)
 
 subplot(321),
-boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 0.8])
+boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 1])
 
 x = reactivation.reward.dvHPC(:,2);
 y = reactivation.reward.dvHPC(:,3);
-[h p] = kstest2(x,y,'Tail','larger')
+[h p] = kstest2(x,y)
 
 subplot(322),
-boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 0.8])
+boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 1])
 
 % for dHPC
 x = reactivation.aversive.dHPC(:,2);
 y = reactivation.aversive.dHPC(:,3);
-[h p] = kstest2(x,y,'Tail','larger')
+[h p] = kstest2(x,y)
 
 subplot(323),
-boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 0.8])
+boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 1])
 
 x = reactivation.reward.dHPC(:,2);
 y = reactivation.reward.dHPC(:,3);
-[h p] = kstest2(x,y,'Tail','larger')
+[h p] = kstest2(x,y)
 
 subplot(324),
-boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 0.8])
+boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 1])
 
 % for vHPC
 x = reactivation.aversive.vHPC(:,2);
 y = reactivation.aversive.vHPC(:,3);
-[h p] = kstest2(x,y,'Tail','larger')
+[h p] = kstest2(x,y)
 
 subplot(325),
-boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 0.8])
+boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 1])
 
 x = reactivation.reward.vHPC(:,2);
 y = reactivation.reward.vHPC(:,3);
-[h p] = kstest2(x,y,'Tail','larger')
+[h p] = kstest2(x,y)
 
 subplot(326),
-boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 0.8])
+boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 1])
 
 %% Plot Correlations
 figure
 subplot(131)
-scatter(reactivation.reward.dvHPC(:,4) , reactivation.reward.dvHPC(:,1),'filled','b'),hold on,ylim([-0.5 0.5]),xlim([0 60])
-scatter(reactivation.aversive.dvHPC(:,4) , reactivation.aversive.dvHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-0.5 0.5])
+scatter(reactivation.reward.dvHPC(:,4) , reactivation.reward.dvHPC(:,1),'filled','b'),hold on,ylim([-0.5 0.5]),xlim([0 60]),ylim([-1 1])
+% scatter(reactivation.aversive.dvHPC(:,4) , reactivation.aversive.dvHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-1 1])
 
 subplot(132)
-scatter(reactivation.reward.dHPC(:,4) , reactivation.reward.dHPC(:,1),'filled','b'),hold on,xlim([0 60]),ylim([-10 10])
-% scatter(reactivation.aversive.dHPC(:,4) , reactivation.aversive.dHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-10 10])
+scatter(reactivation.reward.dHPC(:,4) , reactivation.reward.dHPC(:,1),'filled','b'),hold on,xlim([0 60]),ylim([-1 1])
+% scatter(reactivation.aversive.dHPC(:,4) , reactivation.aversive.dHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-1 1])
 
 subplot(133)
-scatter(reactivation.reward.vHPC(:,4) , reactivation.reward.vHPC(:,1),'filled','b'),hold on,xlim([0 60]),ylim([-10 10])
-% scatter(reactivation.aversive.vHPC(:,4) , reactivation.aversive.vHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-10 10])
+scatter(reactivation.reward.vHPC(:,4) , reactivation.reward.vHPC(:,1),'filled','b'),hold on,xlim([0 60]),ylim([-1 1])
+% scatter(reactivation.aversive.vHPC(:,4) , reactivation.aversive.vHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-1 1])
 
 figure
 subplot(131)
 % fitlm(reactivation.aversive.dvHPC(:,4) , reactivation.aversive.dvHPC(:,1))
-% plot(ans),xlim([0 60]),ylim([-10 10]),hold on
 fitlm(reactivation.reward.dvHPC(:,4) , reactivation.reward.dvHPC(:,1))
-plot(ans),xlim([0 60]),ylim([-10 10]),hold on
+plot(ans),xlim([0 60]),ylim([-1 1])
 
 subplot(132)
 % fitlm(reactivation.aversive.dHPC(:,4) , reactivation.aversive.dHPC(:,1))
 % plot(ans),xlim([0 60]),ylim([-10 10]),hold on
 fitlm(reactivation.reward.dHPC(:,4) , reactivation.reward.dHPC(:,1))
-plot(ans),xlim([0 60]),ylim([-10 10]),hold on
+plot(ans),xlim([0 60]),ylim([-1 1])
 
 subplot(133)
 % fitlm(reactivation.aversive.vHPC(:,4) , reactivation.aversive.vHPC(:,1))
 % plot(ans),xlim([0 60]),ylim([-10 10]),hold on
 fitlm(reactivation.reward.vHPC(:,4) , reactivation.reward.vHPC(:,1))
-plot(ans),xlim([0 60]),ylim([-10 10]),hold on
-
-%% Plot cumulative
-figure,
-BothA = []; BothR = []; dHPCA = []; dHPCR = []; vHPCA = []; vHPCR = [];
-dur = 100;
-for ttt = 1:3
-    for tt = 1:length(path)
-        %List of folders from the path
-        files = dir(path{tt});
-        % Get a logical vector that tells which is a directory.
-        dirFlags = [files.isdir];
-        % Extract only those that are directories.
-        subFolders = files(dirFlags);
-        clear files dirFlags
-        num_assembliesR = [];
-        num_assembliesA = [];
-        for t = 1 : length(subFolders)-2
-%             disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
-            session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
-            cd([session,'\Spikesorting'])
-            if isfile('CumSumPeaks.mat')
-                load('CumSumPeaks.mat')
-                
-                % for Joint Assemblies
-                if ttt==1
-                    if not(isempty(CumBR))
-                        for i = 1 : size(CumBR,1)
-                            tmp = nan(1,dur);
-                            tmp(1:size(CumBR(i,:),2)) = CumBR(i,:);
-                            BothR = [BothR ; tmp];
-                            clear tmp
-                        end
-                    end
-                    
-                    if not(isempty(CumBA))
-                        for i = 1 : size(CumBA,1)
-                            tmp = nan(1,dur);
-                            tmp(1:size(CumBA(i,:),2)) = CumBA(i,:);
-                            BothA = [BothA ; tmp];
-                            clear tmp
-                        end
-                    end
-                end
-                
-                % for Dorsal Assemblies
-                if ttt==2
-                    if not(isempty(CumDR))
-                        for i = 1 : size(CumDR,1)
-                            tmp = nan(1,dur);
-                            tmp(1:size(CumDR(i,:),2)) = CumDR(i,:);
-                            dHPCR = [dHPCR ; tmp];
-                            clear tmp
-                        end
-                    end
-                    
-                    if not(isempty(CumDA))
-                        for i = 1 : size(CumDA,1)
-                            tmp = nan(1,dur);
-                            tmp(1:size(CumDA(i,:),2)) = CumDA(i,:);
-                            dHPCA = [dHPCA ; tmp];
-                            clear tmp
-                        end
-                    end
-                end
-                
-                % for Ventral Assemblies
-                if ttt==3
-                   if not(isempty(CumVR))
-                        for i = 1 : size(CumVR,1)
-                            tmp = nan(1,dur);
-                            tmp(1:size(CumVR(i,:),2)) = CumVR(i,:);
-                            vHPCR = [vHPCR ; tmp];
-                            clear tmp
-                        end
-                    end
-                    
-                    if not(isempty(CumVA))
-                        for i = 1 : size(CumVA,1)
-                            tmp = nan(1,dur);
-                            tmp(1:size(CumVA(i,:),2)) = CumVA(i,:);
-                            vHPCA = [vHPCA ; tmp];
-                            clear tmp
-                        end
-                    end
-                end
-                clear CumBA CumDA CumVA CumBR CumDR CumVR
-                
-            end
-        end
-    end
-end
-
-%% 
-
-subplot(311)
-id = logical(reactivation.aversive.dvHPC(:,end));
-plot(nanmean(BothA(id,:)),'r'),hold on
-
-id = logical(reactivation.reward.dvHPC(:,end));
-plot(nanmean(BothR(id,:)),'b'),hold on
-
-ciplot(nanmean(BothA)-nansem(BothA) , nanmean(BothA)+nansem(BothA) , [1:1:100],'r'), alpha 0.5
-
-ciplot(nanmean(BothR)-nansem(BothR) , nanmean(BothR)+nansem(BothR) , [1:1:100],'b'), alpha 0.5
-xlim([0 60])
-
-subplot(312)
-plot(nanmean(dHPCA),'r'),hold on
-plot(nanmean(dHPCR),'b'),hold on
-ciplot(nanmean(dHPCA)-nansem(dHPCA) , nanmean(dHPCA)+nansem(dHPCA) , [1:1:100],'r'), alpha 0.5
-ciplot(nanmean(dHPCR)-nansem(dHPCR) , nanmean(dHPCR)+nansem(dHPCR) , [1:1:100],'b'), alpha 0.5
-xlim([0 60])
-
-subplot(313)
-plot(nanmean(vHPCA),'r'),hold on
-plot(nanmean(vHPCR),'b'),hold on
-ciplot(nanmean(vHPCA)-nansem(vHPCA) , nanmean(vHPCA)+nansem(vHPCA) , [1:1:100],'r'), alpha 0.5
-ciplot(nanmean(vHPCR)-nansem(vHPCR) , nanmean(vHPCR)+nansem(vHPCR) , [1:1:100],'b'), alpha 0.5
-xlim([0 60])
-
-
-
+plot(ans),xlim([0 60]),ylim([-1 1])
 
 %% Ven Graphs for similarity Index
 % dHPC Assemblies
@@ -1101,7 +1020,6 @@ A = [ p1 p2 ];
 I = (sum(percentages(:,9))./sum(sum(percentages(:,7:8))))*100;
 
 subplot(133),venn(A,I), xlim([-5 10]), ylim([-5 5])
-
 
 
 %% Plot Activity Strength
@@ -1151,7 +1069,6 @@ er = errorbar(xx,yy,err)%;ylim([-3 3])
 er.Color = [0 0 0];                            
 er.LineStyle = 'none';
 hold off
-
 
 
 % dHPC reward
@@ -1265,8 +1182,6 @@ kstest(x2)
 scatter(y,x2,"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
 scatter(2,nanmean(x2),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
 
-
-
 % dHPC reward
 x3 = (reactivation.reward.dHPC(:,4)-reactivation.reward.dHPC(:,5))./(reactivation.reward.dHPC(:,4)+reactivation.reward.dHPC(:,5));
 y=ones(length(reactivation.reward.dHPC(:,4)),1)*3;
@@ -1284,8 +1199,6 @@ kstest(x4)
 
 scatter(y,x4,"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
 scatter(4,nanmean(x4),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
-
-
 
 
 % vHPC reward
@@ -1306,8 +1219,6 @@ kstest(x6)
 scatter(y,x6,"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
 scatter(6,nanmean(x6),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 7]),hold on
 ylim([-0.5 1])
-
-
 
 
 x = [x1;x2;x3;x4;x5;x6];
