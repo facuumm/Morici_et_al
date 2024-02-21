@@ -542,14 +542,14 @@ for tt = 2:length(path)
                 if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
                     % Joint Aversive Assemblies
                     if sum(cond.both.aversive)>=1
-                        if and(not(strcmp(W,'V')) , not(strcmp(W,'D')))
+                        if and(not(strcmp(W,'V')) , not(strcmp(W,'D'))) % check if is not uncoordinated events
                             [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
                             reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
                             RBA = R; clear R
-                        elseif strcmp(W,'D')
+                        elseif strcmp(W,'D') % if is uncoordinated dorsal ripples
                             if length(ripples.dHPC.uncoordinated.all) > length(ripples.dHPC.coordinated.all)
                                 tmp = [];
-                                for i = 1:iterations
+                                for i = 1:iterations % downsampling ripples
                                     r = randperm(length(ripples.dHPC.uncoordinated.all));
                                     r = ripples.dHPC.uncoordinated.all(r(1:length(ripples.dHPC.coordinated.all)),:);
                                     r = sort([r(:,1) r(:,3)]);
@@ -562,7 +562,7 @@ for tt = 2:length(path)
                                 end
                                 
                                 R = [];
-                                for i = 1 : size(tmp,1)
+                                for i = 1 : size(tmp,1) % mean the output of the previous loop
                                     r = [];
                                     for ii = 1 : size(tmp,2)
                                         r = [r , nanmean(squeeze(tmp(i,ii,:)))];
@@ -571,12 +571,12 @@ for tt = 2:length(path)
                                 end
                                 reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
                                 RBA = R; clear R
-                            else
+                            else % if length(uncoordinated) <= length(coordinated)
                                 [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
                                 reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
                                 RBA = R; clear R
                             end
-                        elseif strcmp(W,'V')
+                        elseif strcmp(W,'V') % it does the same if I am taking unccordinated ventral ripples
                             if length(ripples.vHPC.uncoordinated.all) > length(ripples.vHPC.coordinated.all)
                                 tmp = [];
                                 for i = 1:iterations
@@ -748,7 +748,7 @@ for tt = 2:length(path)
                     end
                 end
                 
-                %%
+                %% Same for Reward assemblies
                 % Joint Reward Assemblies
                 if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
                     if sum(cond.both.reward)>=1
@@ -820,7 +820,7 @@ for tt = 2:length(path)
                     end
                 end
                 
-                % dHPC Aversive Assemblies
+                % dHPC Reward Assemblies
                 if sum(cond.dHPC.reward)>=1
                     if and(not(strcmp(W,'V')) , not(strcmp(W,'D')))
                         [R] = reactivation_strength(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
