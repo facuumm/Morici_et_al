@@ -566,7 +566,7 @@ for tt = 1:length(path)
                         if tmp>0
                             z = Rtt(and(Rtt>= r-0.1, Rtt<= r+0.1),:);
                             [p,indice] = min(abs(r-z));
-                            CV = [CV ; z(indice)];
+                            CV = [CV ; z(indice,2)];
                             CD = [CD ; r];
                             clear tmp2 tmp1 p indice z
                         end

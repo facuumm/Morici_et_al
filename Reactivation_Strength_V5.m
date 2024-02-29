@@ -7,45 +7,48 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
-MUAselection = logical(0); % to select ripples by their MUA
-W = 'V'; % to select what kind of ripples I want to check
+W = 'N'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % D= uncoordinated dorsal, V= uncoordinated ventral
 % CB = cooridnated bursts
 % N= NREM, R= REM
 TA =  logical(0); % Trigger Reactivation Strength
+Shock_Activity = logical(0); % Trigger activity during shock.
 
 % for SU
 criteria_fr = 0; %criteria to include or not a SU into the analysis
 criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
 criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
 binSize = 0.025; %for qssemblie detection qnd qxctivity strength
+normalization = true; % to define if normalization over Reactivation Strength is applied or not
+th = 5; % threshold for peak detection
+iterations = 100; % number of iterations for downsampling
 
 % Behavior
 minimal_speed = 7; % minimal speed to detect quite periods
 minimal_speed_time = 2; % minimal time to detect quite periods
 
-reactivation.aversive.dvHPC = [];
-reactivation.reward.dvHPC = [];
-reactivation.aversive.dHPC = [];
-reactivation.reward.dHPC = [];
-reactivation.aversive.vHPC = [];
-reactivation.reward.vHPC = [];
-
-normalization = true; % to define if normalization over Reactivation Strength is applied or not
-th = 5; % threshold for peak detection
-iterations = 100; % number of iterations for downsampling
-
+% Storage variables
+% For ripple repsonse
 gain.both.reward.pre = [];     gain.both.reward.post = [];
 gain.both.aversive.pre = [];   gain.both.aversive.post = [];
 
-percentages = [];
+% For Reactivation measure
+reactivation.aversive.dvHPC = []; reactivation.reward.dvHPC = [];
+reactivation.aversive.dHPC = []; reactivation.reward.dHPC = [];
+reactivation.aversive.vHPC = []; reactivation.reward.vHPC = [];
 
+% Shock repsonse
+Shock_response.dHPC.aversive = []; Shock_response.vHPC.aversive = []; Shock_response.both.aversive = [];
+Shock_response.dHPC.reward = []; Shock_response.vHPC.reward = []; Shock_response.both.reward = [];
+
+% General metrics
+percentages = [];
 Number_of_assemblies.aversive = [];
 Number_of_assemblies.reward = [];
 
 %% Main loop, to iterate across sessions
-for tt = 2:length(path)
+for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
     % Get a logical vector that tells which is a directory.
@@ -111,6 +114,26 @@ for tt = 2:length(path)
         % Load digitalin.mat
         load('digitalin.mat')
         
+        %Shocks selection
+        Shocks_filt = Restrict(shock,aversiveTS_run ./1000);
+        % Keep only the first shock of each TTL (first from 20)
+        count = 1;
+        deff = [];
+        for i = 1:length(Shocks_filt)
+            if count == 1
+                deff = [deff ; Shocks_filt(i,1)];
+            end
+            if count ==20
+                count = 0;
+            end
+            count = count + 1;
+        end
+        Shocks_filt = deff;
+        clear count deff shock i
+        
+        %Rewards selection
+        Rewards_filt = Restrict([leftvalve ; rightvalve],rewardTS_run ./1000);
+                
         % Behavioral calculations
         disp('Uploading DLC outputs')
         camara = ((camara(:,2)-camara(:,1))/2)+camara(:,1);
@@ -172,12 +195,12 @@ for tt = 2:length(path)
         % Reward
         start = behavior.speed.reward(1,1);   stop = behavior.speed.reward(end,1);
         movement.reward = InvertIntervals(behavior.quiet.reward , start , stop); %keep only those higher than criteria
-%         movement.reward(movement.reward(:,2) - movement.reward(:,1) <1,:)=[]; %eliminate 1sec segments
+        %         movement.reward(movement.reward(:,2) - movement.reward(:,1) <1,:)=[]; %eliminate 1sec segments
         clear tmp start stop
         % Aversive
         start = behavior.speed.aversive(1,1);   stop = behavior.speed.aversive(end,1);
         movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
-%         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
+        %         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
         clear tmp start stop
         
         %% load sleep states
@@ -187,7 +210,7 @@ for tt = 2:length(path)
         %         REM.all(REM.all(:,2)-REM.all(:,1)<60,:) = [];
         clear x states
         
-%         NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
+        %         NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
         NREM.baseline = Restrict(NREM.all,baselineTS./1000);
         NREM.aversive = Restrict(NREM.all,aversiveTS./1000);
         NREM.reward = Restrict(NREM.all,rewardTS./1000);
@@ -199,8 +222,8 @@ for tt = 2:length(path)
         WAKE.baseline = Restrict(WAKE.all,baselineTS./1000);
         WAKE.aversive = Restrict(WAKE.all,aversiveTS./1000);
         WAKE.reward = Restrict(WAKE.all,rewardTS./1000);
-
-
+        
+        
         %% Load ripples
         if exist('ripplesD_customized2.csv')
             ripplesD = table2array(readtable('ripplesD_customized2.csv'));
@@ -466,7 +489,7 @@ for tt = 2:length(path)
             
             percentages = [percentages  ; sum(cond.dHPC.aversive) , sum(cond.dHPC.reward) , sum(sum(AR.dHPC)) , sum(cond.vHPC.aversive) , sum(cond.vHPC.reward) , sum(sum(AR.vHPC)) , sum(cond.both.aversive) , sum(cond.both.reward) , sum(sum(AR.both))];
             clear A R r p
-
+            
             %% SpikeTrains construction
             limits = [0 segments.Var1(end)/1000];
             events = [];
@@ -539,13 +562,20 @@ for tt = 2:length(path)
                 is.reward = InIntervals(bins,rewardTS_run./1000);
                 
                 %% Reactivation Strenght
-                if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
+%                 if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
                     % Joint Aversive Assemblies
                     if sum(cond.both.aversive)>=1
                         if and(not(strcmp(W,'V')) , not(strcmp(W,'D'))) % check if is not uncoordinated events
+                            
+                            templates = ones(size(patterns.all.aversive,1),1);
+                            templates(size(clusters.dHPC)+1:end) = 0;
+                            templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
+                            templates(1:size(clusters.dHPC),2) = 0;
+                            
                             [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
                             reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
                             RBA = R; clear R
+                            
                         elseif strcmp(W,'D') % if is uncoordinated dorsal ripples
                             if length(ripples.dHPC.uncoordinated.all) > length(ripples.dHPC.coordinated.all)
                                 tmp = [];
@@ -576,6 +606,7 @@ for tt = 2:length(path)
                                 reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
                                 RBA = R; clear R
                             end
+                            
                         elseif strcmp(W,'V') % it does the same if I am taking unccordinated ventral ripples
                             if length(ripples.vHPC.uncoordinated.all) > length(ripples.vHPC.coordinated.all)
                                 tmp = [];
@@ -608,7 +639,7 @@ for tt = 2:length(path)
                             end
                         end
                     end
-                end
+%                 end
                 
                 % dHPC Aversive Assemblies
                 if sum(cond.dHPC.aversive)>=1
@@ -750,9 +781,14 @@ for tt = 2:length(path)
                 
                 %% Same for Reward assemblies
                 % Joint Reward Assemblies
-                if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
+%                 if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
                     if sum(cond.both.reward)>=1
                         if and(not(strcmp(W,'V')) , not(strcmp(W,'D')))
+                            templates = ones(size(patterns.all.aversive,1),1);
+                            templates(size(clusters.dHPC)+1:end) = 0;
+                            templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
+                            templates(1:size(clusters.dHPC),2) = 0;
+                            
                             [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
                             reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
                             RBR = R; clear R
@@ -818,7 +854,7 @@ for tt = 2:length(path)
                             end
                         end
                     end
-                end
+%                 end
                 
                 % dHPC Reward Assemblies
                 if sum(cond.dHPC.reward)>=1
@@ -964,71 +1000,113 @@ for tt = 2:length(path)
             if TA
                 disp('Triggered assemblies activity sourrounding cooridnated events')
                 % Aversive
-%                 if RBA(:,end)>=1
-%                     condd = logical(RBA(:,end));
-                    if sum(cond.both.aversive) >= 1
-                        if aversiveTS_run(1) < rewardTS_run(1)
-                            [R.baseline] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 0.2 , ripple_event.filtered.baseline , 0 , 0 , [] , []);
-                            [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 0.2 , ripple_event.filtered.aversive , 0 , 0 , [] , []);
-                            
-                            if isempty(gain.both.aversive.pre)
-                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline];
-                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive];
-                            else
-                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline(:,1:size(gain.both.aversive.pre,2))];
-                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(:,1:size(gain.both.aversive.pre,2))];
-                            end
-                            
-                            clear R
+                %                 if RBA(:,end)>=1
+                %                     condd = logical(RBA(:,end));
+                if sum(cond.both.aversive) >= 1
+                    if aversiveTS_run(1) < rewardTS_run(1)
+                        tmp = [ripple_event.baseline(:,1)-0.05 ripple_event.baseline(:,3)+0.05];
+                        [R.baseline] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.baseline , 0 , 0 , [] , [] , [size(clusters.dHPC,1) size(clusters.vHPC,1)]); clear tmp
+                        tmp = [ripple_event.aversive(:,1)-0.05 ripple_event.aversive(:,3)+0.05];
+                        [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 0 , 0 , [] , [] , [size(clusters.dHPC,1) size(clusters.vHPC,1)]); clear tmp
+                        
+                        if isempty(gain.both.aversive.pre)
+                            gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline];
+                            gain.both.aversive.post = [gain.both.aversive.post ; R.aversive];
                         else
-                            [R.reward] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 1 , [] , []);
-                            [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 0 , 0 , [] , []);
-                            
-                            if isempty(gain.both.aversive.pre)
-                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward];
-                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive];
-                            else
-                                gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward(:,1:size(gain.both.aversive.pre,2))];
-                                gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(:,1:size(gain.both.aversive.pre,2))];
-                            end
-                            clear R
+                            gain.both.aversive.pre = [gain.both.aversive.pre ; R.baseline(:,1:size(gain.both.aversive.pre,2))];
+                            gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(:,1:size(gain.both.aversive.pre,2))];
                         end
-%                     end
-%                     clear condd
+                        
+                        clear R
+                    else
+                        tmp = [ripple_event.reward(:,1)-0.05 ripple_event.reward(:,3)+0.05];
+                        [R.reward] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 0 , [] , [] , [size(clusters.dHPC,1) size(clusters.vHPC,1)]); clear tmp
+                        tmp = [ripple_event.aversive(:,1)-0.05 ripple_event.aversive(:,3)+0.05];
+                        [R.aversive] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 0 , 0 , [] , [] , [size(clusters.dHPC,1) size(clusters.vHPC,1)]); clear tmp
+                        
+                        if isempty(gain.both.aversive.pre)
+                            gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward];
+                            gain.both.aversive.post = [gain.both.aversive.post ; R.aversive];
+                        else
+                            gain.both.aversive.pre = [gain.both.aversive.pre ; R.reward(:,1:size(gain.both.aversive.pre,2))];
+                            gain.both.aversive.post = [gain.both.aversive.post ; R.aversive(:,1:size(gain.both.aversive.pre,2))];
+                        end
+                        clear R
+                    end
+                    %                     end
+                    %                     clear condd
                 end
                 
                 % Reward
-%                 if RBR(:,end)>=1
-%                     condd = logical(RBR(:,end));
-                    if sum(cond.both.reward) >= 1
-                        if aversiveTS_run(1) > rewardTS_run(1)
-                            [R.baseline] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.baseline , 0 , 0 , [] , []);
-                            [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 0 , [] , []);
-                            
-                            if isempty(gain.both.reward.pre)
-                                gain.both.reward.pre = [gain.both.reward.pre ; R.baseline];
-                                gain.both.reward.post = [gain.both.reward.post ; R.reward];
-                            else
-                                gain.both.reward.pre = [gain.both.reward.pre ; R.baseline(:,1:size(gain.both.reward.pre,2))];
-                                gain.both.reward.post = [gain.both.reward.post ; R.reward(:,1:size(gain.both.reward.pre,2))];
-                            end
-                            clear R
+                %                 if RBR(:,end)>=1
+                %                     condd = logical(RBR(:,end));
+                if sum(cond.both.reward) >= 1
+                    if aversiveTS_run(1) > rewardTS_run(1)
+                        tmp = [ripple_event.baseline(:,1)-0.05 ripple_event.baseline(:,3)+0.05];
+                        [R.baseline] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.baseline , 0 , 0 , [] , [] , [size(clusters.dHPC,1) size(clusters.vHPC,1)]);clear tmp
+                        tmp = [ripple_event.reward(:,1)-0.05 ripple_event.reward(:,3)+0.05];
+                        [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 0 , [] , [] , [size(clusters.dHPC,1) size(clusters.vHPC,1)]); clear tmp
+                        
+                        if isempty(gain.both.reward.pre)
+                            gain.both.reward.pre = [gain.both.reward.pre ; R.baseline];
+                            gain.both.reward.post = [gain.both.reward.post ; R.reward];
                         else
-                            [R.aversive] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 0 , 0 , [] , []);
-                            [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 0 , [] , []);
-                            
-                            if isempty(gain.both.reward.pre)
-                                gain.both.reward.pre = [gain.both.reward.pre ; R.aversive];
-                                gain.both.reward.post = [gain.both.reward.post ; R.reward];
-                            else
-                                gain.both.reward.pre = [gain.both.reward.pre ; R.aversive(:,1:size(gain.both.reward.pre,2))];
-                                gain.both.reward.post = [gain.both.reward.post ; R.reward(:,1:size(gain.both.reward.pre,2))];
-                            end
-                            clear R
+                            gain.both.reward.pre = [gain.both.reward.pre ; R.baseline(:,1:size(gain.both.reward.pre,2))];
+                            gain.both.reward.post = [gain.both.reward.post ; R.reward(:,1:size(gain.both.reward.pre,2))];
                         end
+                        clear R
+                    else
+                        tmp = [ripple_event.aversive(:,1)-0.05 ripple_event.aversive(:,3)+0.05];
+                        [R.aversive] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.aversive , 0 , 0 , [] , [] , [size(clusters.dHPC,1) size(clusters.vHPC,1)]); clear tmp
+                        tmp = [ripple_event.reward(:,1)-0.05 ripple_event.reward(:,3)+0.05];
+                        [R.reward] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes], 2 , ripple_event.filtered.reward , 0 , 0 , [] , [] , [size(clusters.dHPC,1) size(clusters.vHPC,1)]); clear tmp
+                        
+                        if isempty(gain.both.reward.pre)
+                            gain.both.reward.pre = [gain.both.reward.pre ; R.aversive];
+                            gain.both.reward.post = [gain.both.reward.post ; R.reward];
+                        else
+                            gain.both.reward.pre = [gain.both.reward.pre ; R.aversive(:,1:size(gain.both.reward.pre,2))];
+                            gain.both.reward.post = [gain.both.reward.post ; R.reward(:,1:size(gain.both.reward.pre,2))];
+                        end
+                        clear R
                     end
-%                     clear cond
-%                 end
+                end
+                %                     clear cond
+                %                 end
+            end
+            
+            if Shock_Activity
+                disp('Calculating mean response to the Shocks')
+                baseline = SubtractIntervals(aversiveTS_run./1000,[Shocks_filt-1 Shocks_filt+2]);
+                if sum(cond.both.aversive)>=1
+                    [R] = triggered_activity(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , 10 , Shocks_filt, 0 , 1 , [] , baseline , []);
+                    Shock_response.both.aversive = [Shock_response.both.aversive ; R]; clear R
+                end
+                
+                if sum(cond.dHPC.aversive)>=1
+                    [R] = triggered_activity(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes] , 10 ,  Shocks_filt, 0 , 1 ,[] , baseline , []);
+                    Shock_response.dHPC.aversive = [Shock_response.dHPC.aversive ; R]; clear R
+                end
+                
+                if sum(cond.vHPC.aversive)>=1
+                    [R] = triggered_activity(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes] , 10 ,  Shocks_filt, 0 , 1 ,[] , baseline , []);
+                    Shock_response.vHPC.aversive = [Shock_response.vHPC.aversive ; R]; clear R
+                end
+                
+                if sum(cond.both.reward)>=1
+                    [R] = triggered_activity(patterns.all.reward , cond.both.reward , [bins' , Spikes] , 10 , Shocks_filt, 0 , 1 , [] , baseline , []);
+                    Shock_response.both.reward = [Shock_response.both.reward ; R]; clear R
+                end
+                
+                if sum(cond.dHPC.reward)>=1
+                    [R] = triggered_activity(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes] , 10 ,  Shocks_filt, 0 , 1 ,[] , baseline , []);
+                    Shock_response.dHPC.reward = [Shock_response.dHPC.reward ; R]; clear R
+                end
+                
+                if sum(cond.vHPC.reward)>=1
+                    [R] = triggered_activity(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes] , 10 ,  Shocks_filt, 0 , 1 ,[] , baseline , []);
+                    Shock_response.vHPC.reward = [Shock_response.vHPC.reward ; R]; clear R
+                end
             end
             
             
@@ -1046,6 +1124,7 @@ for tt = 2:length(path)
         clear ripple_bursts ripple_event ripplesD ripplesV
         clear spks spks_dHPC spks_vHPC ripples cooridnated_event
         clear cooridnated_eventDV cooridnated_eventVD segments
+        clear RBA RBR RDA RDR RVA RVR Shocks_filt Rewards_filt
     end
     
     Number_of_assemblies.aversive = [Number_of_assemblies.aversive ; sum(num_assembliesA)];
@@ -1054,7 +1133,7 @@ for tt = 2:length(path)
     
 end
 
-save([cd,'\Reactivation_Strength_Data_Normalized_noncoordinates_vRipples.mat'] , 'reactivation')
+save([cd,'\Reactivation_Strength_Data_Normalized_NREM.mat'] , 'reactivation')
 
 %% Plot Strenght Reactivation
 %  for joint assemblies
@@ -1064,7 +1143,7 @@ y = reactivation.aversive.dvHPC(:,1);
 
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y)  
+[h, p] = ranksum(x,y,'tail','left')  
 [h, p] = signrank(y,0)
 [h, p] = signrank(x,0)
 
@@ -1072,25 +1151,14 @@ subplot(131),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
-
-% xx = [1 2];
-% yy = [nanmean(x) nanmean(y)];
-% err = [nansem(x) nansem(y)];
-% 
-% subplot(131),
-% bar(xx,yy),hold on
-% er = errorbar(xx,yy,err);ylim([-3 3])
-% er.Color = [0 0 0];                            
-% er.LineStyle = 'none';
-% hold off
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.5 0.5])
 
 %  for dHPC assemblies
 x = reactivation.reward.dHPC(:,1);
 y = reactivation.aversive.dHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y)  
+[h, p] = ranksum(x,y,'tail','left')  
 [h, p] = signrank(y,0)
 [h, p] = signrank(x,0)
 
@@ -1098,25 +1166,14 @@ subplot(132),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
-
-% xx = [1 2];
-% yy = [nanmean(x) nanmean(y)];
-% err = [nansem(x) nansem(y)];
-% 
-% subplot(132),
-% bar(xx,yy),hold on
-% er = errorbar(xx,yy,err);ylim([-3 3])
-% er.Color = [0 0 0];                            
-% er.LineStyle = 'none';
-% hold off
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.5 0.5])
 
 %  for vHPC assemblies
 x = reactivation.reward.vHPC(:,1);
 y = reactivation.aversive.vHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y)  
+[h, p] = ranksum(x,y,'tail','left')  
 [h, p] = signrank(y,0)
 [h, p] = signrank(x,0)
 
@@ -1124,19 +1181,7 @@ subplot(133),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
-
-% xx = [1 2];
-% yy = [nanmean(x) nanmean(y)];
-% err = [nansem(x) nansem(y)];
-% 
-% subplot(133),
-% bar(xx,yy),hold on
-% er = errorbar(xx,yy,err);ylim([-3 3])
-% er.Color = [0 0 0];                            
-% er.LineStyle = 'none';
-% hold off
-
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.5 0.5])
 
 %% Plot Peaks of activation
 %  for joint assemblies
@@ -1154,18 +1199,7 @@ subplot(131),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
-
-% xx = [1 2];
-% yy = [nanmean(x) nanmean(y)];
-% err = [nansem(x) nansem(y)];
-% 
-% subplot(131),
-% bar(xx,yy),hold on
-% er = errorbar(xx,yy,err);ylim([-3 3])
-% er.Color = [0 0 0];                            
-% er.LineStyle = 'none';
-% hold off
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.3 0.3])
 
 %  for dHPC assemblies
 x = reactivation.reward.dHPC(:,7);
@@ -1181,18 +1215,7 @@ subplot(132),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
-
-% xx = [1 2];
-% yy = [nanmean(x) nanmean(y)];
-% err = [nansem(x) nansem(y)];
-% 
-% subplot(132),
-% bar(xx,yy),hold on
-% er = errorbar(xx,yy,err);ylim([-3 3])
-% er.Color = [0 0 0];                            
-% er.LineStyle = 'none';
-% hold off
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.3 0.3])
 
 %  for vHPC assemblies
 x = reactivation.reward.vHPC(:,7);
@@ -1207,51 +1230,55 @@ subplot(133),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.3 0.3])
 
-% xx = [1 2];
-% yy = [nanmean(x) nanmean(y)];
-% err = [nansem(x) nansem(y)];
-% 
-% subplot(133),
-% bar(xx,yy),hold on
-% er = errorbar(xx,yy,err);ylim([-3 3])
-% er.Color = [0 0 0];                            
-% er.LineStyle = 'none';
-% hold off
+%% Plot Activity Strength surrounding the ripples
+[h p] = min(abs([-2:binSize:2+binSize]-0.1))
+[h pp] = min(abs([-2:binSize:2+binSize]-(-0.1)))
+
+[h p] = sort(mean(gain.both.aversive.post(:,pp:p),2),'descend')
+
+figure,
+x = [];
+y = gain.both.aversive.pre(p,:);
+for i = 1:size(y,1)
+    x = [x ; Smooth(y(i,:),0,'type','l')'];
+end
+subplot(121),imagesc([-2:binSize:2],[1:size(gain.both.aversive.pre,1)],x),xlim([-0.2 0.2]),caxis([-2 10]), colormap 'jet'
+
+x = [];
+y = gain.both.aversive.post(p,:);
+for i = 1:size(y,1)
+    x = [x ; Smooth(y(i,:),0,'type','l')'];
+end
+subplot(122),imagesc([-2:binSize:2],[1:size(gain.both.aversive.post,1)],x),xlim([-0.2 0.2]),caxis([-2 10]), colormap 'jet'
+
+figure,
+plot([-2:binSize:2],gain.both.aversive.pre,'k'),hold on
+plot([-2:binSize:2],gain.both.aversive.post,'g')
 
 
-%% Plot cumulative distribution
-%  for joint assemblies
-figure
-x = reactivation.reward.dvHPC(:,1);
-y = reactivation.aversive.dvHPC(:,1);
-[h p] = kstest2(x,y,'Tail','larger')
 
-subplot(131),
-cdfplot(x)
-hold on
-cdfplot(y)%,xlim([-0.6 0.6])
+[h p] = min(abs([-2:binSize:2+binSize]-0.1))
+[h pp] = min(abs([-2:binSize:2+binSize]-(-0.1)))
 
-%  for dHPC assemblies
-x = reactivation.reward.dHPC(:,1);
-y = reactivation.aversive.dHPC(:,1);
-[h p] = kstest2(x,y,'Tail','larger')
+[h p] = sort(mean(gain.both.reward.post(:,pp:p),2),'descend')
 
-subplot(132),
-cdfplot(x)
-hold on
-cdfplot(y)%,xlim([-0.6 0.6])
+figure,
+x = [];
+y = gain.both.reward.pre(p,:);
+for i = 1:size(y,1)
+    x = [x ; Smooth(y(i,:),1,'type','l')'];
+end
+subplot(121),imagesc([-2:binSize:2],[1:size(gain.both.reward.pre,1)],x),xlim([-0.2 0.2]),caxis([-2 4]), colormap 'jet'
 
-%  for vHPC assemblies
-x = reactivation.reward.vHPC(:,1);
-y = reactivation.aversive.vHPC(:,1);
-[h p] = kstest2(x,y,'Tail','larger')
+x = [];
+y = gain.both.reward.post(p,:);
+for i = 1:size(y,1)
+    x = [x ; Smooth(y(i,:),1,'type','l')'];
+end
+subplot(122),imagesc([-2:binSize:2],[1:size(gain.both.reward.post,1)],x),xlim([-0.2 0.2]),caxis([-2 4]), colormap 'jet'
 
-subplot(133),
-cdfplot(x)
-hold on
-cdfplot(y)%,xlim([-0.6 0.6])
 
 %% Plot cumulative distribution FR
 %  for joint assemblies
@@ -1567,3 +1594,162 @@ grps = [grps , [ones(length(x1),1) ; ones(length(x2),1)*2 ; ones(length(x3),1) ;
 
 figure,
 anovan(x,grps,'model','interaction','varnames',{'type','condition'})
+
+
+%% Shock repsonsive assemblies
+figure
+% both aversive
+[h p] = min(abs([-10:binSize:10]-0));
+[h pp] = min(abs([-10:binSize:10]-1));
+
+tmp = [];
+for i = 1 : size(Shock_response.both.aversive,1)
+    tmp = [tmp ; Smooth(Shock_response.both.aversive(i,:),2,'type','l')'];
+%     tmp = [tmp ; movmean(Shock_response.both.aversive(i,:),8)];
+
+end
+criteria = nanmean(Shock_response.both.aversive(:,p:pp),2);
+% p = prctile(criteria,75);
+% criteria = criteria >= p;
+[h p] = sort(nanmean(tmp(:,p:pp),2),'descend');
+subplot(321),imagesc([-10 : binSize : 10] , [1:size(Shock_response.both.aversive,1)] , tmp(p,:)),xlim([-2 3]),caxis([-1 1])%,colormap 'jet'
+title('Both Averisve')
+xline(0,'-w'), xline(1,'-w'), 
+
+% plot([-10 : binSize : 10],tmp(criteria,:))
+% plot(mean(gain.both.aversive.pre(:,criteria),2))
+
+% both reward
+[h p] = min(abs([-10:binSize:10]-0));
+[h pp] = min(abs([-10:binSize:10]-0.5));
+
+tmp = [];
+for i = 1 : size(Shock_response.both.reward,1)
+    tmp = [tmp ; Smooth(Shock_response.both.reward(i,:),2,'type','l')'];
+%     tmp = [tmp ; movmean(Shock_response.both.reward(i,:),4)];
+
+end
+[h p] = sort(nanmean(tmp(:,p:pp),2),'descend');
+subplot(322),imagesc([-10 : binSize : 10] , [1:size(Shock_response.both.reward,1)] , tmp(p,:)),xlim([-2 3]),caxis([-1 1])%,colormap 'jet'
+title('Both Reward')
+xline(0,'-w'), xline(1,'-w'), 
+
+
+% dHPC aversive
+[h p] = min(abs([-10:binSize:10]-0));
+[h pp] = min(abs([-10:binSize:10]-0.5));
+
+tmp = [];
+for i = 1 : size(Shock_response.dHPC.aversive,1)
+    tmp = [tmp ; Smooth(Shock_response.dHPC.aversive(i,:),2,'type','l')'];
+%         tmp = [tmp ; movmean(Shock_response.dHPC.aversive(i,:),4)];
+end
+[h p] = sort(nanmean(tmp(:,p:pp),2),'descend');
+subplot(323),imagesc([-10 : binSize : 10] , [1:size(Shock_response.dHPC.aversive,1)] , tmp(p,:)),xlim([-2 3]),caxis([-1 1])%,colormap 'jet'
+title('dHPC Averisve')
+xline(0,'-w'), xline(1,'-w'), 
+
+% dHPC reward
+[h p] = min(abs([-10:binSize:10]-0));
+[h pp] = min(abs([-10:binSize:10]-0.5));
+
+tmp = [];
+for i = 1 : size(Shock_response.dHPC.reward,1)
+    tmp = [tmp ; Smooth(Shock_response.dHPC.reward(i,:),2,'type','l')'];
+%         tmp = [tmp ; movmean(Shock_response.dHPC.reward(i,:),4)];
+end
+[h p] = sort(nanmean(tmp(:,p:pp),2),'descend');
+subplot(324),imagesc([-10 : binSize : 10] , [1:size(Shock_response.dHPC.reward,1)] , tmp(p,:)),xlim([-2 3]),caxis([-1 1])%,colormap 'jet'
+title('dHPC Reward')
+xline(0,'-w'), xline(1,'-w'), 
+
+% vHPC aversive
+[h p] = min(abs([-10:binSize:10]-0));
+[h pp] = min(abs([-10:binSize:10]-0.5));
+
+tmp = [];
+for i = 1 : size(Shock_response.vHPC.aversive,1)
+    tmp = [tmp ; Smooth(Shock_response.vHPC.aversive(i,:),2,'type','l')'];
+%         tmp = [tmp ; movmean(Shock_response.vHPC.aversive(i,:),4)];
+
+end
+[h p] = sort(nanmean(tmp(:,p:pp),2),'descend');
+subplot(325),imagesc([-10 : binSize : 10] , [1:size(Shock_response.vHPC.aversive,1)] , tmp(p,:)),xlim([-2 3]),caxis([-1 1])%,colormap 'jet'
+title('vHPC Averisve')
+xline(0,'-w'), xline(1,'-w'), 
+
+% vHPC reward
+[h p] = min(abs([-10:binSize:10]-0));
+[h pp] = min(abs([-10:binSize:10]-0.5));
+
+tmp = [];
+for i = 1 : size(Shock_response.vHPC.reward,1)
+    tmp = [tmp ; Smooth(Shock_response.vHPC.reward(i,:),2,'type','l')'];
+%         tmp = [tmp ; movmean(Shock_response.vHPC.reward(i,:),4)];
+
+end
+[h p] = sort(nanmean(tmp(:,p:pp),2),'descend');
+subplot(326),imagesc([-10 : binSize : 10] , [1:size(Shock_response.vHPC.reward,1)] , tmp(p,:)),xlim([-2 3]),caxis([-1 1])%,colormap 'jet'
+title('vHPC Reward')
+xline(0,'-w'), xline(1,'-w'), 
+
+%% Shock repsonsive assemblies
+figure
+tmp = [];
+for i = 1 : size(Shock_response.both.aversive,1)
+    tmp = [tmp ; Smooth(Shock_response.both.aversive(i,:),1,'type','l')'];
+end
+subplot(131),plot([-10 : binSize : 10] , mean(tmp),'r'),xlim([-1 2]),hold on
+ciplot(mean(tmp)-nansem(tmp) , mean(tmp)+nansem(tmp) , [-10 : binSize : 10] , 'r') , alpha 0.5
+title('Both')
+
+% both reward
+tmp = [];
+for i = 1 : size(Shock_response.both.reward,1)
+    tmp = [tmp ; Smooth(Shock_response.both.reward(i,:),1,'type','l')'];
+end
+plot([-10 : binSize : 10] , mean(tmp),'b'),xlim([-1 2]),ylim([-0.1 2])
+ciplot(mean(tmp)-nansem(tmp) , mean(tmp)+nansem(tmp) , [-10 : binSize : 10] , 'b') , alpha 0.5
+
+% dHPC aversive
+tmp = [];
+for i = 1 : size(Shock_response.dHPC.aversive,1)
+    tmp = [tmp ; Smooth(Shock_response.dHPC.aversive(i,:),1,'type','l')'];
+end
+subplot(132),plot([-10 : binSize : 10] , mean(tmp),'r'),xlim([-1 2]),hold on
+ciplot(mean(tmp)-nansem(tmp) , mean(tmp)+nansem(tmp) , [-10 : binSize : 10] , 'r') , alpha 0.5
+title('dHPC')
+
+% dHPC reward
+tmp = [];
+for i = 1 : size(Shock_response.dHPC.reward,1)
+    tmp = [tmp ; Smooth(Shock_response.dHPC.reward(i,:),1,'type','l')'];
+end
+plot([-10 : binSize : 10] , mean(tmp),'b'),xlim([-1 2]),ylim([-0.1 2])
+ciplot(mean(tmp)-nansem(tmp) , mean(tmp)+nansem(tmp) , [-10 : binSize : 10] , 'b') , alpha 0.5
+
+% vHPC aversive
+tmp = [];
+for i = 1 : size(Shock_response.vHPC.aversive,1)
+    tmp = [tmp ; Smooth(Shock_response.vHPC.aversive(i,:),1,'type','l')'];
+end
+subplot(133),plot([-10 : binSize : 10] , mean(tmp),'r'),xlim([-1 2]),hold on
+ciplot(mean(tmp)-nansem(tmp) , mean(tmp)+nansem(tmp) , [-10 : binSize : 10] , 'r') , alpha 0.5
+title('vHPC')
+
+% dHPC reward
+tmp = [];
+for i = 1 : size(Shock_response.vHPC.reward,1)
+    tmp = [tmp ; Smooth(Shock_response.vHPC.reward(i,:),1,'type','l')'];
+end
+plot([-10 : binSize : 10] , mean(tmp),'b'),xlim([-1 2]),ylim([-0.1 2])
+ciplot(mean(tmp)-nansem(tmp) , mean(tmp)+nansem(tmp) , [-10 : binSize : 10] , 'b') , alpha 0.5
+
+
+
+
+
+%%
+
+plot(gain.both.aversive.pre(:,criteria),'k'),hold on
+plot(gain.both.aversive.post(:,criteria,:),'r'),

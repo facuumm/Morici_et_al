@@ -1,5 +1,4 @@
 function [R] = triggered_activity(patterns , cond , SpikeTrain , limits , events, graph , normalization , selection , baseline , Sizes)
-% DO DOCUMENTATIOOOOOOOOOOOn!!!!!!!
 % This function calculate Reactivation Strength (van de Ven et al (2016)).
 % Plot the activity sourrounding the events introduced.
 %
@@ -84,13 +83,7 @@ if not(isempty(selection))
 end
 
 if normalization % normalization
-    if not(isempty(baseline))
-        baseline = InIntervals(bins,baseline);
-        gain = nanmean(a(:,baseline),2);
-        S = nanstd(a(:,baseline),1,2);
-    else
-        a = zscore(a,1,2);
-    end
+    a = zscore(a,1,2);
 end
 
 
@@ -104,7 +97,10 @@ for i = 1:size(events,1)
     is = [is , p]; clear h p
 end
 
-
+if not(isempty(baseline))
+    baseline = InIntervals(bins,baseline);
+    gain = nanmean(a(:,baseline),2);
+end
 
 R = [];
 for i = 1:size(a,1)
@@ -119,7 +115,7 @@ for i = 1:size(a,1)
         clear t
     end
     if not(isempty(baseline))
-        R = [R ; (nanmean(tmp)-gain(i))./S(i)];
+        R = [R ; nanmean(tmp)./gain(i)];
     else
         R = [R ; nanmean(tmp)];
     end
