@@ -32,12 +32,14 @@ if strcmp(mode,'Probability')
 end
 
 if and(strcmp(mode,'Gain') , not(isempty(baseline)))
+    ccg = (ccg(:,1,2)./length(Times1))./b;
     bb =  length(Restrict(Times2,baseline));
     bb = bb/sum(baseline(:,2)-baseline(:,1));
     ccg = ccg ./bb;
 end
 
 if and(strcmp(mode,'NormGain') , not(isempty(baseline)))
+    ccg = (ccg(:,1,2)./length(Times1))./b;
     bb =  length(Restrict(Times2,baseline));
     bb = bb/sum(baseline(:,2)-baseline(:,1));
     ccg = ccg ./bb;

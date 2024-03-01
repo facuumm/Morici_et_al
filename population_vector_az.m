@@ -1,4 +1,4 @@
-%% Script to calculate population vector correlation of 2D ratemaps 
+  %% Script to calculate population vector correlation of 2D ratemaps 
 % Sessions need to have at least 5 neurons to be included in the pv corr
 % analysis
 % Silva 2023

@@ -398,8 +398,8 @@ for tt = 1:length(path)
         clear camara shock rightvalve leftvalve
         clear ejeX ejeY dX dY dX_int dY_int
         
-        % to save the clusters I used for further analysis
-        save([cd,'\SUclusters.mat'],'clusters')
+%         % to save the clusters I used for further analysis
+%         save([cd,'\SUclusters.mat'],'clusters')
         
         %% Assemblies detection
         if or(numberD > 3 , numberV > 3)

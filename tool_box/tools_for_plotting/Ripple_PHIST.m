@@ -1,4 +1,4 @@
-function output = Ripple_PHIST(path,Type)
+function output = Ripple_PHIST(path,Type,events)
 % This function construct a CCG using SU activity lock the occurrence
 % of dorsal or ventral ripples. It will iterate in the subfolder from the
 % paths you introduce.
@@ -10,6 +10,10 @@ function output = Ripple_PHIST(path,Type)
 %
 % type: int, put 0 if you want putative Pyr cells put 1 if you want putative
 %       itnernerons
+%
+% events: strg, if 'Coordinated' will compute compute Gain in coordinated
+%         and not coordinated events within structure.
+%
 %
 % OUTPUT
 % output.dHPC: PHIST of dorsal neurons
@@ -23,15 +27,25 @@ function output = Ripple_PHIST(path,Type)
 %                  CCG (FMA toolbox)
 % Morci Juan Facundo 12/2023
 
-output.dHPC = [];
-output.vHPC = [];
-output.time = [];
-output.up.dHPC = [];
-output.up.vHPC = [];
-output.down.dHPC = [];
-output.down.vHPC = [];
-output.non.dHPC = [];
-output.non.vHPC = [];
+% Storage creation depending on the ripple type
+if strcmp(events,'Coordinated')
+    output.dHPC.coordinated = [];
+    output.dHPC.uncoordinated = [];
+    output.vHPC.coordinated = [];
+    output.vHPC.uncoordinated = [];
+    output.time = [];
+else
+    output.dHPC = [];
+    output.vHPC = [];
+    output.time = [];
+    output.up.dHPC = [];
+    output.up.vHPC = [];
+    output.down.dHPC = [];
+    output.down.vHPC = [];
+    output.non.dHPC = [];
+    output.non.vHPC = [];
+end
+
 
 for tt = 1:length(path)
     %List of folders from the path
@@ -174,74 +188,155 @@ for tt = 1:length(path)
             clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
         end
         
-        
-        %% CCG
-        if not(isempty(spks_dHPC))
-            baseline = SubtractIntervals(NREM.all,[ripplesD(:,1)-0.05 ripplesD(:,3)+0.05]);
-            for i = 1:size(clusters.dHPC,1)
-                [p , time] = PHIST(ripplesD(:,2),spks_dHPC(spks_dHPC(:,1)==clusters.dHPC(i),2),baseline,1,0.01,0,'NormGain');
-                output.dHPC = [output.dHPC , p];
-                
-                c = ripple_modulated.dHPC.all(clusters.dHPC(i) == ripple_modulated.dHPC.all(:,1),:);
-                [p , time] = PHIST(ripplesD(:,2),spks_dHPC(spks_dHPC(:,1)==clusters.dHPC(i),2),baseline,1,0.01,0,'Gain');
-                if logical(c(1,3))
-                    output.up.dHPC = [output.up.dHPC , p];
-                elseif logical(c(1,4))
-                    output.down.dHPC = [output.down.dHPC , p];
-                elseif and(not(logical(c(1,3))) , not(logical(c(1,4))))
-                    output.non.dHPC = [output.non.dHPC , p];
+
+        if strcmp(events,'Coordinated')
+            % coordinated events
+            coordinated = [];
+            coordinatedV = [];
+            for i = 1:length(ripplesD)
+                r = ripplesD(i,:);
+                tmp = sum(and(ripplesV(:,2)>= r(1,2)-0.1, ripplesV(:,2)<= r(1,2)+0.1));
+                if tmp>0
+                    z = ripplesV(and(ripplesV(:,2)>= r(1,2)-0.1, ripplesV(:,2)<= r(1,2)+0.1),:);
+                    [p,indice] = min(abs(r(2)-z(:,2)));
+                    coordinatedV = [coordinatedV ; z(indice,:)];
+                    coordinated = [coordinated ; r];
+                    clear tmp2 tmp1 p indice z
                 end
-                clear p c
+                clear r
             end
-        end
-        
-        if not(isempty(spks_vHPC))
-            baseline = SubtractIntervals(NREM.all,[ripplesV(:,1)-0.05 ripplesV(:,3)+0.05]);
-            for i = 1:size(clusters.vHPC,1)
-                [p , time] = PHIST(ripplesV(:,2),spks_vHPC(spks_vHPC(:,1)==clusters.vHPC(i),2),baseline,1,0.01,0,'NormGain');
-                output.vHPC = [output.vHPC , p];
-                
-                c = ripple_modulated.vHPC.all(clusters.vHPC(i) == ripple_modulated.vHPC.all(:,1),:);
-                [p , time] = PHIST(ripplesV(:,2),spks_vHPC(spks_vHPC(:,1)==clusters.vHPC(i),2),baseline,1,0.01,0,'Gain');
-                if logical(c(1,3))
-                    output.up.vHPC = [output.up.vHPC , p];
-                elseif logical(c(1,4))
-                    output.down.vHPC = [output.down.vHPC , p];
-                elseif and(not(logical(c(1,3))) , not(logical(c(1,4))))
-                    output.non.vHPC = [output.non.vHPC , p];
+            clear x tmp i
+            uncoordinated = ripplesD(~ismember(ripplesD(:,1),coordinated(:,1)),:);
+            uncoordinatedV = ripplesV(~ismember(ripplesV(:,1),coordinatedV(:,1)),:);
+            
+            % CCG dHPC
+            if not(isempty(spks_dHPC))
+                baseline = SubtractIntervals(NREM.all,[ripplesD(:,1)-0.05 ripplesD(:,3)+0.05]);
+                for i = 1:size(clusters.dHPC,1)
+                    [p , time] = PHIST(coordinated(:,2),spks_dHPC(spks_dHPC(:,1)==clusters.dHPC(i),2),baseline,1,0.01,0,'Gain');
+                    output.dHPC.coordinated = [output.dHPC.coordinated , p];
+                    clear p
+                    
+                    [p , time] = PHIST(uncoordinated(:,2),spks_dHPC(spks_dHPC(:,1)==clusters.dHPC(i),2),baseline,1,0.01,0,'Gain');
+                    output.dHPC.uncoordinated = [output.dHPC.uncoordinated , p];
+                    clear p
                 end
-                clear p c
+                clear i
             end
+            
+            
+            if not(isempty(spks_vHPC))
+                baseline = SubtractIntervals(NREM.all,[ripplesV(:,1)-0.05 ripplesV(:,3)+0.05]);
+                for i = 1:size(clusters.vHPC,1)
+                    [p , time] = PHIST(coordinatedV(:,2),spks_vHPC(spks_vHPC(:,1)==clusters.vHPC(i),2),baseline,1,0.01,0,'Gain');
+                    output.vHPC.coordinated = [output.vHPC.coordinated , p];
+                    clear p
+                    
+                    [p , time] = PHIST(uncoordinatedV(:,2),spks_vHPC(spks_vHPC(:,1)==clusters.vHPC(i),2),baseline,1,0.01,0,'Gain');
+                    output.vHPC.uncoordinated = [output.vHPC.uncoordinated , p];
+                    clear p
+                end
+                clear i
+            end
+            
+%         else
+%             %% CCG
+%             if not(isempty(spks_dHPC))
+%                 baseline = SubtractIntervals(NREM.all,[ripplesD(:,1)-0.05 ripplesD(:,3)+0.05]);
+%                 for i = 1:size(clusters.dHPC,1)
+%                     [p , time] = PHIST(ripplesD(:,2),spks_dHPC(spks_dHPC(:,1)==clusters.dHPC(i),2),baseline,1,0.01,0,'NormGain');
+%                     output.dHPC = [output.dHPC , p];
+%                     
+%                     c = ripple_modulated.dHPC.all(clusters.dHPC(i) == ripple_modulated.dHPC.all(:,1),:);
+%                     [p , time] = PHIST(ripplesD(:,2),spks_dHPC(spks_dHPC(:,1)==clusters.dHPC(i),2),baseline,1,0.01,0,'Gain');
+%                     if logical(c(1,3))
+%                         output.up.dHPC = [output.up.dHPC , p];
+%                     elseif logical(c(1,4))
+%                         output.down.dHPC = [output.down.dHPC , p];
+%                     elseif and(not(logical(c(1,3))) , not(logical(c(1,4))))
+%                         output.non.dHPC = [output.non.dHPC , p];
+%                     end
+%                     clear p c
+%                 end
+%             end
+%             
+%             if not(isempty(spks_vHPC))
+%                 baseline = SubtractIntervals(NREM.all,[ripplesV(:,1)-0.05 ripplesV(:,3)+0.05]);
+%                 for i = 1:size(clusters.vHPC,1)
+%                     [p , time] = PHIST(ripplesV(:,2),spks_vHPC(spks_vHPC(:,1)==clusters.vHPC(i),2),baseline,1,0.01,0,'NormGain');
+%                     output.vHPC = [output.vHPC , p];
+%                     
+%                     c = ripple_modulated.vHPC.all(clusters.vHPC(i) == ripple_modulated.vHPC.all(:,1),:);
+%                     [p , time] = PHIST(ripplesV(:,2),spks_vHPC(spks_vHPC(:,1)==clusters.vHPC(i),2),baseline,1,0.01,0,'Gain');
+%                     if logical(c(1,3))
+%                         output.up.vHPC = [output.up.vHPC , p];
+%                     elseif logical(c(1,4))
+%                         output.down.vHPC = [output.down.vHPC , p];
+%                     elseif and(not(logical(c(1,3))) , not(logical(c(1,4))))
+%                         output.non.vHPC = [output.non.vHPC , p];
+%                     end
+%                     clear p c
+%                 end
+%             end
         end
-        
         disp('-- Finishing --')
     end
-   disp(['-- Finishing analysis from rat #',num2str(tt) , ' --'])
+    disp(['-- Finishing analysis from rat #',num2str(tt) , ' --'])
     disp('  ')
 
 end
 
-output.time = time;
 
-[n i] = min(abs(output.time - (-0.05)));
-[n ii] = min(abs(output.time - 0.05)); clear n
-
-% sort dHPC
-% [i ii] = max(output.dHPC);
-n = nanmean(output.dHPC(i:ii,:));
-m = nanmean(output.dHPC(1:i,:));
-m = mean([m;nanmean(output.dHPC(ii:end,:))]);
-n = m-n;
-[n m] = sort(n,'ascend'); clear n
-output.dHPC = output.dHPC(:,m); clear m
-
-% sort vHPC
-% [i ii] = max(output.vHPC);
-n = nanmean(output.vHPC(i:ii,:));
-m = nanmean(output.vHPC(1:i,:));
-m = mean([m;nanmean(output.vHPC(ii:end,:))]);
-n = m-n;
-[n m] = sort(n,'ascend'); clear n
-output.vHPC = output.vHPC(:,m); clear m i ii
+if strcmp(events,'Coordinated')
+    output.time = time;
+    [n i] = min(abs(output.time - (-0.05)));
+    [n ii] = min(abs(output.time - 0.05)); clear n
+    
+    % sort dHPC
+    % [i ii] = max(output.dHPC);
+    n = nanmean(output.dHPC.coordinated(i:ii,:));
+    m = nanmean(output.dHPC.coordinated(1:i,:));
+    m = mean([m;nanmean(output.dHPC.coordinated(ii:end,:))]);
+    n = m-n;
+    [n m] = sort(n,'ascend'); clear n
+    output.dHPC.coordinated = output.dHPC.coordinated(:,m);
+    output.dHPC.uncoordinated = output.dHPC.uncoordinated(:,m);
+    clear m
+    
+    % sort vHPC
+    % [i ii] = max(output.vHPC);
+    % [i ii] = max(output.dHPC);
+    n = nanmean(output.vHPC.coordinated(i:ii,:));
+    m = nanmean(output.vHPC.coordinated(1:i,:));
+    m = mean([m;nanmean(output.vHPC.coordinated(ii:end,:))]);
+    n = m-n;
+    [n m] = sort(n,'ascend'); clear n
+    output.vHPC.coordinated = output.vHPC.coordinated(:,m);
+    output.vHPC.uncoordinated = output.vHPC.uncoordinated(:,m);
+    clear m
+    
+else
+    output.time = time;
+    [n i] = min(abs(output.time - (-0.05)));
+    [n ii] = min(abs(output.time - 0.05)); clear n
+    
+    % sort dHPC
+    % [i ii] = max(output.dHPC);
+    n = nanmean(output.dHPC(i:ii,:));
+    m = nanmean(output.dHPC(1:i,:));
+    m = mean([m;nanmean(output.dHPC(ii:end,:))]);
+    n = m-n;
+    [n m] = sort(n,'ascend'); clear n
+    output.dHPC = output.dHPC(:,m); clear m
+    
+    % sort vHPC
+    % [i ii] = max(output.vHPC);
+    n = nanmean(output.vHPC(i:ii,:));
+    m = nanmean(output.vHPC(1:i,:));
+    m = mean([m;nanmean(output.vHPC(ii:end,:))]);
+    n = m-n;
+    [n m] = sort(n,'ascend'); clear n
+    output.vHPC = output.vHPC(:,m); clear m i ii
+end
 
 end

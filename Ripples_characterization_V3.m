@@ -69,6 +69,7 @@ for tt = 1:length(path)
     subFolders = files(dirFlags);
     clear files dirFlags
     for t = 1 : length(subFolders)-2
+        disp(' ')
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
@@ -1200,6 +1201,37 @@ scatter([1 2] , [nanmean((ripples_coordinated_numbers_shuffled(:,1) ./ ripples_c
 boxplot(x(:,1),x(:,2)),ylim([0 70])
 [h p] = ranksum((ripples_coordinated_numbers_shuffled(:,1) ./ ripples_coordinated_numbers_shuffled(:,2))*100 ,  (ripples_coordinated_numbers_shuffled(:,3) ./ ripples_coordinated_numbers_shuffled(:,4))*100)
 
+%% plot percentage after downsampling
+figure
+x = [ (ripples_coordinated_numbers_downsampled(:,1) ./ ripples_coordinated_numbers_downsampled(:,2))*100 ;  (ripples_coordinated_numbers_downsampled(:,3) ./ ripples_coordinated_numbers_downsampled(:,4))*100];
+x = [x , [ones(40,1) ; ones(40,1)*2]];
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+scatter([1 2] , [nanmean((ripples_coordinated_numbers_downsampled(:,1) ./ ripples_coordinated_numbers_downsampled(:,2))*100) nanmean((ripples_coordinated_numbers_downsampled(:,3) ./ ripples_coordinated_numbers_downsampled(:,4))*100)],'filled')%,ylim([0 0.4])
+boxplot(x(:,1),x(:,2)),ylim([0 70])
+[h p] = ranksum((ripples_coordinated_numbers_downsampled(:,1) ./ ripples_coordinated_numbers_downsampled(:,2))*100 ,  (ripples_coordinated_numbers_downsampled(:,3) ./ ripples_coordinated_numbers_downsampled(:,4))*100)
+
+
+
+%% Plot percentage all, downsampled, shuffled
+x1 = (ripples_coordinated_numbers(:,1) ./ ripples_coordinated_numbers(:,2))*100;
+x2 = (ripples_coordinated_numbers_downsampled(:,1) ./ ripples_coordinated_numbers_downsampled(:,2))*100;
+x3 = (ripples_coordinated_numbers_shuffled(:,1) ./ ripples_coordinated_numbers_shuffled(:,2))*100;
+x4 = (ripples_coordinated_numbers(:,3) ./ ripples_coordinated_numbers(:,4))*100;
+x5 = (ripples_coordinated_numbers_downsampled(:,3) ./ ripples_coordinated_numbers_downsampled(:,4))*100;
+x6 = (ripples_coordinated_numbers_shuffled(:,3) ./ ripples_coordinated_numbers_shuffled(:,4))*100;
+
+x = [x1 ; x2 ; x3 ; x4 ; x5 ; x6];
+x = [x , [ones(40,1) ; ones(40,1)*2 ; ones(40,1)*3 ; ones(40,1)*4 ; ones(40,1)*5 ; ones(40,1)*6]];
+x = [x , [ones(40,1) ; ones(40,1) ; ones(40,1) ; ones(40,1)*2 ; ones(40,1)*2 ; ones(40,1)*2]];
+x = [x , [ones(40,1) ; ones(40,1)*2 ; ones(40,1)*3 ; ones(40,1) ; ones(40,1)*2 ; ones(40,1)*3]];
+
+figure
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 7]),hold on
+scatter([1 2 3 4 5 6] , [nanmean(x1) nanmean(x2) nanmean(x3) nanmean(x4) nanmean(x5) nanmean(x6)],'filled')%,ylim([0 0.4])
+boxplot(x(:,1),x(:,2)),ylim([0 70])
+
+[~,~,stats] = anovan(x(:,1) , x(:,3:4) , 'model','interaction','varnames',{'Structure','Condition'})
+[results,~,~,gnames] = multcompare(stats,"Dimension",[1 2]);
 %% Plot CDF of amplitude across structures
 % x = [amplitude.D.uncoordinated ; amplitude.D.coordinated];
 % x = [x , [ones(length(amplitude.D.uncoordinated),1) ; ones(length(amplitude.D.coordinated),1)*2]];
