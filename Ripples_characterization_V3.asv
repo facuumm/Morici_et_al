@@ -1,6 +1,6 @@
 clear
 clc
-% close all
+close all
 
 %% Parameters
 path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
@@ -9,8 +9,8 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 time_criteria = 600; %time criteria to define the maximal time of sleep to include
 
 % Ripples
-shuf = true; % to shuffle ripples to see if the coordination level change
-downSamp = true; % to downsample dRipples
+shuf = false; % to shuffle ripples to see if the coordination level change
+downSamp = false; % to downsample dRipples
 q = 0.25; %quantile to restrict above it ripples according to their peak amplitude
 ripples_coordinated_numbers = []; %for storing the number of cooridnated events all conditions pooled
 ripples_coordinated_numbers_shuffled = [];
@@ -1089,8 +1089,8 @@ for tt = 1:length(path)
         clear burstD burstV ccg coordinated_ripple_bursts q R tmp tmpA_D tmpA_V tmpB_D tmpB_V tmpR_D tmpR_V
     end
 end
-save([cd,'\Ripples_Characterization_all_rats.mat'])
 
+save([cd,'\Ripples_Characterization_all_rats.mat'])
 %% Plotting Ripple rate
 figure
 x = [[rate.D.all ; rate.V.all] , [ones(length(rate.D.all),1) ; ones(length(rate.V.all),1)*2]];
@@ -1313,15 +1313,6 @@ x = amplitude.V.uncoordinated(x);
 cdfplot(x),hold on
 [h p] = kstest2(amplitude.D.coordinated,amplitude.D.uncoordinated)
 
-%% Plot Cross CoorDorsal_allDorsal and CoorVentral_allVentral
-figure
-plot(time , mean(Cross.CoorDorsal_allDorsal./sum(Cross.CoorDorsal_allDorsal),2)), hold on
-plot(time , mean(Cross.CoorVentral_allVentral./sum(Cross.CoorVentral_allVentral),2)), hold on
-
-%% Plot
-figure
-plot(time , mean(Cross.CoorDorsal_allVentral./sum(Cross.CoorDorsal_allVentral),2)), hold on
-
-figure
-plot(time , mean(Cross.CoorVentral_allDorsal./sum(Cross.CoorVentral_allDorsal),2)), hold on
+%% Plot Cross CoorDorsal_allVentral
+plot()
 

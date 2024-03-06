@@ -418,7 +418,7 @@ for tt = 1:length(path)
                                     y = Restrict(SpikesV,pre);
                                     if and(length(x)>10,length(y)>10)
                                         [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                        [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',0.5 ,'smooth',0,'mode','ccg'); %ccg calculation
+                                        [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg'); %ccg calculation
                                         time = tttt;
                                         cross_members.aversive.pre = [cross_members.aversive.pre , ccg(:,1,2)];
                                         clear x y s ids groups ccg tttt
@@ -429,7 +429,7 @@ for tt = 1:length(path)
                                     y = Restrict(SpikesV,post);
                                     if and(length(x)>10,length(y)>10)
                                         [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                        [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',0.5 ,'smooth',0,'mode','ccg'); %ccg calculation
+                                        [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg'); %ccg calculation
                                         time = tttt;
                                         cross_members.aversive.post = [cross_members.aversive.post , ccg(:,1,2)];
                                         clear x y s ids groups ccg tttt
@@ -442,7 +442,7 @@ for tt = 1:length(path)
                                     y = Restrict(SpikesV,pre);
                                     if and(length(x)>5,length(y)>5)
                                         [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                        [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',0.5 ,'smooth',0,'mode','ccg'); %ccg calculation
+                                        [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg'); %ccg calculation
                                         time = tttt;
                                         cross_nonmembers.aversive.pre = [cross_nonmembers.aversive.pre , ccg(:,1,2)];
                                         clear x y s ids groups ccg tttt
@@ -453,7 +453,7 @@ for tt = 1:length(path)
                                     y = Restrict(SpikesV,post);
                                     if and(length(x)>10,length(y)>10)
                                         [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                        [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',0.5,'smooth',0,'mode','ccg'); %ccg calculation
+                                        [ccg,tttt] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg'); %ccg calculation
                                         time = tttt;
                                         cross_nonmembers.aversive.post = [cross_nonmembers.aversive.post , ccg(:,1,2)];
                                         clear x y s ids groups ccg tttt

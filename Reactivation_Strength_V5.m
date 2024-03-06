@@ -1132,11 +1132,57 @@ for tt = 1:length(path)
     clear num_assembliesA num_assembliesR
     
 end
-
-save([cd,'\Reactivation_Strength_Data_Normalized_NREM.mat'] , 'reactivation')
+% save([cd,'\Reactivation_Strength_Data_Normalized_NREM.mat'] , 'reactivation')
 
 %% Plot Strenght Reactivation
-%  for joint assemblies
+%  Mean Activation Strength for joint assemblies
+figure
+x = reactivation.reward.dvHPC(:,8);
+y = reactivation.aversive.dvHPC(:,8);
+
+kstest(x)
+kstest(y)
+[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = signrank(y,0)
+[h, p] = signrank(x,0)
+
+subplot(131),
+grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
+Y = [x;y];
+scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.5 0.5])
+
+%  for dHPC assemblies
+x = reactivation.reward.dHPC(:,1);
+y = reactivation.aversive.dHPC(:,1);
+kstest(x)
+kstest(y)
+[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = signrank(y,0)
+[h, p] = signrank(x,0)
+
+subplot(132),
+grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
+Y = [x;y];
+scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.5 0.5])
+
+%  for vHPC assemblies
+x = reactivation.reward.vHPC(:,1);
+y = reactivation.aversive.vHPC(:,1);
+kstest(x)
+kstest(y)
+[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = signrank(y,0)
+[h, p] = signrank(x,0)
+
+subplot(133),
+grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
+Y = [x;y];
+scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.5 0.5])
+
+% Peaks mean for joint assemblies
 figure
 x = reactivation.reward.dvHPC(:,1);
 y = reactivation.aversive.dvHPC(:,1);
