@@ -1137,12 +1137,13 @@ end
 %% Plot Strenght Reactivation
 %  Mean Activation Strength for joint assemblies
 figure
-x = reactivation.reward.dvHPC(:,8);
-y = reactivation.aversive.dvHPC(:,8);
+x = reactivation.aversive.dvHPC(:,8)-reactivation.aversive.dvHPC(:,9)./((reactivation.aversive.dvHPC(:,8)+reactivation.aversive.dvHPC(:,9))/2);
+y = reactivation.reward.dvHPC(:,8)-reactivation.reward.dvHPC(:,9)./(reactivation.reward.dvHPC(:,8)+reactivation.reward.dvHPC(:,9)/2);
+
 
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = ttest2(x,y)  
 [h, p] = signrank(y,0)
 [h, p] = signrank(x,0)
 
@@ -1150,11 +1151,13 @@ subplot(131),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.5 0.5])
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3])%,ylim([-0.5 0.5])
+
+boxplot(Y,grps)
 
 %  for dHPC assemblies
-x = reactivation.reward.dHPC(:,1);
-y = reactivation.aversive.dHPC(:,1);
+x = reactivation.aversive.dHPC(:,8);
+y = reactivation.reward.dHPC(:,8);
 kstest(x)
 kstest(y)
 [h, p] = ranksum(x,y,'tail','left')  
@@ -1165,11 +1168,11 @@ subplot(132),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.5 0.5])
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3])%,ylim([-0.5 0.5])
 
 %  for vHPC assemblies
-x = reactivation.reward.vHPC(:,1);
-y = reactivation.aversive.vHPC(:,1);
+x = reactivation.aversive.vHPC(:,8)./reactivation.aversive.vHPC(:,9);
+y = reactivation.reward.vHPC(:,8)./reactivation.reward.vHPC(:,9);
 kstest(x)
 kstest(y)
 [h, p] = ranksum(x,y,'tail','left')  
@@ -1180,7 +1183,7 @@ subplot(133),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.5 0.5])
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3])%,ylim([-0.5 0.5])
 
 % Peaks mean for joint assemblies
 figure

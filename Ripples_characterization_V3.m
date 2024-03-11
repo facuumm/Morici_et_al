@@ -60,6 +60,9 @@ Auto.coordinated.subsample.dRipples = []; Auto.coordinated.subsample.vRipples = 
 Cross.DV.all = []; Cross.DV.B = []; Cross.DV.R = []; Cross.DV.A = []; 
 
 Cross.CoorDorsal_allVentral = []; Cross.CoorVentral_allDorsal = []; Cross.CoorDorsal_allDorsal = []; Cross.CoorVentral_allVentral = [];
+Cross.bursts = [];
+
+PrefPos.dHPC = []; PrefPos.vHPC = [];
 
 %% Main tloop to iterate across sessions
 for tt = 1:length(path)
@@ -416,7 +419,6 @@ for tt = 1:length(path)
             coordinatedV_refined = [];
             tmpB_D = [];        tmpR_D = [];        tmpA_D = [];
             tmpB_V = [];        tmpR_V = [];        tmpA_V = [];
-            
             for i = 1:length(ripplesD)
                 r = ripplesD(i,:);
                 tmp = sum(and(ripplesV(:,2)>= r(1,2)-0.1, ripplesV(:,2)<= r(1,2)+0.1));
@@ -453,24 +455,112 @@ for tt = 1:length(path)
             end
             clear x tmp i
             
+
+%             coordinatedV = [];
+%             for i = 1:length(ripplesV)
+%                 r = ripplesV(i,:);
+%                 tmp = sum(and(ripplesD(:,2)>= r(1,2)-0.1, ripplesD(:,2)<= r(1,2)+0.1));
+%                 if tmp>0
+%                     coordinatedV = [coordinatedV ; r];
+%                     clear tmp2 tmp1 p indice z
+%                 end
+%                 clear r
+%             end
+%             clear x tmp i
+
+            [C,IA,IC] = unique(coordinatedV(:,1));
+            coordinatedV  = coordinatedV(IA,:); clear C IA IC
             coordinatedB = Restrict(coordinated,NREM.B);    coordinatedA = Restrict(coordinated,NREM.A);    coordinatedR = Restrict(coordinated,NREM.R);
-            coordinatedB_V = Restrict(coordinatedV_refined,NREM.B);    coordinatedR_V = Restrict(coordinatedV_refined,NREM.R);    coordinatedA_V = Restrict(coordinatedV_refined,NREM.A);
+            coordinatedB_V = Restrict(coordinatedV,NREM.B);    coordinatedR_V = Restrict(coordinatedV,NREM.R);    coordinatedA_V = Restrict(coordinatedV_refined,NREM.A);
             coordinatedB_V_non_refined = Restrict(coordinatedV,NREM.B);    coordinatedR_V_non_refined  = Restrict(coordinatedV,NREM.R);    coordinatedA_V_non_refined  = Restrict(coordinatedV,NREM.A);
             %         coordinatedB_V = Restrict(coordinatedV,NREM_B);    coordinatedR_V = Restrict(coordinatedV,NREM_R);    coordinatedA_V = Restrict(coordinatedV,NREM_A);
             
             % Detection of uncoordinated ripples
             uncoordinated = ripplesD(~ismember(ripplesD(:,1),coordinated(:,1)),:);
-            uncoordinatedV = ripplesV(~ismember(ripplesV(:,1),coordinatedV_refined(:,1)),:);
+            uncoordinatedV = ripplesV(~ismember(ripplesV(:,1),unique(coordinatedV(:,1))),:);
             
             % Save amplitude of events
             mean_D = nanmean(ripplesD(:,4));            SD_D = nanstd(ripplesD(:,4));
             mean_V = nanmean(ripplesV(:,4));            SD_V = nanstd(ripplesV(:,4));
             
             amplitude.D.coordinated = [amplitude.D.coordinated ; ((coordinated(:,4)-mean_D)./SD_D)];
-            amplitude.V.coordinated = [amplitude.V.coordinated ; ((coordinatedV_refined(:,4)-mean_V)./SD_V)];
+            amplitude.V.coordinated = [amplitude.V.coordinated ; ((coordinatedV(:,4)-mean_V)./SD_V)];
             amplitude.D.uncoordinated = [amplitude.D.uncoordinated ; ((uncoordinated(:,4)-mean_D)./SD_D)];
             amplitude.V.uncoordinated = [amplitude.V.uncoordinated ; ((uncoordinatedV(:,4)-mean_V)./SD_V)];             
             clear mean_D mean_V SD_D SD_V
+            
+            %% Detection of bursts
+            % dorsal ripples burst
+            Ref = diff(ripplesD(:,2));
+            Ref = Ref<0.1;
+            Ref = ToIntervals([2:length(ripplesD)]',Ref);
+            Ref(:,1) = Ref(:,1)-1;
+            bursts.dHPC.members = [];
+            bursts.dHPC.events = [];
+            for i = 1 : length(Ref)
+                ii = ripplesD(Ref(i,1):Ref(i,2),:);
+                bursts.dHPC.members = [bursts.dHPC.members ; ii , ones(size(ii,1),1)*i];
+                bursts.dHPC.events = [bursts.dHPC.events ; ii(1,1) , ((ii(end,3)-ii(1,1))/2)+ii(1,1) , ii(end,3)];
+                clear ii
+            end
+            clear Ref i
+            
+            % ventral ripples burst
+            Ref = diff(ripplesV(:,2));
+            Ref = Ref<0.1;
+            Ref = ToIntervals([2:length(ripplesV)]',Ref);
+            Ref(:,1) = Ref(:,1)-1;
+            bursts.vHPC.members = [];
+            bursts.vHPC.events = [];
+            for i = 1 : length(Ref)
+                ii = ripplesV(Ref(i,1):Ref(i,2),:);
+                bursts.vHPC.members = [bursts.vHPC.members ; ii , ones(size(ii,1),1)*i];
+                bursts.vHPC.events = [bursts.vHPC.events ; ii(1,1) , ((ii(end,3)-ii(1,1))/2)+ii(1,1) , ii(end,3)];
+                clear ii
+            end
+            clear Ref i
+            
+            % CCG between bursts
+            x = bursts.dHPC.events(:,2);
+            y = bursts.vHPC.events(:,2);
+            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
+            ccg = ccg(:,1,2);
+            Cross.bursts = [Cross.bursts , ccg]; clear s ids x y groups
+            
+            % Detection of preferred position with bursts of coord ripples
+            posi = [];
+            for i = 1 : length(bursts.dHPC.members)
+                r = bursts.dHPC.members(i,:);
+                tmp = sum(and(ripplesV(:,2)>= r(1,2)-0.1, ripplesV(:,2)<= r(1,2)+0.1)); %detecting cooridnated event
+                if tmp>=1
+                    iterator = [1:length(bursts.dHPC.members)]';
+                    iterator = iterator(bursts.dHPC.members(:,5) == r(1,5)); %defining position of the burst events
+                    iterator2 = [1:length(bursts.dHPC.members)]';
+                    iterator2 = iterator2(bursts.dHPC.members(:,2) == r(1,2));  %defining my event of interest
+                    [h p] = min(abs(iterator - iterator2)); % finding the position in the burst
+                    posi = [posi ; p]; clear iterator iterator2 h p %save data
+                end
+            end
+            PrefPos.dHPC = [PrefPos.dHPC ; posi]; clear posi
+
+            
+            % Detection of preferred position with bursts of coord ripples
+            posi = [];
+            for i = 1 : length(bursts.vHPC.members)
+                r = bursts.vHPC.members(i,:);
+                tmp = sum(and(ripplesD(:,2)>= r(1,2)-0.1, ripplesD(:,2)<= r(1,2)+0.1));
+                if tmp>=1
+                    iterator = [1:length(bursts.vHPC.members)]';
+                    iterator = iterator(bursts.vHPC.members(:,5) == r(1,5)); 
+                    iterator2 = [1:length(bursts.vHPC.members)]';
+                    iterator2 = iterator2(bursts.vHPC.members(:,2) == r(1,2));
+                    [h p] = min(abs(iterator - iterator2));
+                    posi = [posi ; p]; clear iterator iterator2 h p
+                end
+            end            
+            PrefPos.vHPC = [PrefPos.vHPC ; posi]; clear posi
+            
 %             %% Detection of ripple burst
 %             coordinated_ripple_bursts = [];
 %             for i = 1:length(coordinated)
@@ -533,7 +623,7 @@ for tt = 1:length(path)
             Cross.CoorDorsal_allDorsal = [Cross.CoorDorsal_allDorsal , ccg]; clear ccg time s ids groups x y
             
             % Coordinated vRipples vs all dRipples
-            x = unique(coordinatedV_refined(:,2));
+            x = unique(coordinatedV(:,2));
             y = unique(uncoordinatedV(:,2));
             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
@@ -541,7 +631,7 @@ for tt = 1:length(path)
             Cross.CoorVentral_allVentral = [Cross.CoorVentral_allVentral , ccg]; clear ccg time s ids groups x y            
 
             %% For storing number of coordinated events
-            ripples_coordinated_numbers = [ripples_coordinated_numbers ; length(coordinated) , length(ripplesD) , length(coordinatedV_refined) , length(ripplesV) , length(Restrict(coordinated,NREM.B)) , length(Restrict(ripplesD,NREM.B)) , length(Restrict(coordinated,NREM.R)) , length(Restrict(ripplesD,NREM.R)) , length(Restrict(coordinated,NREM.A)) , length(Restrict(ripplesD,NREM.A)) , length(Restrict(coordinatedV_refined,NREM.B)) , length(Restrict(ripplesV,NREM.B)) , length(Restrict(coordinatedV_refined,NREM.R)) , length(Restrict(ripplesV,NREM.R)) , length(Restrict(coordinatedV_refined,NREM.A)) , length(Restrict(ripplesV,NREM.A))];
+            ripples_coordinated_numbers = [ripples_coordinated_numbers ; length(coordinated) , length(ripplesD) , length(coordinatedV) , length(ripplesV) , length(Restrict(coordinated,NREM.B)) , length(Restrict(ripplesD,NREM.B)) , length(Restrict(coordinated,NREM.R)) , length(Restrict(ripplesD,NREM.R)) , length(Restrict(coordinated,NREM.A)) , length(Restrict(ripplesD,NREM.A)) , length(Restrict(unique(coordinatedV(:,1)),NREM.B)) , length(Restrict(ripplesV,NREM.B)) , length(Restrict(unique(coordinatedV(:,1)),NREM.R)) , length(Restrict(ripplesV,NREM.R)) , length(Restrict(unique(coordinatedV(:,1)),NREM.A)) , length(Restrict(ripplesV,NREM.A))];
             
             %% shuffle dRipples to see if that change %coordinated
             if shuf
@@ -643,8 +733,8 @@ for tt = 1:length(path)
             clear ccg time x y count
             
             % coordinated vRipples
-            x = unique(coordinatedV_refined(:,2));
-            y = unique(coordinatedV_refined(:,2));
+            x = (coordinatedV(:,2));
+            y = unique(coordinatedV(:,2));
             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
             ccg = ccg(:,1,1);
@@ -714,8 +804,8 @@ for tt = 1:length(path)
             clear s ids groups ccg
             
             % coordinated vRipples
-            x = unique(coordinatedV_refined(:,2));
-            y = unique(coordinatedV_refined(:,2));
+            x = unique(coordinatedV(:,2));
+            y = unique(coordinatedV(:,2));
             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
             ccg = ccg(:,1,1);
@@ -775,308 +865,6 @@ for tt = 1:length(path)
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
             ccg = ccg(:,1,2);
             Cross.DV.all = [Cross.DV.all , ccg]; clear x y s ids groups
-            
-%             %% Crosscorrelogram coordionated/uncooridnated with all ripples
-%             % Burst Index calculation as we discuss with GG
-%             % coordinated dRipples
-%             x = coordinated(:,2);
-%             y = ripplesD(:,2);
-%             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-%             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
-%             ccg = ccg(:,1,2);
-%             dRipples_coordinated_single_cross_with_all = [dRipples_coordinated_single_cross_with_all , ccg];
-%             clear ccg time x y count tmp
-%             
-%             % coordinated vRipples
-%             x = unique(coordinatedV(:,2));
-%             y = ripplesV(:,2);
-%             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-%             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
-%             ccg = ccg(:,1,2);
-%             vRipples_coordinated_single_cross_with_all = [vRipples_coordinated_single_cross_with_all , ccg];
-%             clear ccg time x y count tmp
-%             
-%             % uncoordinated dRipples
-%             x = uncoordinated(:,2);
-%             y = ripplesD(:,2);
-%             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-%             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
-%             ccg = ccg(:,1,2);
-%             dRipples_uncoordinated_single_cross_with_all = [dRipples_uncoordinated_single_cross_with_all , ccg];
-%             clear ccg time x y count tmp
-%             
-%             % uncoordinated dRipples
-%             x = uncoordinatedV(:,2);
-%             y = ripplesV(:,2);
-%             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-%             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
-%             ccg = ccg(:,1,2);
-%             vRipples_uncoordinated_single_cross_with_all = [vRipples_uncoordinated_single_cross_with_all , ccg];
-%             clear ccg time x y count tmp
-%             
-%             %% Crosscorrelogram coordionated vs uncooridnated
-%             % coordinated dRipples
-%             x = coordinated(:,2);
-%             y = uncoordinated(:,2);
-%             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-%             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
-%             ccg = ccg(:,1,2);
-%             dRipples_coordinated_single_cross_with_uncoordinated = [dRipples_coordinated_single_cross_with_uncoordinated , ccg];
-%             clear ccg time x y count tmp
-%             
-%             % coordinated vRipples
-%             x = unique(coordinatedV(:,2));
-%             y = unique(uncoordinatedV(:,2));
-%             y = y(~ismember(y,x));
-%             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-%             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
-%             ccg = ccg(:,1,2);
-%             vRipples_coordinated_single_cross_with_uncoordinated = [vRipples_coordinated_single_cross_with_uncoordinated , ccg];
-%             clear ccg time x y count tmp
-%             
-%             
-%             %% Burst Index calculation as we discuss with GG
-%             % per condition
-%             % coordinated dRipples
-%             x = coordinatedB(:,2);
-%             count = 0;
-%             y = ripplesD(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     break
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_cooridnatedB_dRipples = [Burst_Index_cooridnatedB_dRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             x = coordinatedR(:,2);
-%             count = 0;
-%             y = ripplesD(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_cooridnatedR_dRipples = [Burst_Index_cooridnatedR_dRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             x = coordinatedA(:,2);
-%             count = 0;
-%             y = ripplesD(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_cooridnatedA_dRipples = [Burst_Index_cooridnatedA_dRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             
-%             x = coordinatedB_V(:,2);
-%             count = 0;
-%             y = ripplesV(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_cooridnatedB_vRipples = [Burst_Index_cooridnatedB_vRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             x = coordinatedR_V(:,2);
-%             count = 0;
-%             y = ripplesV(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_cooridnatedR_vRipples = [Burst_Index_cooridnatedR_vRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             x = coordinatedA_V(:,2);
-%             count = 0;
-%             y = ripplesV(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_cooridnatedA_vRipples = [Burst_Index_cooridnatedA_vRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             % uncoordinated
-%             x = uncoordinatedB(:,2);
-%             count = 0;
-%             y = ripplesD(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_uncooridnatedB_dRipples = [Burst_Index_uncooridnatedB_dRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             x = uncoordinatedR(:,2);
-%             count = 0;
-%             y = ripplesD(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_uncooridnatedR_dRipples = [Burst_Index_uncooridnatedR_dRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             x = uncoordinatedA(:,2);
-%             count = 0;
-%             y = ripplesD(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_uncooridnatedA_dRipples = [Burst_Index_uncooridnatedA_dRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             
-%             x = uncoordinatedB_V(:,2);
-%             count = 0;
-%             y = ripplesV(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_uncooridnatedB_vRipples = [Burst_Index_uncooridnatedB_vRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             x = uncoordinatedR_V(:,2);
-%             count = 0;
-%             y = ripplesV(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_uncooridnatedR_vRipples = [Burst_Index_uncooridnatedR_vRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             x = uncoordinatedA_V(:,2);
-%             count = 0;
-%             y = ripplesV(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_uncooridnatedA_vRipples = [Burst_Index_uncooridnatedA_vRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             % All
-%             x = Restrict(ripplesD(:,2),NREM_B);
-%             count = 0;
-%             y = ripplesD(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_allB_dRipples = [Burst_Index_allB_dRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             x = Restrict(ripplesD(:,2),NREM_R);
-%             count = 0;
-%             y = ripplesD(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_allR_dRipples = [Burst_Index_allR_dRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             x = Restrict(ripplesD(:,2),NREM_A);
-%             count = 0;
-%             y = ripplesD(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_allA_dRipples = [Burst_Index_allA_dRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             
-%             x = Restrict(ripplesV(:,2),NREM_B);
-%             count = 0;
-%             y = ripplesV(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_allB_vRipples = [Burst_Index_allB_vRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             x = Restrict(ripplesV(:,2),NREM_R);
-%             count = 0;
-%             y = ripplesV(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_allR_vRipples = [Burst_Index_allR_vRipples ; count/length(x)];
-%             clear ccg time x y count
-%             
-%             x = Restrict(ripplesV(:,2),NREM_A);
-%             count = 0;
-%             y = ripplesV(:,2);
-%             for s = 1 : length(x)
-%                 seed = x(s);
-%                 tmp = sum(and(y > seed-0.2 , y < seed+0.2));
-%                 if tmp>1
-%                     count = count + 1;
-%                 end
-%             end
-%             Burst_Index_allA_vRipples = [Burst_Index_allA_vRipples ; count/length(x)];
-%             clear ccg time x y count
         end
         clear ripplesD ripplesV
         clear aversiveTS aversiveTS_run rewardTS rewardTS_run baselineTS
@@ -1089,7 +877,7 @@ for tt = 1:length(path)
         clear burstD burstV ccg coordinated_ripple_bursts q R tmp tmpA_D tmpA_V tmpB_D tmpB_V tmpR_D tmpR_V
     end
 end
-save([cd,'\Ripples_Characterization_all_rats.mat'])
+% save([cd,'\Ripples_Characterization_all_ratsVf.mat'])
 
 %% Plotting Ripple rate
 figure
@@ -1206,7 +994,7 @@ x = [ (ripples_coordinated_numbers(:,1) ./ ripples_coordinated_numbers(:,2))*100
 x = [x , [ones(40,1) ; ones(40,1)*2]];
 scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
 scatter([1 2] , [nanmean((ripples_coordinated_numbers(:,1) ./ ripples_coordinated_numbers(:,2))*100) nanmean((ripples_coordinated_numbers(:,3) ./ ripples_coordinated_numbers(:,4))*100)],'filled')%,ylim([0 0.4])
-boxplot(x(:,1),x(:,2)),ylim([0 70])
+boxplot(x(:,1),x(:,2)),ylim([0 60])
 % [h p] = ranksum((ripples_coordinated_numbers(:,1) ./ ripples_coordinated_numbers(:,2))*100 ,  (ripples_coordinated_numbers(:,3) ./ ripples_coordinated_numbers(:,4))*100)
 
 figure,
@@ -1215,7 +1003,7 @@ x = [ (ripples_coordinated_numbers(:,5) ./ ripples_coordinated_numbers(:,6))*100
 x = [x , [ones(40,1) ; ones(40,1)*2 ; ones(40,1)*3]];
 scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 4]),hold on
 scatter([1 2 3] , [nanmean((ripples_coordinated_numbers(:,5) ./ ripples_coordinated_numbers(:,6))*100) ;  nanmean((ripples_coordinated_numbers(:,7) ./ ripples_coordinated_numbers(:,8))*100) ;  nanmean((ripples_coordinated_numbers(:,9) ./ ripples_coordinated_numbers(:,10))*100)],'filled'),ylim([0 70])
-boxplot(x(:,1),x(:,2)),ylim([0 70])
+boxplot(x(:,1),x(:,2)),ylim([0 60])
 % [h p] = kruskalwallis(x(:,1) , x(:,2))
 
 subplot(122)
@@ -1223,7 +1011,7 @@ x = [ (ripples_coordinated_numbers(:,11) ./ ripples_coordinated_numbers(:,12))*1
 x = [x , [ones(40,1) ; ones(40,1)*2 ; ones(40,1)*3]];
 scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 4]),hold on
 scatter([1 2 3] , [nanmean((ripples_coordinated_numbers(:,11) ./ ripples_coordinated_numbers(:,12))*100) ;  nanmean((ripples_coordinated_numbers(:,13) ./ ripples_coordinated_numbers(:,14))*100) ;  nanmean((ripples_coordinated_numbers(:,15) ./ ripples_coordinated_numbers(:,16))*100)],'filled'),ylim([0 70])
-boxplot(x(:,1),x(:,2)),ylim([0 70])
+boxplot(x(:,1),x(:,2)),ylim([0 60])
 % [h p] = kruskalwallis(x(:,1) , x(:,2))
 
 %% plot percentage after shuffling dRipples
@@ -1232,7 +1020,7 @@ x = [ (ripples_coordinated_numbers_shuffled(:,1) ./ ripples_coordinated_numbers_
 x = [x , [ones(40,1) ; ones(40,1)*2]];
 scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
 scatter([1 2] , [nanmean((ripples_coordinated_numbers_shuffled(:,1) ./ ripples_coordinated_numbers_shuffled(:,2))*100) nanmean((ripples_coordinated_numbers_shuffled(:,3) ./ ripples_coordinated_numbers_shuffled(:,4))*100)],'filled')%,ylim([0 0.4])
-boxplot(x(:,1),x(:,2)),ylim([0 70])
+boxplot(x(:,1),x(:,2)),ylim([0 60])
 [h p] = ranksum((ripples_coordinated_numbers_shuffled(:,1) ./ ripples_coordinated_numbers_shuffled(:,2))*100 ,  (ripples_coordinated_numbers_shuffled(:,3) ./ ripples_coordinated_numbers_shuffled(:,4))*100)
 
 %% plot percentage after downsampling
@@ -1241,7 +1029,7 @@ x = [ (ripples_coordinated_numbers_downsampled(:,1) ./ ripples_coordinated_numbe
 x = [x , [ones(40,1) ; ones(40,1)*2]];
 scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
 scatter([1 2] , [nanmean((ripples_coordinated_numbers_downsampled(:,1) ./ ripples_coordinated_numbers_downsampled(:,2))*100) nanmean((ripples_coordinated_numbers_downsampled(:,3) ./ ripples_coordinated_numbers_downsampled(:,4))*100)],'filled')%,ylim([0 0.4])
-boxplot(x(:,1),x(:,2)),ylim([0 70])
+boxplot(x(:,1),x(:,2)),ylim([0 60])
 [h p] = ranksum((ripples_coordinated_numbers_downsampled(:,1) ./ ripples_coordinated_numbers_downsampled(:,2))*100 ,  (ripples_coordinated_numbers_downsampled(:,3) ./ ripples_coordinated_numbers_downsampled(:,4))*100)
 
 %% Plot percentage all, downsampled, shuffled
@@ -1260,7 +1048,7 @@ x = [x , [ones(40,1) ; ones(40,1)*2 ; ones(40,1)*3 ; ones(40,1) ; ones(40,1)*2 ;
 figure
 scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 7]),hold on
 scatter([1 2 3 4 5 6] , [nanmean(x1) nanmean(x2) nanmean(x3) nanmean(x4) nanmean(x5) nanmean(x6)],'filled')%,ylim([0 0.4])
-boxplot(x(:,1),x(:,2)),ylim([0 70])
+boxplot(x(:,1),x(:,2)),ylim([0 60])
 
 [~,~,stats] = anovan(x(:,1) , x(:,3:4) , 'model','interaction','varnames',{'Structure','Condition'})
 [results,~,~,gnames] = multcompare(stats,"Dimension",[1 2]);
@@ -1315,13 +1103,8 @@ cdfplot(x),hold on
 
 %% Plot Cross CoorDorsal_allDorsal and CoorVentral_allVentral
 figure
-plot(time , mean(Cross.CoorDorsal_allDorsal./sum(Cross.CoorDorsal_allDorsal),2)), hold on
-plot(time , mean(Cross.CoorVentral_allVentral./sum(Cross.CoorVentral_allVentral),2)), hold on
-
-%% Plot
-figure
-plot(time , mean(Cross.CoorDorsal_allVentral./sum(Cross.CoorDorsal_allVentral),2)), hold on
-
-figure
-plot(time , mean(Cross.CoorVentral_allDorsal./sum(Cross.CoorVentral_allDorsal),2)), hold on
+subplot(221),plot(time , mean(Cross.CoorDorsal_allDorsal./sum(Cross.CoorDorsal_allDorsal),2)),xlim([-1 1]),ylim([0 0.008])
+subplot(222),plot(time , mean(Cross.CoorVentral_allVentral./sum(Cross.CoorVentral_allVentral),2)),xlim([-1 1]),ylim([0 0.008])
+subplot(223),plot(time , mean(Cross.CoorDorsal_allVentral./sum(Cross.CoorDorsal_allVentral),2)),xlim([-1 1]),ylim([0 0.025])
+subplot(224),plot(time , mean(Cross.CoorVentral_allDorsal./sum(Cross.CoorVentral_allDorsal),2)),xlim([-1 1]),ylim([0 0.025])
 
