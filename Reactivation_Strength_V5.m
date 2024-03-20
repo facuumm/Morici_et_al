@@ -486,7 +486,6 @@ for tt = 1:length(path)
             AR.both = cond.both.aversive .* cond.both.reward';
             AR.both = and(AR.both , p.AR);
             
-            
             percentages = [percentages  ; sum(cond.dHPC.aversive) , sum(cond.dHPC.reward) , sum(sum(AR.dHPC)) , sum(cond.vHPC.aversive) , sum(cond.vHPC.reward) , sum(sum(AR.vHPC)) , sum(cond.both.aversive) , sum(cond.both.reward) , sum(sum(AR.both))];
             clear A R r p
             
@@ -1136,56 +1135,79 @@ end
 
 %% Plot Strenght Reactivation
 %  Mean Activation Strength for joint assemblies
-figure
-x = reactivation.aversive.dvHPC(:,8)-reactivation.aversive.dvHPC(:,9)./((reactivation.aversive.dvHPC(:,8)+reactivation.aversive.dvHPC(:,9))/2);
-y = reactivation.reward.dvHPC(:,8)-reactivation.reward.dvHPC(:,9)./(reactivation.reward.dvHPC(:,8)+reactivation.reward.dvHPC(:,9)/2);
+figure(1)
+x = [reactivation.aversive.dvHPC(:,9) ; reactivation.aversive.dvHPC(:,8)]%-reactivation.aversive.dvHPC(:,9))%./((reactivation.aversive.dvHPC(:,8)+reactivation.aversive.dvHPC(:,9)));
+y = [reactivation.reward.dvHPC(:,9) ; reactivation.reward.dvHPC(:,8)]%-reactivation.reward.dvHPC(:,9))%./(reactivation.reward.dvHPC(:,8)+reactivation.reward.dvHPC(:,9));
 
 
 kstest(x)
 kstest(y)
-[h, p] = ttest2(x,y)  
-[h, p] = signrank(y,0)
-[h, p] = signrank(x,0)
+% [h, p] = ttest2(x,y)  
+% [h, p] = signrank(y,0)
+% [h, p] = signrank(x,0)
 
 subplot(131),
-grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
+grps = [ones(size(reactivation.aversive.dvHPC(:,8),1),1) ; ones(size(reactivation.aversive.dvHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.dvHPC(:,8),1),1)*3 ; ones(size(reactivation.reward.dvHPC(:,8),1),1)*4];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3])%,ylim([-0.5 0.5])
+scatter([1 2 3 4] , [nanmean(reactivation.aversive.dvHPC(:,9)) nanmean(reactivation.aversive.dvHPC(:,8)) nanmean(reactivation.reward.dvHPC(:,9)) nanmean(reactivation.reward.dvHPC(:,8))],'filled'),xlim([0 5]),ylim([-0.2 1.2])
 
-boxplot(Y,grps)
+clear grps
+grps = [ones(size(reactivation.aversive.dvHPC(:,8),1),1) ; ones(size(reactivation.aversive.dvHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.dvHPC(:,8),1),1) ; ones(size(reactivation.reward.dvHPC(:,8),1),1)*2];
+grps = [grps , [ones(size(x,1),1) ; ones(size(y,1),1)*2]];
+[~,~,stats]  = anovan(Y,{grps(:,1) grps(:,2)},'model','interaction','varnames',{'sleep','condition'})
+[results,~,~,gnames] = multcompare(stats,"Dimension",[1 2]);
 
 %  for dHPC assemblies
-x = reactivation.aversive.dHPC(:,8);
-y = reactivation.reward.dHPC(:,8);
+figure(1)
+x = [reactivation.aversive.dHPC(:,9) ; reactivation.aversive.dHPC(:,8)]%-reactivation.aversive.dvHPC(:,9))%./((reactivation.aversive.dvHPC(:,8)+reactivation.aversive.dvHPC(:,9)));
+y = [reactivation.reward.dHPC(:,9) ; reactivation.reward.dHPC(:,8)]%-reactivation.reward.dvHPC(:,9))%./(reactivation.reward.dvHPC(:,8)+reactivation.reward.dvHPC(:,9));
+
+
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y,'tail','left')  
-[h, p] = signrank(y,0)
-[h, p] = signrank(x,0)
+% [h, p] = ttest2(x,y)  
+% [h, p] = signrank(y,0)
+% [h, p] = signrank(x,0)
 
 subplot(132),
-grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
+grps = [ones(size(reactivation.aversive.dHPC(:,8),1),1) ; ones(size(reactivation.aversive.dHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.dHPC(:,8),1),1)*3 ; ones(size(reactivation.reward.dHPC(:,8),1),1)*4];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3])%,ylim([-0.5 0.5])
+scatter([1 2 3 4] , [nanmean(reactivation.aversive.dHPC(:,9)) nanmean(reactivation.aversive.dHPC(:,8)) nanmean(reactivation.reward.dHPC(:,9)) nanmean(reactivation.reward.dHPC(:,8))],'filled'),xlim([0 5]),ylim([-0.2 1.2])
+
+clear grps
+grps = [ones(size(reactivation.aversive.dHPC(:,8),1),1) ; ones(size(reactivation.aversive.dHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.dHPC(:,8),1),1) ; ones(size(reactivation.reward.dHPC(:,8),1),1)*2];
+grps = [grps , [ones(size(x,1),1) ; ones(size(y,1),1)*2]];
+[p,~,stats]  = anovan(Y,{grps(:,1) grps(:,2)},'model','interaction','varnames',{'sleep','condition'})
+[results,~,~,gnames] = multcompare(stats,"Dimension",[1 2]);
+
 
 %  for vHPC assemblies
-x = reactivation.aversive.vHPC(:,8)./reactivation.aversive.vHPC(:,9);
-y = reactivation.reward.vHPC(:,8)./reactivation.reward.vHPC(:,9);
+figure(1)
+x = [reactivation.aversive.vHPC(:,9) ; reactivation.aversive.vHPC(:,8)]%-reactivation.aversive.dvHPC(:,9))%./((reactivation.aversive.dvHPC(:,8)+reactivation.aversive.dvHPC(:,9)));
+y = [reactivation.reward.vHPC(:,9) ; reactivation.reward.vHPC(:,8)]%-reactivation.reward.dvHPC(:,9))%./(reactivation.reward.dvHPC(:,8)+reactivation.reward.dvHPC(:,9));
+
+
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y,'tail','left')  
-[h, p] = signrank(y,0)
-[h, p] = signrank(x,0)
+% [h, p] = ttest2(x,y)  
+% [h, p] = signrank(y,0)
+% [h, p] = signrank(x,0)
 
 subplot(133),
-grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
+grps = [ones(size(reactivation.aversive.vHPC(:,8),1),1) ; ones(size(reactivation.aversive.vHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.vHPC(:,8),1),1)*3 ; ones(size(reactivation.reward.vHPC(:,8),1),1)*4];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3])%,ylim([-0.5 0.5])
+scatter([1 2 3 4] , [nanmean(reactivation.aversive.vHPC(:,9)) nanmean(reactivation.aversive.vHPC(:,8)) nanmean(reactivation.reward.vHPC(:,9)) nanmean(reactivation.reward.vHPC(:,8))],'filled'),xlim([0 5]),ylim([-0.2 1.2])
 
-% Peaks mean for joint assemblies
+clear grps
+grps = [ones(size(reactivation.aversive.vHPC(:,8),1),1) ; ones(size(reactivation.aversive.vHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.vHPC(:,8),1),1) ; ones(size(reactivation.reward.vHPC(:,8),1),1)*2];
+grps = [grps , [ones(size(x,1),1) ; ones(size(y,1),1)*2]];
+[~,~,stats]  = anovan(Y,{grps(:,1) grps(:,2)},'model','interaction','varnames',{'sleep','condition'})
+[results,~,~,gnames] = multcompare(stats,"Dimension",[1 2]);
+
+%% Peaks mean for joint assemblies
 figure
 x = reactivation.reward.dvHPC(:,1);
 y = reactivation.aversive.dvHPC(:,1);

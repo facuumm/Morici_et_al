@@ -94,6 +94,7 @@ for i = 1:size(a,1)
     MB = nanmean(A(i,Is.baseline));
     MR = nanmean(A(i,Is.reward));
     MA = nanmean(A(i,Is.aversive));
+%     MA = nanmean(movmean(A(i,Is.aversive),40*60));
 
     % using the time vector for plotting   
     [pks.baseline,loc.baseline] = findpeaks(a(i,Is.baseline),bins(Is.baseline),'MinPeakHeight',th);

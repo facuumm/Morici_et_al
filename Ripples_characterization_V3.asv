@@ -798,8 +798,7 @@ for tt = 1:length(path)
             B.dHPC = [];
             for i = 1 : size(iri,1)
                 tmp = ripplesD(iri(i,1) : iri(i,2) , :);
-                
-                B.dHPC = [B.dHPC ; tmp(1,1) tmp(1,1)+((tmp(end,2)-tmp(1,1))/2) tmp(end,2)];
+                B.dHPC = [B.dHPC ; tmp(1,1) tmp(end,2)];
                 ruler = [1:size(tmp,1)]';
                 PrefPos.dHPC = [PrefPos.dHPC ; ruler(ismember(tmp(:,2) , coordinated(:,2)))];
             end
@@ -811,27 +810,20 @@ for tt = 1:length(path)
             B.vHPC = [];
             for i = 1 : size(iri,1)
                 tmp = ripplesV(iri(i,1) : iri(i,2) , :);
-                B.vHPC = [B.vHPC ; tmp(1,1) tmp(1,1)+((tmp(end,2)-tmp(1,1))/2) tmp(end,2)];
+                B.vHPC = [B.vHPC ; tmp(1,1) tmp(end,2)];
                 ruler = [1:size(tmp,1)]';
                 PrefPos.vHPC = [PrefPos.vHPC ; ruler(ismember(tmp(:,2) , coordinatedV(:,2)))];
             end
             clear iri i
 
             for i = 1 : size(B.dHPC,1)
-                T = [T ; B.dHPC(i,3) - B.vHPC(:,1)];
+                T = [T ; B.dHPC(i,2) - B.vHPC(:,1)];
             end
 %             histogram(tmp , 'BinEdges' , [-0.5 : 0.05 : 0.5])
             
             %% CCG between bursts
-%             x = bursts.dHPC.events(:,2);
-%             y = bursts.vHPC.events(:,2);
-%             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-%             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',1,'smooth',1,'mode','ccg');
-%             ccg = ccg(:,1,2);
-%             Cross.bursts = [Cross.bursts , ccg]; clear s ids x y groups
-            
-            x = B.dHPC(:,2);
-            y = B.vHPC(:,2);
+            x = bursts.dHPC.events(:,2);
+            y = bursts.vHPC.events(:,2);
             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',1,'smooth',1,'mode','ccg');
             ccg = ccg(:,1,2);

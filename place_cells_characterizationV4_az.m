@@ -174,9 +174,6 @@ for tt = 1:length(path)
         movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
         clear tmp start stop
-        
-        
-        %% Dividing even/odd laps 
 
         %% load sleep states
 %         disp('Uploading sleep scoring')
@@ -309,100 +306,142 @@ for tt = 1:length(path)
                 
                 if ~isnan(m)
                     % --- Aversive ---
-                    spks_tmp = Restrict(spks , movement.aversive); % Restrict spikes to movement periods
-                    pos_tmp = Restrict(behavior.pos.aversive(:,1:2) , movement.aversive); % Restrict pos to movement periods
-%                     pos_tmp = pos_tmp(and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170),:); % eliminating the extrems of the maze
+                    spks_tmp = spks; 
+                    pos_tmp = behavior.pos.aversive(:,1:2); 
                     in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
-                    %Control plot
-                    figure(1);clf; hold on;plot(pos_tmp(:,2),pos_tmp(:,1));
-                    ini_lap = [];
-                    fin_lap = []; 
-                    for ix=1:size(in_maze,1)
-                        ini = in_maze(ix,1);
-                        fin = in_maze(ix,2);
-                        ini_lap = [ini_lap; ini, pos_tmp(pos_tmp(:,1)==ini,2)]; 
-                        fin_lap = [fin_lap; fin, pos_tmp(pos_tmp(:,1)==fin,2)]; 
-                    end 
-                    scatter(ini_lap(:,2),ini_lap(:,1),'r');scatter(fin_lap(:,2),fin_lap(:,1),'b')
                     
                     %Check lenght of in_maze segments to define real laps
-                    in_lap = []; 
+                    in_lapA = []; 
                     for ix=1:size(in_maze,1)
                         ini = in_maze(ix,1);
                         fin = in_maze(ix,2);
                         ini_pos = pos_tmp(pos_tmp(:,1)==ini,2); 
                         fin_pos = pos_tmp(pos_tmp(:,1)==fin,2); 
                         if abs(fin_pos-ini_pos)>100
-                             in_lap = [in_lap;in_maze(ix,:)]; 
+                             in_lapA = [in_lapA;in_maze(ix,:)]; 
                         end
-                    end 
+                    end
                     
-                    figure(2);clf; hold on;plot(pos_tmp(:,2),pos_tmp(:,1));
-                    ini_lap = [];
-                    fin_lap = []; 
-                    for ix=1:size(in_maze,1)
-                        ini = in_maze(ix,1);
-                        fin = in_maze(ix,2);
-                        ini_lap = [ini_lap; ini, pos_tmp(pos_tmp(:,1)==ini,2)]; 
-                        fin_lap = [fin_lap; fin, pos_tmp(pos_tmp(:,1)==fin,2)]; 
-                    end 
-                    scatter(ini_lap(:,2),ini_lap(:,1),'r');scatter(fin_lap(:,2),fin_lap(:,1),'b')
+                    %%%%%%%%Control plot
+%                     figure(2);clf; hold on; subplot(1,2,1);plot(pos_tmp(:,2),pos_tmp(:,1));hold on; 
+%                     ini_lap = [];
+%                     fin_lap = []; 
+%                     for ix=1:size(in_maze,1)
+%                         ini = in_maze(ix,1);
+%                         fin = in_maze(ix,2);
+%                         ini_lap = [ini_lap; ini, pos_tmp(pos_tmp(:,1)==ini,2)]; 
+%                         fin_lap = [fin_lap; fin, pos_tmp(pos_tmp(:,1)==fin,2)]; 
+%                     end 
+%                     scatter(ini_lap(:,2),ini_lap(:,1),'r');scatter(fin_lap(:,2),fin_lap(:,1),'b')
+%                     title('In Maze');
+%                     subplot(1,2,2);hold on;plot(pos_tmp(:,2),pos_tmp(:,1));
+%                     ini_lap = [];
+%                     fin_lap = []; 
+%                     for ix=1:size(in_lapA,1)
+%                         ini = in_lapA(ix,1);
+%                         fin = in_lapA(ix,2);
+%                         ini_lap = [ini_lap; ini, pos_tmp(pos_tmp(:,1)==ini,2)]; 
+%                         fin_lap = [fin_lap; fin, pos_tmp(pos_tmp(:,1)==fin,2)]; 
+%                     end 
+%                     scatter(ini_lap(:,2),ini_lap(:,1),'r');scatter(fin_lap(:,2),fin_lap(:,1),'b')
+%                     title('In Lap');
+                    %%%%%%%%%
                     
-                    
-          
-                    spks_tmp = Restrict(spks_tmp,in_maze);
-                    pos_tmp = Restrict(pos_tmp,in_maze); 
-                    
-                    in_lap = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
-              
-                    figure(1);clf; hold on;plot(pos_tmp(:,2),pos_tmp(:,1));
-                    ini_lap = [];
-                    fin_lap = []; 
-                    for ix=1:size(in_lap,1)
-                        ini = in_lap(ix,1);
-                        fin = in_lap(ix,2);
-                        ini_lap = [ini_lap; ini, pos_tmp(pos_tmp(:,1)==ini,2)]; 
-                        fin_lap = [fin_lap; fin, pos_tmp(pos_tmp(:,1)==fin,2)]; 
-                    end 
-                    scatter(ini_lap(:,2),ini_lap(:,1),'r');scatter(fin_lap(:,2),fin_lap(:,1),'b')
-                    
-                    
-                    
-                    
-                    
+                    %Restrict spk and position to laps
+                    spks_tmp = Restrict(spks_tmp,in_lapA);spks_tmp = Restrict(spks_tmp , movement.aversive); % Restrict spikes to movement periods
+                    pos_tmp = Restrict(pos_tmp,in_lapA);pos_tmp = Restrict(pos_tmp, movement.aversive); % Restrict pos to movement periods
+
                     pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
-                    
-                    
-                    %Laps
-                    
-                    %Firing curve construction
-                    [curveA , statsA] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4, 'minPeak' , 0.2);
-                    curveA_dhpc = curveA.rate; 
-                    
-                    %%%Within-trial pc parameters 
-                    [withinA,withinA_tresh] = Within_pc(pos_tmp,spks_tmp,1,sigma,Xedges);
                     
                     %Store par for between comp
                     spks_ave = spks_tmp;
                     pos_ave = pos_tmp;
                     
+                    %Firing curve construction
+                    [curveA , statsA] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4, 'minPeak' , 0.2);
+                    curveA_dhpc = curveA.rate; 
+                    
+                    % Control plot 
+                    figure(1);clf;hold on; 
+                    subplot(2,1,1);imagesc(curveA.rate), colormap 'jet'
+                    
+                    %%%Within-trial pc parameters or Lap parameters
+                    if contains(comp,'whitin') 
+                        [withinA,withinA_tresh] = Within_pc(pos_tmp,spks_tmp,1,sigma,Xedges);
+                    elseif contains(comp,'laps')
+                        %Compare laps 
+                        [within_lap_A] = Within_lap(pos_tmp,spks_tmp,in_lapA,sigma,Xedges);
+                        
+                    else
+                        disp('No comparison method selected')
+                    end 
+                    
+
                     % --- Reward ---
-                    spks_tmp = Restrict(spks , movement.reward); % Restrict to movement periods
-                    pos_tmp = Restrict(behavior.pos.reward(:,1:2), movement.reward);
+                    spks_tmp = spks; % Restrict to movement periods
+                    pos_tmp = behavior.pos.reward(:,1:2);
                     in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
-                    spks_tmp = Restrict(spks_tmp,in_maze);
-                    pos_tmp = Restrict(pos_tmp,in_maze); 
+                    %Check lenght of in_maze segments to define real laps
+                    in_lapR = []; 
+                    for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_tmp(pos_tmp(:,1)==ini,2); 
+                        fin_pos = pos_tmp(pos_tmp(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>100
+                             in_lapR = [in_lapR;in_maze(ix,:)]; 
+                        end
+                    end 
+                    
+%                     %%%%%%%%Control plot
+%                     figure(3);clf; hold on; subplot(1,2,1);plot(pos_tmp(:,2),pos_tmp(:,1));hold on; 
+%                     ini_lap = [];
+%                     fin_lap = []; 
+%                     for ix=1:size(in_maze,1)
+%                         ini = in_maze(ix,1);
+%                         fin = in_maze(ix,2);
+%                         ini_lap = [ini_lap; ini, pos_tmp(pos_tmp(:,1)==ini,2)]; 
+%                         fin_lap = [fin_lap; fin, pos_tmp(pos_tmp(:,1)==fin,2)]; 
+%                     end 
+%                     scatter(ini_lap(:,2),ini_lap(:,1),'r');scatter(fin_lap(:,2),fin_lap(:,1),'b')
+%                     title('In Maze');
+%                     subplot(1,2,2);hold on;plot(pos_tmp(:,2),pos_tmp(:,1));
+%                     ini_lap = [];
+%                     fin_lap = []; 
+%                     for ix=1:size(in_lapR,1)
+%                         ini = in_lapR(ix,1);
+%                         fin = in_lapR(ix,2);
+%                         ini_lap = [ini_lap; ini, pos_tmp(pos_tmp(:,1)==ini,2)]; 
+%                         fin_lap = [fin_lap; fin, pos_tmp(pos_tmp(:,1)==fin,2)]; 
+%                     end 
+%                     scatter(ini_lap(:,2),ini_lap(:,1),'r');scatter(fin_lap(:,2),fin_lap(:,1),'b')
+%                     title('In Lap');
+%                     %%%%%%%%%
+                    %Restrict spks and pos to valid laps 
+                    spks_tmp = Restrict(spks_tmp,in_lapR); spks_tmp = Restrict(spks_tmp, movement.reward); % Restrict to movement periods
+                    pos_tmp = Restrict(pos_tmp,in_lapR); pos_tmp = Restrict(pos_tmp , movement.reward);
                     pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
+                    %Store par for between comp
+                    spks_rew = spks_tmp;
+                    pos_rew = pos_tmp;
                     
                     %Firing curve construction
                     [curveR , statsR] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
                     curveR_dhpc = curveR.rate;
-                    %%%Within-trial pc parameters 
-                    [withinR,withinR_tresh] = Within_pc(pos_tmp,spks_tmp,1,sigma,Xedges);
-                   
-                    %Store par for between comp
-                    spks_rew = spks_tmp;
-                    pos_rew = pos_tmp;
+                    
+                    figure(1); hold on; subplot(2,1,2);imagesc(curveR.rate), colormap 'jet'
+                    sgtitle('Firing curvs original');
+                    
+                    %%%Within-trial pc parameters or Lap parameters
+                    if contains(comp,'whitin') 
+                        [withinR,withinR_tresh] = Within_pc(pos_tmp,spks_tmp,1,sigma,Xedges);
+                    elseif contains(comp,'laps')
+                        %Compare laps 
+                        [within_lap_R] = Within_lap(pos_tmp,spks_tmp,in_lapR,sigma,Xedges);
+                        
+                    else
+                        disp('No comparison method selected')
+                    end 
                     
                     %Subsampling pos and spk for both conditions
                     [sub_pos_ave,sub_spk_ave,sub_pos_rew,sub_spk_rew] = Subsampling_1d(pos_ave, spks_ave,pos_rew, spks_rew,dt,Xedges,sigma);
@@ -472,6 +511,17 @@ for tt = 1:length(path)
                         
                         pc_dHPC_par.within.ave_tresh = [pc_dHPC_par.within.ave_tresh; withinA_tresh];
                         pc_dHPC_par.within.rew_tresh = [pc_dHPC_par.within.rew_tresh; withinR_tresh];
+                        
+                        %%%Between pc parameters or Between Lap parameters
+                        if contains(comp,'whitin') 
+                            [between] = Between_pc(pos_ave,spks_ave,pos_rew,spks_rew,bin_size,sigma,Xedges);
+                        elseif contains(comp,'laps')
+                        %Compare laps 
+                            [between_lap] = Between_lap(pos_ave,spks_ave,in_lapA,pos_rew,spks_rew,in_lapR,sigma,Xedges);
+                        else
+                            disp('No comparison method selected')
+                        end 
+                        
                         
                         %Between-trial pc parameters (aversive vs. rewarded)
                         [between] = Between_pc(pos_ave,spks_ave,pos_rew,spks_rew,bin_size,sigma,Xedges);

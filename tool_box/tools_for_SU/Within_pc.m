@@ -86,7 +86,14 @@ for c=1:500
     %Calculate remapping parameters 
     [curve1,stats1] = FiringCurve(time_x_y_1, tspk_1' , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
     [curve2,stats2] = FiringCurve(time_x_y_2, tspk_2' , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
-                    
+     
+    %Control plot 
+%     figure;hold on; 
+%     subplot(2,1,1);imagesc(curve1.rate), colormap 'jet'
+%     subplot(2,1,2);imagesc(curve2.rate), colormap 'jet'
+%     sgtitle('Firing curvs laps');
+    
+    
     fr_1= nanmean(curve1.rate);
     fr_2= nanmean(curve2.rate);
                     
@@ -106,6 +113,12 @@ for c=1:500
     
     %Peak shift 
     shift = abs(stats1.x(1) - stats2.x(1)); 
+    
+%      % Control plot 
+%     figure(2);clf;hold on; 
+%     subplot(2,1,1);imagesc(curve1.rate), colormap 'jet'
+%     subplot(2,1,2);imagesc(curve2.rate), colormap 'jet'
+%     sgtitle('Firing curvs within pc');
     
     %Save 
     within(c,1)=spatial;

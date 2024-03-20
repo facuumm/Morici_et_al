@@ -311,14 +311,48 @@ for tt = 1:length(path)
                     % --- Aversive ---
                     spks_tmp = Restrict(spks , movement.aversive); % Restrict spikes to movement periods
                     pos_tmp = Restrict(behavior.pos.aversive(:,1:2) , movement.aversive); % Restrict pos to movement periods
-%                     pos_tmp = pos_tmp(and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170),:); % eliminating the extrems of the maze
                     in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<170));% eliminating the extrems of the maze
+               
+                      %Control plot
+%                     figure(1);clf; hold on;plot(pos_tmp(:,2),pos_tmp(:,1));
+%                     ini_lap = [];
+%                     fin_lap = []; 
+%                     for ix=1:size(in_maze,1)
+%                         ini = in_maze(ix,1);
+%                         fin = in_maze(ix,2);
+%                         ini_lap = [ini_lap; ini, pos_tmp(pos_tmp(:,1)==ini,2)]; 
+%                         fin_lap = [fin_lap; fin, pos_tmp(pos_tmp(:,1)==fin,2)]; 
+%                     end 
+%                     scatter(ini_lap(:,2),ini_lap(:,1),'r');scatter(fin_lap(:,2),fin_lap(:,1),'b')
+                    
+                    %Check lenght of in_maze segments to define real laps
+                    in_lap = []; 
+                    for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_tmp(pos_tmp(:,1)==ini,2); 
+                        fin_pos = pos_tmp(pos_tmp(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>100
+                             in_lap = [in_lap;in_maze(ix,:)]; 
+                        end
+                    end 
+                    
+%                     figure(2);clf; hold on;plot(pos_tmp(:,2),pos_tmp(:,1));
+%                     ini_lap = [];
+%                     fin_lap = []; 
+%                     for ix=1:size(in_lap,1)
+%                         ini = in_lap(ix,1);
+%                         fin = in_lap(ix,2);
+%                         ini_lap = [ini_lap; ini, pos_tmp(pos_tmp(:,1)==ini,2)]; 
+%                         fin_lap = [fin_lap; fin, pos_tmp(pos_tmp(:,1)==fin,2)]; 
+%                     end 
+%                     scatter(ini_lap(:,2),ini_lap(:,1),'r');scatter(fin_lap(:,2),fin_lap(:,1),'b')
+                    
+
                     spks_tmp = Restrict(spks_tmp,in_maze);
                     pos_tmp = Restrict(pos_tmp,in_maze); 
+                    
                     pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
-                    
-                    
-                    %Laps
                     
                     %Firing curve construction
                     [curveA , statsA] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4, 'minPeak' , 0.2);
