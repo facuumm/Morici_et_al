@@ -23,7 +23,7 @@ function [events] = FindReplay(Signal,Threshold,Durations,Points,restrict)
 % Morici Juan Facundo 06/2023
 
 
-% Default values
+% Parameters
 lowThresholdFactor = Threshold(1);
 highThresholdFactor = Threshold(2);
 minInter = Durations (1);
@@ -37,7 +37,7 @@ w = gausswin(Points, 1);
 signal = filter(w , 1 ,signal);
 signal = zscore(signal);
 
-% Detect replays periods by thresholding normalized squared signal
+% Detect replays periods by thresholding normalized zscored signal
 thresholded = signal > mean(signal) + (std(signal) * lowThresholdFactor);
 start = find(diff(thresholded)>0);
 stop = find(diff(thresholded)<0);
@@ -111,20 +111,20 @@ else
 end
 
 
-% Discard ripples that are way too short
+% Discard replay that are way too short
 events = [time(thirdPass(:,1)) time(peakPosition) time(thirdPass(:,2))];
 duration = events(:,3)-events(:,1);
 events(duration<minDuration,:) = [];
 % disp(['After min duration test: ' num2str(size(events,1)) ' events.']);
 
-% Discard ripples that are way too long
+% Discard replay that are way too long
 duration = events(:,3)-events(:,1);
 events(duration>maxDuration,:) = [];
 % disp(['After max duration test: ' num2str(size(events,1)) ' events.']);
 
-if exist('restrict','var')
-events = Restrict(events,restrict);
-% disp(['After Restriction to selected periods: ' num2str(size(events,1)) ' events.']);
+if and(exist('restrict','var') , not(isempty(restrict)))
+    events = Restrict(events,restrict);
+    % disp(['After Restriction to selected periods: ' num2str(size(events,1)) ' events.']);
 end
 
 end

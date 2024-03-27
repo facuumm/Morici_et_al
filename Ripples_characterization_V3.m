@@ -64,6 +64,11 @@ Cross.bursts = [];
 
 PrefPos.dHPC = []; PrefPos.vHPC = [];
 T = [];
+
+bursts_durations.dHPC = [];   bursts_durations.vHPC = [];
+Cross.t2vst1 = [];
+BurstOverlapping = [];
+
 %% Main tloop to iterate across sessions
 for tt = 1:length(path)
     %List of folders from the path
@@ -480,7 +485,7 @@ for tt = 1:length(path)
             % Coordinated dRipples vs all vRipples
             x = coordinated(:,2);
             y = ripplesV(:,2);
-            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
             ccg = ccg(:,1,2);
             Cross.CoorDorsal_allVentral = [Cross.CoorDorsal_allVentral , ccg]; clear ccg time s ids groups x y
@@ -488,7 +493,7 @@ for tt = 1:length(path)
             % Coordinated vRipples vs all dRipples
             x = unique(coordinatedV(:,2));
             y = ripplesD(:,2);
-            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
             ccg = ccg(:,1,2);
             Cross.CoorVentral_allDorsal = [Cross.CoorVentral_allDorsal , ccg]; clear ccg time s ids groups x y
@@ -513,7 +518,7 @@ for tt = 1:length(path)
             % Coordinated dRipples vs all dRipples
             x = coordinated(:,2);
             y = ripplesD(:,2);
-            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',0,'mode','ccg');
             [i ii] = min(abs(time-0));
             ccg = ccg(:,1,2);
@@ -523,9 +528,9 @@ for tt = 1:length(path)
             % Coordinated vRipples vs all dRipples
             x = unique(coordinatedV(:,2));
             y =ripplesV(:,2);
-            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',0,'mode','ccg');
-            [i ii] = min(abs(time-0));
+            [~, ii] = min(abs(time-0));
             ccg = ccg(:,1,2);
             ccg(ii) = 0; clear i ii
             Cross.CoorVentral_allVentral = [Cross.CoorVentral_allVentral , ccg]; clear ccg time s ids groups x y            
@@ -615,7 +620,7 @@ for tt = 1:length(path)
             % coordinated dRipples
             x = coordinated(:,2);
             y = coordinated(:,2);
-            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
             ccg = ccg(:,1,1);
             Auto.coordinated.dRipples = [Auto.coordinated.dRipples , ccg];
@@ -654,7 +659,7 @@ for tt = 1:length(path)
             %% coordinated vRipples
             x = (coordinatedV(:,2));
             y = unique(coordinatedV(:,2));
-            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
             ccg = ccg(:,1,1);
             Auto.coordinated.vRipples = [Auto.coordinated.vRipples , ccg];
@@ -798,13 +803,15 @@ for tt = 1:length(path)
             B.dHPC = [];
             for i = 1 : size(iri,1)
                 tmp = ripplesD(iri(i,1) : iri(i,2) , :);
-                
                 B.dHPC = [B.dHPC ; tmp(1,1) tmp(1,1)+((tmp(end,2)-tmp(1,1))/2) tmp(end,2)];
                 ruler = [1:size(tmp,1)]';
                 PrefPos.dHPC = [PrefPos.dHPC ; ruler(ismember(tmp(:,2) , coordinated(:,2)))];
             end
             clear iri i
+            bursts_durations.dHPC = [bursts_durations.dHPC ; B.dHPC(:,2)-B.dHPC(:,1)];   
+
             
+            % ventral
             iri = diff(ripplesV(:,2))<=0.1;
             iri = ToIntervals([2:length(ripplesV)] , iri);
             iri(:,1) = iri(:,1)-1;
@@ -816,13 +823,27 @@ for tt = 1:length(path)
                 PrefPos.vHPC = [PrefPos.vHPC ; ruler(ismember(tmp(:,2) , coordinatedV(:,2)))];
             end
             clear iri i
-
+            bursts_durations.vHPC = [bursts_durations.vHPC ; B.vHPC(:,2)-B.vHPC(:,1)];
+            
+            % CCG dT2 vs vt1
+            x = B.dHPC(:,3);
+            y = B.vHPC(:,1);
+            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
+            [ccg,Time] = CCG(s,ids,'binSize',0.05,'duration',1,'smooth',1,'mode','ccg');
+            ccg = ccg(:,1,2);
+            Cross.t2vst1 = [Cross.t2vst1 , ccg];
+            
+            % both
             for i = 1 : size(B.dHPC,1)
                 T = [T ; B.dHPC(i,3) - B.vHPC(:,1)];
             end
 %             histogram(tmp , 'BinEdges' , [-0.5 : 0.05 : 0.5])
             
-            %% CCG between bursts
+            B.both = [B.dHPC(:,1) ,  B.dHPC(:,3) ; B.vHPC(:,1) , B.vHPC(:,3)];
+            [i ii] = sort(B.both(:,1));
+            B.both = ConsolidateIntervals(B.both(ii,:)); clear i ii
+            
+%             %% CCG between bursts
 %             x = bursts.dHPC.events(:,2);
 %             y = bursts.vHPC.events(:,2);
 %             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
@@ -832,16 +853,24 @@ for tt = 1:length(path)
             
             x = B.dHPC(:,2);
             y = B.vHPC(:,2);
-            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',1,'smooth',1,'mode','ccg');
             ccg = ccg(:,1,2);
             Cross.bursts = [Cross.bursts , ccg]; clear s ids x y groups
+            
+            % Overlap beween burst
+            x = [0 : 0.001 : segments.Var1(end)/1000];
+            x1 = InIntervals(x,[B.dHPC(:,1) B.dHPC(:,3)]);
+            x2 = InIntervals(x,[B.vHPC(:,1) B.vHPC(:,3)]);
+            x3 = and(x1,x2); x3 = ToIntervals(x,x3);
+            x3 = x3(:,2) - x3(:,1);
+            BurstOverlapping = [BurstOverlapping ; x3]; clear x x1 x2 x3
             
             %% save bursts timestamps
             if (isfile('coordinated_ripple_bursts.mat'))
                 delete([cd,'\coordinated_ripple_bursts.mat'])
             end
-            save ([cd,'\coordinated_ripple_bursts.mat'],'bursts')
+            save ([cd,'\coordinated_ripple_bursts.mat'],'bursts' , 'B')
             
             %% Autoccorelogram coordionated and uncooridnated with subsampling
             % Burst Index calculation as we discuss with GG
@@ -912,7 +941,7 @@ for tt = 1:length(path)
             %% Crosscorrelogram dRipples - vRipples
             x = ripplesD(:,2);
             y = ripplesV(:,2);
-            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
             ccg = ccg(:,1,2);
             Cross.DV.all = [Cross.DV.all , ccg]; clear x y s ids groups
@@ -1167,3 +1196,12 @@ plot([-0.5 : 0.01 : 0.5],mean(Cross.bursts./sum(Cross.bursts),2)),xlim([-0.5 0.5
 figure
 subplot(121),histogram(PrefPos.dHPC,'Normalization','probability'),xlim([0 10]),ylim([0 0.5])
 subplot(122),histogram(PrefPos.vHPC,'Normalization','probability'),xlim([0 10]),ylim([0 0.5])
+
+%% plot distribution of durations
+figure
+subplot(121), histogram(bursts_durations.dHPC,[0:0.01:0.4],'Normalization','probability'),ylim([0 0.4])
+subplot(122), histogram(bursts_durations.vHPC,[0:0.01:0.4],'Normalization','probability'),ylim([0 0.4])
+
+%% plot CCG dT2 vd vT1
+figure
+plot(Time,mean(Cross.t2vst1./sum(Cross.t2vst1),2))
