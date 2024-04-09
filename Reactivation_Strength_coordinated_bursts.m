@@ -8,6 +8,10 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
 
+W = 'Coor'; % coordinated bursts = 'Coor'
+               % uncoordinated dbursts = 'unCoorD'
+               % uncoordinated vbursts = 'unCoorV'
+
 % for SU
 criteria_fr = 0; %criteria to include or not a SU into the analysis
 criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
@@ -315,14 +319,15 @@ for tt = 1:length(path)
             if or(numberD > 3 , numberV > 3)
                 % --- Aversive ---
                 disp('Lets go for the assemblies')
-                if isfile('dorsalventral_assemblies_aversive.mat')
+                if isfile('dorsalventral_assemblies_aversiveVF.mat')
                     disp('Loading Aversive template')
-                    load('dorsalventral_assemblies_aversive.mat')
+                    load('dorsalventral_assemblies_aversiveVF.mat')
                 end
                 
                 Thresholded.aversive.all = Th;
                 patterns.all.aversive = pat;
-                clear cond Th pat
+                Eigen.all.aversive = eig.values;
+                clear cond Th pat eig
                 
                 % Detection of members
                 if not(isempty(Thresholded.aversive.all))
@@ -350,13 +355,14 @@ for tt = 1:length(path)
                 
                 % --- Reward ---
                 disp('Loading Reward template')
-                if isfile('dorsalventral_assemblies_reward.mat')
-                    load('dorsalventral_assemblies_reward.mat')
+                if isfile('dorsalventral_assemblies_rewardVF.mat')
+                    load('dorsalventral_assemblies_rewardVF.mat')
                 end
                 
                 Thresholded.reward.all = Th;
                 patterns.all.reward = pat;
-                clear Th pat
+                Eigen.all.reward = eig.values;
+                clear Th pat eig
                 
                 % Detection of members using
                 if not(isempty(Thresholded.reward.all))
@@ -390,9 +396,20 @@ for tt = 1:length(path)
                 
                 if S
                     if and(not(isempty(bursts.coordinated)) , size(bursts.coordinated,1)>35)
-                        is.sws.baseline = InIntervals(bins,Restrict(bursts.coordinated,NREM.baseline));
-                        is.sws.reward = InIntervals(bins,Restrict(bursts.coordinated,NREM.reward));
-                        is.sws.aversive = InIntervals(bins,Restrict(bursts.coordinated,NREM.aversive));
+                        
+                        if strcmp(W,'Coor')
+                            is.sws.baseline = InIntervals(bins,Restrict(bursts.coordinated,NREM.baseline));
+                            is.sws.reward = InIntervals(bins,Restrict(bursts.coordinated,NREM.reward));
+                            is.sws.aversive = InIntervals(bins,Restrict(bursts.coordinated,NREM.aversive));
+                        elseif strcmp(W,'unCoorD')
+                            is.sws.baseline = InIntervals(bins,Restrict(bursts.uncoordinated.dHPC,NREM.baseline));
+                            is.sws.reward = InIntervals(bins,Restrict(bursts.uncoordinated.dHPC,NREM.reward));
+                            is.sws.aversive = InIntervals(bins,Restrict(bursts.uncoordinated.dHPC,NREM.aversive));
+                        elseif strcmp(W,'unCoorV')
+                            is.sws.baseline = InIntervals(bins,Restrict(bursts.uncoordinated.vHPC,NREM.baseline));
+                            is.sws.reward = InIntervals(bins,Restrict(bursts.uncoordinated.vHPC,NREM.reward));
+                            is.sws.aversive = InIntervals(bins,Restrict(bursts.uncoordinated.vHPC,NREM.aversive));
+                        end
                         
                         is.sws.runaversive = InIntervals(bins,movement.aversive);
                         is.sws.runreward = InIntervals(bins,movement.reward);
@@ -403,14 +420,15 @@ for tt = 1:length(path)
                         %% Reactivation Strenght
                         % Joint Aversive Assemblies
                         if sum(cond.both.aversive)>=1
+                            e = Eigen.all.aversive(cond.both.aversive);
                             templates = ones(size(patterns.all.aversive,1),1);
                             templates(size(clusters.dHPC)+1:end) = 0;
                             templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
                             templates(1:size(clusters.dHPC),2) = 0;
                             
                             [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
-                            reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
-                            RBA = R; clear R
+                            reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R , e];
+                            RBA = R; clear R e
                         end
                         
                         % dHPC Aversive Assemblies
@@ -430,14 +448,15 @@ for tt = 1:length(path)
                         %% Same for Reward assemblies
                         % Joint Reward Assemblies
                         if sum(cond.both.reward)>=1
+                            e = Eigen.all.reward(cond.both.reward);
                             templates = ones(size(patterns.all.aversive,1),1);
                             templates(size(clusters.dHPC)+1:end) = 0;
                             templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
                             templates(1:size(clusters.dHPC),2) = 0;
                             
                             [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
-                            reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
-                            RBR = R; clear R
+                            reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R , e];
+                            RBR = R; clear R e
                         end
                         
                         % dHPC Reward Assemblies
@@ -493,7 +512,7 @@ subplot(131),
 grps = [ones(size(reactivation.aversive.dvHPC(:,8),1),1) ; ones(size(reactivation.aversive.dvHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.dvHPC(:,8),1),1)*3 ; ones(size(reactivation.reward.dvHPC(:,8),1),1)*4];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2 3 4] , [nanmean(reactivation.aversive.dvHPC(:,9)) nanmean(reactivation.aversive.dvHPC(:,8)) nanmean(reactivation.reward.dvHPC(:,9)) nanmean(reactivation.reward.dvHPC(:,8))],'filled'),xlim([0 5]),ylim([-0.2 1.2])
+scatter([1 2 3 4] , [nanmean(reactivation.aversive.dvHPC(:,9)) nanmean(reactivation.aversive.dvHPC(:,8)) nanmean(reactivation.reward.dvHPC(:,9)) nanmean(reactivation.reward.dvHPC(:,8))],'filled'),xlim([0 5]),ylim([-2.5 10])
 
 clear grps
 grps = [ones(size(reactivation.aversive.dvHPC(:,8),1),1) ; ones(size(reactivation.aversive.dvHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.dvHPC(:,8),1),1) ; ones(size(reactivation.reward.dvHPC(:,8),1),1)*2];
@@ -517,7 +536,7 @@ subplot(132),
 grps = [ones(size(reactivation.aversive.dHPC(:,8),1),1) ; ones(size(reactivation.aversive.dHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.dHPC(:,8),1),1)*3 ; ones(size(reactivation.reward.dHPC(:,8),1),1)*4];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2 3 4] , [nanmean(reactivation.aversive.dHPC(:,9)) nanmean(reactivation.aversive.dHPC(:,8)) nanmean(reactivation.reward.dHPC(:,9)) nanmean(reactivation.reward.dHPC(:,8))],'filled'),xlim([0 5]),ylim([-0.2 1.2])
+scatter([1 2 3 4] , [nanmean(reactivation.aversive.dHPC(:,9)) nanmean(reactivation.aversive.dHPC(:,8)) nanmean(reactivation.reward.dHPC(:,9)) nanmean(reactivation.reward.dHPC(:,8))],'filled'),xlim([0 5]),ylim([-2.5 10])
 
 clear grps
 grps = [ones(size(reactivation.aversive.dHPC(:,8),1),1) ; ones(size(reactivation.aversive.dHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.dHPC(:,8),1),1) ; ones(size(reactivation.reward.dHPC(:,8),1),1)*2];
@@ -542,7 +561,7 @@ subplot(133),
 grps = [ones(size(reactivation.aversive.vHPC(:,8),1),1) ; ones(size(reactivation.aversive.vHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.vHPC(:,8),1),1)*3 ; ones(size(reactivation.reward.vHPC(:,8),1),1)*4];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2 3 4] , [nanmean(reactivation.aversive.vHPC(:,9)) nanmean(reactivation.aversive.vHPC(:,8)) nanmean(reactivation.reward.vHPC(:,9)) nanmean(reactivation.reward.vHPC(:,8))],'filled'),xlim([0 5]),ylim([-0.2 1.2])
+scatter([1 2 3 4] , [nanmean(reactivation.aversive.vHPC(:,9)) nanmean(reactivation.aversive.vHPC(:,8)) nanmean(reactivation.reward.vHPC(:,9)) nanmean(reactivation.reward.vHPC(:,8))],'filled'),xlim([0 5]),ylim([-2.5 10])
 
 clear grps
 grps = [ones(size(reactivation.aversive.vHPC(:,8),1),1) ; ones(size(reactivation.aversive.vHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.vHPC(:,8),1),1) ; ones(size(reactivation.reward.vHPC(:,8),1),1)*2];
@@ -596,6 +615,18 @@ grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
 scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
+
+%% correlation between post-pre and eigenvalue
+y = [reactivation.aversive.dvHPC(:,8) - reactivation.aversive.dvHPC(:,9)];
+x = reactivation.aversive.dvHPC(:,end);
+
+scatter(x,y)
+
+y = [reactivation.reward.dvHPC(:,1)];% - reactivation.reward.dvHPC(:,9)];
+x = reactivation.reward.dvHPC(:,end);
+
+scatter(x,y)
+
 
 %% Plot Peaks of activation
 %  for joint assemblies

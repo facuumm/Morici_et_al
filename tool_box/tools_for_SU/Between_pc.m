@@ -2,7 +2,7 @@ function [between] = Between_pc(pos_ave,spks_ave,pos_rew,spks_rew,bin_size,sigma
 %
 % Between_pc - Randomly splits spike and position data of the two conditions (ave and rew) in two groups and randomly selects one group 
 % of each condition and calcualtes remapping parameters(spatial correlation, firing rate change,rate overlap and peak shift)between conditions. 
-% Repeat 500 times  
+% Repeat 100 times  
 %
 % [between] = Between_pc(pos_ave,spks_ave,pos_rew,spks_rew,bin_size,sigma,Xedges)
 %
@@ -25,9 +25,9 @@ function [between] = Between_pc(pos_ave,spks_ave,pos_rew,spks_rew,bin_size,sigma
 %other functions:FiringCurve (FMAtoolbox), Bins_half
 %
 %Azul Silva, 2023
-between = nan(500,4);
+between = nan(100,4);
 
-for c=1:500
+for c=1:100
 
     [groups_ave] = Bins_half(pos_ave,spks_ave,bin_size); 
     [groups_rew] = Bins_half(pos_rew,spks_rew,bin_size);

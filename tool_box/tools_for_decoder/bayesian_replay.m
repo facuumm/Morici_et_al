@@ -1,4 +1,4 @@
-function [R H P] = bayesian_replay(Spks , ids , RateMap , time , dt , d)
+function [Pr, prMax] = bayesian_replay(Spks , ids , RateMap , time , dt , d)
 % Replay detection and significance testing.
 % This function calculates likelihood R between the replayed trajectory and
 % a constant-velocity trajectory inferred with the initial and final
@@ -31,13 +31,11 @@ function [R H P] = bayesian_replay(Spks , ids , RateMap , time , dt , d)
 % d: float, Distance margin of acceptance
 %
 % --- OUTPUTS ---
-% R: float, likelihood value.
-%
-% H: row vector, output of both shuffling methods 
-%
-% P: row vector, probability of each spatial position of being
-%              replayed in the event.
-%
+% Pr = [nTemporalBin X nSpatialBins] matrix of posterior probabilities
+% prMax = the spatial bin with higher spatial probabilities for each
+%       temporalBin in Cr (note, ties go to the lower numbered bins as 
+%       consistent with the behavior of the second output of built in function
+%       'max')
 % Morici Juan Facundo, 09/06/2023
 % placeBayes from Andres Grosmark 2015
 
@@ -54,7 +52,7 @@ for i = 1:size(time,2)-1
 end
 Cr = Cr.*dt; clear i
 
-[Pr, prMax] = placeBayes(Cr, RateMap, dt)
+[Pr, prMax] = placeBayes(Cr, RateMap, dt); 
 
  
 end

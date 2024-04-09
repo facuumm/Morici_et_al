@@ -19,9 +19,10 @@ function probability = bayesian_decoder(RateMap, nSpks, start, stop)
 % stop: float, ending time stamp of the event (same unit as spikes)
 %
 % --- OUTPUTS ---
-% probability: row vector, probability of each spatial position of being
-%              replayed in the event.
-%
+% 
+% 
+%       
+
 % Morici Juan Facundo, 09/06/2023
 
 

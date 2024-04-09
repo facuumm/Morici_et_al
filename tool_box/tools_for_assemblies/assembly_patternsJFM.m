@@ -1,4 +1,4 @@
-function [Members , AssemblyTemplates] = assembly_patterns(SpikeCount,opts)
+function [Members , AssemblyTemplates , EigenValues] = assembly_patterns(SpikeCount,opts)
 
 % Patterns = assembly_patterns(Activitymatrix,opts): extracts assembly patterns from the spike matrix.
 % 
@@ -155,5 +155,9 @@ switch opts.Members.method
     case 'Sqrt'
         Members =  abs(AssemblyTemplates) > 1/(sqrt(size(AssemblyTemplates,1)));
 end
+
+EigenValues.values = eigenvalues(eigenvalues>lambda_max);
+EigenValues.lambda = lambda_max;
+
 end
 

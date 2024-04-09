@@ -15,7 +15,7 @@ period = SubtractIntervals(rewardTS_run./1000,behavior.quiet.reward);
 period = Restrict(period,[behavior.pos.reward(1,1) behavior.pos.reward(end,1)]);
 [mm m] = max([period(:,2) - period(:,1)]);
 period = ((period(m,2) - period(m,1))/2) + period(m,1);
-period = [period+18 , period+23];
+period = [period+18 , period+19];
 
 
 % for REM
@@ -54,9 +54,9 @@ ylim([-700 700])
 subplot(313),plot(L3(:,1),L3(:,2))
 xlim(period)
 
-group = [group_vHPC;group_dHPC];
+group = [clusters.vHPC;clusters.dHPC];
 s = [spks_dHPC ; spks_vHPC];
-C = size(group_dHPC,1);
+C = size(clusters.dHPC,1);
 figure ()
 ii = 0;
 
@@ -77,7 +77,7 @@ for i = 1 : length(group)
         end
         
         %                             if i >= C
-        if i>length(group_vHPC)
+        if i>length(clusters.vHPC)
             plot(xspikes,yspikes,'Color','r','LineWidth',1),hold on
         else
             plot(xspikes,yspikes,'Color','k','LineWidth',1),hold on
@@ -86,9 +86,14 @@ for i = 1 : length(group)
 %     end
 end
 xlim(period)
-% ylim([0 75])
-% ylabel('Neuron#')
-% figure
+ylim([0 length(group)])
+ylabel('Neuron#')
+figure
+
+
+bins=[period(1):0.025:period(2)];
+[Spks , Bins , Clus] = spike_train_construction(s, group, cellulartype, binSize, period, [], true,true);
+in = InIntervals(Bins,period);
 
 in = InIntervals(bins,period);
 plot(bins(in),(a(6,in)))%,ylim([-15 30])

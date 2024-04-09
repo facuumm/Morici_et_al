@@ -112,7 +112,7 @@ tspk_rew = rew{id,1};
     
 %Calculate remapping parameters 
 [curveA, statsA] = FiringCurve(time_x_ave, tspk_ave , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2,'minTime',0.15);
-[curveR, statsR] = FiringCurve(time_x_rew, tspk_rew , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2,'minTime',0.15);
+[curveR, statsR] = FiringCurve(time_x_rew, tspk_rew , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2,'minTime',2);
                     
 fr_A= nanmean(curveA.rate);
 fr_R= nanmean(curveR.rate);

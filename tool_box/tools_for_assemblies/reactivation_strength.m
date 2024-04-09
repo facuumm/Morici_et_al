@@ -106,6 +106,7 @@ for i = 1:size(a,1)
     
     [pks.all,loc.all] = findpeaks(a(i,:),bins,'MinPeakHeight',th);
     
+    
     % shuffle peaks to create surrogated
     surrogated = [];
     for ii = 1 : iterations

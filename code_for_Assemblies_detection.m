@@ -1,39 +1,36 @@
-function [cross time] = cross_INT_assemblies(path)
-% This function a CCG between putative-interneuron spiking activity and the
-% timestamps from assemblies peaks.
-%
-% INPUTS
-% path: cell, inside each cell you should put the path of each session you
-%       want to analyze
-%
-% OUTPUT
-% cross: structure, it contains the CCG for aversive and reward
-%         cross.dInt.dHPCA = [];   cross.vInt.dHPCA = [];
-%         cross.dInt.vHPCA = [];   cross.vInt.vHPCA = [];
-%         cross.dInt.jointA = [];  cross.vInt.jointA = [];
-%         cross.dInt.dHPCR = [];   cross.vInt.dHPCR = [];
-%         cross.dInt.vHPCR = [];   cross.vInt.vHPCR = [];
-%         cross.dInt.jointR = [];  cross.vInt.jointR = [];
-%
-% time: column vector, it contains the time axis for the CCG plot.
-%
-%
-%
-% other functions: CCG from FMA toolbox
-% Morci Juan Facundo 01/2024
+clear
+clc
+% close all
 
-% Variabbles
-minimal_speed = 7;
-minimal_speed_time = 2;
+%% Parameters
+path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 
-% Initialization of structures that wil contain the outputs
-cross.dInt.dHPCA = [];   cross.vInt.dHPCA = [];
-cross.dInt.vHPCA = [];   cross.vInt.vHPCA = [];
-cross.dInt.jointA = [];  cross.vInt.jointA = [];
-cross.dInt.dHPCR = [];   cross.vInt.dHPCR = [];
-cross.dInt.vHPCR = [];   cross.vInt.vHPCR = [];
-cross.dInt.jointR = [];  cross.vInt.jointR = [];
+% What par of the code I want to run
+S = logical(1);   % Reactivation Strength Calculation
+MUAselection = logical(0); % to select ripples by their MUA
+W = 'N'; % to select what kind of ripples I want to check
+% E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
+% D= uncoordinated dorsal, V= uncoordinated ventral
+% CB = cooridnated bursts
+% N= NREM, R= REM
+TA =  logical(0); % Trigger Reactivation Strength
 
+% for SU
+criteria_fr = 0; %criteria to include or not a SU into the analysis
+criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
+criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
+binSize = 0.025; %for qssemblie detection qnd qxctivity strength
+
+% Behavior
+minimal_speed = 7; % minimal speed to detect quite periods
+minimal_speed_time = 2; % minimal time to detect quite periods
+
+percentages = [];
+
+Number_of_assemblies.aversive = [];
+Number_of_assemblies.reward = [];
+
+%% Main loop, to iterate across sessions
 for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
@@ -42,7 +39,8 @@ for tt = 1:length(path)
     % Extract only those that are directories.
     subFolders = files(dirFlags);
     clear files dirFlags
-    
+    num_assembliesR = [];
+    num_assembliesA = [];
     for t = 1 : length(subFolders)-2
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
@@ -86,6 +84,13 @@ for tt = 1:length(path)
             end
         end
         clear y A R
+        
+        % Defining what condition was first
+        if aversiveTS_run(1) < rewardTS_run(1)
+            config = 1;
+        else
+            config = 2;
+        end
         
         %% Awake
         disp('Uploading digital imputs')
@@ -160,7 +165,7 @@ for tt = 1:length(path)
         movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
 %         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
         clear tmp start stop
-        
+
         %% Spikes
         % Load Units
         disp('Uploading Spiking activity')
@@ -171,7 +176,7 @@ for tt = 1:length(path)
         K = [K.cluster_id(K.group(:,1) == 'g') , Kinfo.ch(K.group(:,1) == 'g'),]; % defining good clusters
         % Load neuronal classification
         load('Cell_type_classification')
-        K = [K , Cell_type_classification(:,6:7)];
+        K = [K , Cell_type_classification(:,6:8)];
         group_dHPC = K(K(:,2) > 63,:);
         group_vHPC = K(K(:,2) <= 63,:);
         
@@ -191,47 +196,46 @@ for tt = 1:length(path)
         spks(:,2) = double(spks(:,2))./20000;
         
         % Selection of celltype to analyze
-        cellulartype = [K(:,1) , K(:,4)];
-        
+        if criteria_type == 0 %pyr
+            cellulartype = [K(:,1) , K(:,4)];
+        elseif criteria_type == 1 % int
+            cellulartype = [K(:,1) , not(K(:,4))];
+        elseif criteria_type == 2 % all
+            cellulartype = [K(:,1) , ones(length(K),1)];
+        end
         
         %% Counting the Number f SU
         numberD = 0;
         clusters.all = [];
         clusters.dHPC = [];
-        clusters.int.dHPC = [];
         for ii=1:size(group_dHPC,1)
             cluster = group_dHPC(ii,1);
             Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
             if Cellulartype
                 a = length(Restrict(spks(spks(:,1)==cluster,2),aversiveTS_run./1000)) / ((aversiveTS_run(2)-aversiveTS_run(1))/1000);
                 r = length(Restrict(spks(spks(:,1)==cluster,2),rewardTS_run./1000)) / ((rewardTS_run(2)-rewardTS_run(1))/1000);
-                if or(a > 0 ,  r > 0)
+                if or(a > criteria_fr ,  r > criteria_fr)
                     numberD = numberD+1;
                     clusters.all = [clusters.all ; cluster];
                     clusters.dHPC = [clusters.dHPC ; cluster];
                 end
-            else
-                clusters.int.dHPC = [clusters.int.dHPC ; cluster];
             end
             clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
         end
         
         numberV = 0;
         clusters.vHPC = [];
-        clusters.int.vHPC = [];
         for ii=1:size(group_vHPC,1)
             cluster = group_vHPC(ii,1);
             Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
             if Cellulartype
                 a = length(Restrict(spks(spks(:,1)==cluster,2),aversiveTS_run./1000)) / ((aversiveTS_run(2)-aversiveTS_run(1))/1000);
                 r = length(Restrict(spks(spks(:,1)==cluster,2),rewardTS_run./1000)) / ((rewardTS_run(2)-rewardTS_run(1))/1000);
-                if or(a > 0 ,  r > 0)
+                if or(a > criteria_fr ,  r > criteria_fr)
                     numberV = numberV+1;
                     clusters.all = [clusters.all ; cluster];
                     clusters.vHPC = [clusters.vHPC ; cluster];
                 end
-            else
-                clusters.int.vHPC = [clusters.int.vHPC ; cluster];
             end
             clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
         end
@@ -239,15 +243,30 @@ for tt = 1:length(path)
         clear camara shock rightvalve leftvalve
         clear ejeX ejeY dX dY dX_int dY_int
         
-        if or(numberD >2 , numberV > 2)
-            %% --- Aversive ---
+        %% Assemblies detection
+        if or(numberD > 3 , numberV > 3)
+            % --- Aversive ---
             disp('Lets go for the assemblies')
-            if isfile('dorsalventral_assemblies_aversive.mat')
+            if isfile('dorsalventral_assemblies_aversiveVF.mat')
                 disp('Loading Aversive template')
                 load('dorsalventral_assemblies_aversive.mat')
             else
-                Th = [];
-                pat = [];
+                disp('Detection of assemblies using Aversive template')
+                % --- Options for assemblies detection ---
+                opts.Patterns.method = 'ICA';
+                opts.threshold.method= 'MarcenkoPastur';
+                opts.Patterns.number_of_iterations= 500;
+                opts.threshold.permutations_percentile = 0.9;
+                opts.threshold.number_of_permutations = 500;
+                opts.Patterns.number_of_iterations = 500;
+                opts.Members.method = 'Sqrt';
+                
+                limits = aversiveTS_run./1000;
+                events = [];
+                events = movement.aversive;
+                [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
+                [Th , pat , eig] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
+                save([cd,'\dorsalventral_assemblies_aversiveVF.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')
             end
             
             Thresholded.aversive.all = Th;
@@ -270,21 +289,37 @@ for tt = 1:length(path)
                     cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
                 end
             else
-                cond1 =  logical(0); %checking of dHPC SU
+                cond1 =  false; %checking of dHPC SU
                 cond2 =  logical(0); %checking of vHPC SU
                 cond.dHPC.aversive = and(cond1 , not(cond2));
                 cond.vHPC.aversive = and(cond2 , not(cond1));
                 cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
             end
+            num_assembliesA = [num_assembliesA ; sum(cond.both.aversive) sum(cond.dHPC.aversive) sum(cond.vHPC.aversive)];
             
-            %% --- Reward ---
+            % --- Reward ---
             disp('Loading Reward template')
-            if isfile('dorsalventral_assemblies_reward.mat')
+            if isfile('dorsalventral_assemblies_rewardVF.mat')
                 load('dorsalventral_assemblies_reward.mat')
             else
-                Th = [];
-                pat = [];
+                disp('Detection of assemblies using Rewarded template')
+                % --- Options for assemblies detection ---
+                opts.Patterns.method = 'ICA';
+                opts.threshold.method= 'MarcenkoPastur';
+                opts.Patterns.number_of_iterations= 500;
+                opts.threshold.permutations_percentile = 0.9;
+                opts.threshold.number_of_permutations = 500;
+                opts.Patterns.number_of_iterations = 500;
+                opts.Members.method = 'Sqrt';
+                
+                limits = rewardTS_run./1000;
+                events = [];
+                events = movement.reward;
+                [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
+                [Th , pat , eig] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
+                save([cd,'\dorsalventral_assemblies_rewardVF.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')
             end
+            
             Thresholded.reward.all = Th;
             patterns.all.reward = pat;
             clear Th pat
@@ -311,177 +346,44 @@ for tt = 1:length(path)
                 cond.vHPC.reward = and(cond2 , not(cond1));
                 cond.both.reward = and(cond1 , cond2); clear cond1 cond2
             end
+            num_assembliesR = [num_assembliesR ; sum(cond.both.reward) sum(cond.dHPC.reward) sum(cond.vHPC.reward)];
+            
+            %% Similarity Index Calculation
+            [r.AR , p.AR] = SimilarityIndex(patterns.all.aversive , patterns.all.reward);
+            A = sum(p.AR,1)>=1;
+            R = sum(p.AR,2)>=1; R = R';
+            
+            AR.dHPC = cond.dHPC.aversive .* cond.dHPC.reward';
+            AR.dHPC = and(AR.dHPC , p.AR);
+            
+            AR.vHPC = cond.vHPC.aversive .* cond.vHPC.reward';
+            AR.vHPC = and(AR.vHPC , p.AR);
+            
+            AR.both = cond.both.aversive .* cond.both.reward';
+            AR.both = and(AR.both , p.AR);
+            
+            percentages = [percentages  ; sum(cond.dHPC.aversive) , sum(cond.dHPC.reward) , sum(sum(AR.dHPC)) , sum(cond.vHPC.aversive) , sum(cond.vHPC.reward) , sum(sum(AR.vHPC)) , sum(cond.both.aversive) , sum(cond.both.reward) , sum(sum(AR.both))];
+            clear A R r p
             
             
-            %% SpikeTrain
-            limits = [0 segments.Var1(end)/1000];
-            cellulartype = [K(:,1) , K(:,4)];
-            [Spikes , bins , Clusters] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, 0.005, limits, [] , true, true);
-            clear limits
-            
-            % Joint assemblies
-            if sum(cond.both.aversive)>0
-                if not(isempty(clusters.int.vHPC))
-                    for i = 1:size(clusters.int.vHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.vHPC(i),2),movement.aversive);
-                        [R , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.vInt.jointA = [cross.vInt.jointA , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-                
-                if not(isempty(clusters.int.dHPC))
-                    for i = 1:size(clusters.int.dHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.dHPC(i),2),movement.aversive);
-                        [R , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.dInt.jointA = [cross.dInt.jointA , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-            end
-            
-            
-            if sum(cond.both.reward)>0
-                if not(isempty(clusters.int.vHPC))
-                    for i = 1:size(clusters.int.vHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.vHPC(i),2),movement.reward);
-                        [R , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.vInt.jointR = [cross.vInt.jointR , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-                
-                if not(isempty(clusters.int.dHPC))
-                    for i = 1:size(clusters.int.dHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.dHPC(i),2),movement.reward);
-                        [R , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.dInt.jointR = [cross.dInt.jointR , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-            end
-            
-            % dHPC assemblies
-            if sum(cond.dHPC.aversive)>0
-                if not(isempty(clusters.int.vHPC))
-                    for i = 1:size(clusters.int.vHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.vHPC(i),2),movement.aversive);
-                        [R , ttttt] = triggered_CCG(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.vInt.dHPCA = [cross.vInt.dHPCA , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-                
-                if not(isempty(clusters.int.dHPC))
-                    for i = 1:size(clusters.int.dHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.dHPC(i),2),movement.aversive);
-                        [R , ttttt] = triggered_CCG(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.dInt.dHPCA = [cross.dInt.dHPCA , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-            end
-            
-            
-            if sum(cond.dHPC.reward)>0
-                if not(isempty(clusters.int.vHPC))
-                    for i = 1:size(clusters.int.vHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.vHPC(i),2),movement.reward);
-                        [R , ttttt] = triggered_CCG(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.vInt.dHPCR = [cross.vInt.dHPCR , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-                
-                if not(isempty(clusters.int.dHPC))
-                    for i = 1:size(clusters.int.dHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.dHPC(i),2),movement.reward);
-                        [R , ttttt] = triggered_CCG(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.dInt.dHPCR = [cross.dInt.dHPCR , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-            end
-            
-            
-            % vHPC assemblies
-            if sum(cond.vHPC.aversive)>0
-                if not(isempty(clusters.int.vHPC))
-                    for i = 1:size(clusters.int.vHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.vHPC(i),2),movement.aversive);
-                        [R , ttttt] = triggered_CCG(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.vInt.vHPCA = [cross.vInt.vHPCA , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-                
-                if not(isempty(clusters.int.dHPC))
-                    for i = 1:size(clusters.int.dHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.dHPC(i),2),movement.aversive);
-                        [R , ttttt] = triggered_CCG(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.dInt.dHPCA = [cross.dInt.dHPCA , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-            end
-            
-            
-            if sum(cond.vHPC.reward)>0
-                if not(isempty(clusters.int.vHPC))
-                    for i = 1:size(clusters.int.vHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.vHPC(i),2),movement.reward);
-                        [R , ttttt] = triggered_CCG(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.vInt.vHPCR = [cross.vInt.vHPCR , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-                
-                if not(isempty(clusters.int.dHPC))
-                    for i = 1:size(clusters.int.dHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.dHPC(i),2),movement.reward);
-                        [R , ttttt] = triggered_CCG(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.dInt.vHPCR = [cross.dInt.vHPCR , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-            end
-            
-            clear aversiveTS aversiveTS_run baselineTS bins Cell_type_classification
-            clear cellulartype clusters Events group_dHPC group_vHPC i ii iii K
-            clear Kinfo NREM REM numberD numberV p parameter patterns post pre
-            clear SpikesD SpikesV spks spks_dHPC spks_vHPC Thresholded WAKE
-            clear Kinfo K ii iii ripples ripplesD ripplesV ripple_event Spikes
         end
+        disp(' ')
+        clear A aversiveTS aversiveTS_run baselineTS rewardTS rewardTS_run
+        clear behavior bins Cell_type_classification cellulartype cond
+        clear is K Kinfo group_dHPC group_vHPC matrixC matrixD matrixV
+        clear NREM REM WAKE segmentation tmp cond config
+        clear spiketrains_dHPC spiketrains_vHPC opts MUA
+        clear patterns Thresholded i  ii numberD numberV movement cross crossN
+        clear Spikes bins Clusters Shocks_filt Rewards_filt config n_SU_D n_SU_V
+        clear clusters coordinated coordinated_ripple_bursts coordinatedV
+        clear cooridnated_event coordinatedV_refined coordinatedV_refined
+        clear ripple_bursts ripple_event ripplesD ripplesV
+        clear spks spks_dHPC spks_vHPC ripples cooridnated_event
+        clear cooridnated_eventDV cooridnated_eventVD segments
     end
-end
-
-% %Detection of lag where maximal value was detected
-% %Aversive
-% [h p] = max(cross_members.aversive.pre);
-% lags.aversive.pre = [];
-% for i = 1 : size(p,2)
-%     lags.aversive.pre = [lags.aversive.pre ; time(p(i))];
-% end
-%
-% [h p] = max(cross_members.aversive.post);
-% lags.aversive.post = [];
-% for i = 1 : size(p,2)
-%     lags.aversive.post = [lags.aversive.post ; time(p(i))];
-% end
-%
-% % Reward
-% [h p] = max(cross_members.reward.pre);
-% lags.reward.pre = [];
-% for i = 1 : size(p,2)
-%     lags.reward.pre = [lags.reward.pre ; time(p(i))];
-% end
-%
-% [h p] = max(cross_members.reward.post);
-% lags.reward.post = [];
-% for i = 1 : size(p)
-%     lags.reward.post = [lags.reward.post ; time(p(i))];
-% end
-%
-
-
+    
+    Number_of_assemblies.aversive = [Number_of_assemblies.aversive ; sum(num_assembliesA)];
+    Number_of_assemblies.reward = [Number_of_assemblies.reward ; sum(num_assembliesR)];
+    clear num_assembliesA num_assembliesR
+    
 end

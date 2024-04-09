@@ -1,7 +1,7 @@
 function [within_mean,within_percentil ] = Within_pc(pos_tmp,spks_tmp,bin_size,sigma,Xedges)
 %
 % Within_pc - Randomly splits spike and position data in two and calcualtes remapping parameters
-% (spatial correlation, firing rate change, rate overlap and peak shift) within them. Repeat 500 times  
+% (spatial correlation, firing rate change, rate overlap and peak shift) within them. Repeat 100 times  
 %
 % ---> INPUTS
 % pos_tmp: matrix, position timestamps in sec
@@ -20,9 +20,9 @@ function [within_mean,within_percentil ] = Within_pc(pos_tmp,spks_tmp,bin_size,s
 %other functions:FiringCurve (FMAtoolbox)
 %
 %Azul Silva, 2023
-within = nan(500,4);
+within = nan(100,4);
 
-for c=1:500
+for c=1:100
 
     %Asigne tspk to position bins 
     tspk = cell(size(pos_tmp(:,1),1),1);

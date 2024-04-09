@@ -1,38 +1,41 @@
-function [cross time] = cross_INT_assemblies(path)
-% This function a CCG between putative-interneuron spiking activity and the
-% timestamps from assemblies peaks.
+function [cross time] = cross_between_members_assemblies(path)
+% This function a CCG between member-member and member-non_member.
+% It iterates acrsoss the path and perform this operation in each session.
+% The data is restricted to the active periods (>7cm/sec, at least 2 sec)
+% that we used to detect the assemblies.
 %
 % INPUTS
 % path: cell, inside each cell you should put the path of each session you
 %       want to analyze
 %
 % OUTPUT
-% cross: structure, it contains the CCG for aversive and reward
-%         cross.dInt.dHPCA = [];   cross.vInt.dHPCA = [];
-%         cross.dInt.vHPCA = [];   cross.vInt.vHPCA = [];
-%         cross.dInt.jointA = [];  cross.vInt.jointA = [];
-%         cross.dInt.dHPCR = [];   cross.vInt.dHPCR = [];
-%         cross.dInt.vHPCR = [];   cross.vInt.vHPCR = [];
-%         cross.dInt.jointR = [];  cross.vInt.jointR = [];
+% cross_members: structure, it contains the CCG for aversive and reward
+%                joint assemblies.
+%                cross_members.aversive = [];  cross_members.reward = [];
+%
+% cross_nonmembers: structure, same as the output described above.
 %
 % time: column vector, it contains the time axis for the CCG plot.
 %
+% External functions: FMA toolbox
+% Morci Juan Facundo 03/2024
 %
-%
-% other functions: CCG from FMA toolbox
-% Morci Juan Facundo 01/2024
+% Reference: Oberto et al, 2022: 'Distributed cell assemblies spanning 
+%            prefrontal cortex and striatum'. Current Biology.
+%            doi: https://doi.org/10.1016/j.cub.2021.10.007
 
-% Variabbles
+% Parameters to define periods of activity
 minimal_speed = 7;
 minimal_speed_time = 2;
 
+% for CCG
+binSize = 0.003; % bisize in seconds
+smooth = 2; % smooth factor
+
 % Initialization of structures that wil contain the outputs
-cross.dInt.dHPCA = [];   cross.vInt.dHPCA = [];
-cross.dInt.vHPCA = [];   cross.vInt.vHPCA = [];
-cross.dInt.jointA = [];  cross.vInt.jointA = [];
-cross.dInt.dHPCR = [];   cross.vInt.dHPCR = [];
-cross.dInt.vHPCR = [];   cross.vInt.vHPCR = [];
-cross.dInt.jointR = [];  cross.vInt.jointR = [];
+cross.members.aversive = [];  cross.members.reward = [];
+cross.nonmembers.aversive = [];  cross.nonmembers.reward = [];
+time = [];
 
 for tt = 1:length(path)
     %List of folders from the path
@@ -44,6 +47,7 @@ for tt = 1:length(path)
     clear files dirFlags
     
     for t = 1 : length(subFolders)-2
+        disp(' ')
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
@@ -313,175 +317,197 @@ for tt = 1:length(path)
             end
             
             
-            %% SpikeTrain
-            limits = [0 segments.Var1(end)/1000];
-            cellulartype = [K(:,1) , K(:,4)];
-            [Spikes , bins , Clusters] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, 0.005, limits, [] , true, true);
-            clear limits
-            
+            %% CCG
             % Joint assemblies
+            % Aversive assemblies
             if sum(cond.both.aversive)>0
-                if not(isempty(clusters.int.vHPC))
-                    for i = 1:size(clusters.int.vHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.vHPC(i),2),movement.aversive);
-                        [R , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.vInt.jointA = [cross.vInt.jointA , R]; clear R
-                        time = ttttt; clear ttttt
+                T = Thresholded.aversive.all(:,cond.both.aversive);
+                C = [clusters.dHPC ; clusters.vHPC];
+                
+                % Between members
+                for i = 1 : size(T,2)
+                    for ii = 1 :size(clusters.dHPC,1)
+                        clustD = clusters.dHPC(ii);
+                        if T(ii,i)
+                            x = spks(spks(:,1)==clustD,2);
+                            x = Restrict(x,movement.aversive);
+                            for iii = 1:size(clusters.vHPC,1)
+                                clustV = clusters.vHPC(iii);
+                                if T(size(clusters.dHPC,1)+iii,i)
+                                    y = spks(spks(:,1)==clustV,2);
+                                    y = Restrict(y,movement.aversive);
+                                    if and(length(x) >= 5 , length(y) >= 5)
+                                        [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
+                                        [ccg,time] = CCG(s,ids,'binSize',binSize,'duration',0.6,'smooth',smooth,'mode','ccg');
+%                                         if not(sum(isnan(ccg(:,1,2)))>0)
+                                            cross.members.aversive = [cross.members.aversive , zscore(ccg(:,1,2))];
+%                                         end
+                                        clear y s ids groups ccg
+                                    end
+                                end
+                                clear clustV
+                            end
+                        end
+                        clear clustD
                     end
                 end
                 
-                if not(isempty(clusters.int.dHPC))
-                    for i = 1:size(clusters.int.dHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.dHPC(i),2),movement.aversive);
-                        [R , ttttt] = triggered_CCG(patterns.all.aversive , cond.both.aversive , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.dInt.jointA = [cross.dInt.jointA , R]; clear R
-                        time = ttttt; clear ttttt
+                T = sum(T,2)>0; % to select only SU that were not members in any assemblie
+                % Between nonmember-nonmember
+                for i = 1 : size(T,2)
+                    for ii = 1 :size(clusters.dHPC,1)
+                        clustD = clusters.dHPC(ii);
+                        if not(T(ii,i))
+                            x = spks(spks(:,1)==clustD,2);
+                            x = Restrict(x,movement.aversive);
+                            for iii = 1:size(clusters.vHPC,1)
+                                clustV = clusters.vHPC(iii);
+                                if not(T(size(clusters.dHPC,1)+iii,i))
+                                    y = spks(spks(:,1)==clustV,2);
+                                    y = Restrict(y,movement.aversive);
+                                    if and(length(x) >= 5 , length(y) >= 5)
+                                        [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
+                                        [ccg,time] = CCG(s,ids,'binSize',binSize,'duration',0.6,'smooth',smooth,'mode','ccg');
+%                                         if not(sum(isnan(ccg(:,1,2)))>0)
+                                            cross.nonmembers.aversive = [cross.nonmembers.aversive , zscore(ccg(:,1,2))];
+%                                         end
+                                        clear y s ids groups ccg
+                                    end
+                                end
+                                clear clustV
+                            end
+                        end
+                        clear clustD
                     end
                 end
+                clear T C
             end
             
-            
+            % Reward assemblies
             if sum(cond.both.reward)>0
-                if not(isempty(clusters.int.vHPC))
-                    for i = 1:size(clusters.int.vHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.vHPC(i),2),movement.reward);
-                        [R , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.vInt.jointR = [cross.vInt.jointR , R]; clear R
-                        time = ttttt; clear ttttt
+                T = Thresholded.reward.all(:,cond.both.reward);
+                C = [clusters.dHPC ; clusters.vHPC];
+                
+                % Between members
+                for i = 1 : size(T,2)
+                    for ii = 1 :size(clusters.dHPC,1)
+                        clustD = clusters.dHPC(ii);
+                        if T(ii,i)
+                            x = spks(spks(:,1)==clustD,2);
+                            x = Restrict(x,movement.reward);
+                            for iii = 1:size(clusters.vHPC,1)
+                                clustV = clusters.vHPC(iii);
+                                if T(size(clusters.dHPC,1)+iii,i)
+                                    y = spks(spks(:,1)==clustV,2);
+                                    y = Restrict(y,movement.reward);
+                                    if and(length(x) >= 5 , length(y) >= 5)
+                                        [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
+                                        [ccg,time] = CCG(s,ids,'binSize',binSize,'duration',0.6,'smooth',smooth,'mode','ccg');
+%                                         if not(sum(isnan(ccg(:,1,2)))>0)
+                                            cross.members.reward = [cross.members.reward , zscore(ccg(:,1,2))];
+%                                         end
+                                        clear y s ids groups ccg
+                                    end
+                                end
+                                clear clustV
+                            end
+                        end
+                        clear clustD
                     end
                 end
                 
-                if not(isempty(clusters.int.dHPC))
-                    for i = 1:size(clusters.int.dHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.dHPC(i),2),movement.reward);
-                        [R , ttttt] = triggered_CCG(patterns.all.reward , cond.both.reward , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.dInt.jointR = [cross.dInt.jointR , R]; clear R
-                        time = ttttt; clear ttttt
+                T = sum(T,2)>0;% to select only SU that were not members in any assemblie
+                % Between nonmembers
+                for i = 1 : size(T,2)
+                    for ii = 1 :size(clusters.dHPC,1)
+                        clustD = clusters.dHPC(ii);
+                        if not(T(ii,i))
+                            x = spks(spks(:,1)==clustD,2);
+                            x = Restrict(x,movement.reward);
+                            for iii = 1:size(clusters.vHPC,1)
+                                clustV = clusters.vHPC(iii);
+                                if not(T(size(clusters.dHPC,1)+iii,i))
+                                    y = spks(spks(:,1)==clustV,2);
+                                    y = Restrict(y,movement.reward);
+                                    if and(length(x) >= 5 , length(y) >= 5)
+                                        [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
+                                        [ccg,time] = CCG(s,ids,'binSize',binSize,'duration',0.6,'smooth',smooth,'mode','ccg');
+%                                         if not(sum(isnan(ccg(:,1,2)))>0)
+                                            cross.nonmembers.reward = [cross.nonmembers.reward , zscore(ccg(:,1,2))];
+%                                         end
+                                        clear y s ids groups ccg
+                                    end
+                                end
+                                clear clustV
+                            end
+                        end
+                        clear clustD
                     end
-                end
-            end
-            
-            % dHPC assemblies
-            if sum(cond.dHPC.aversive)>0
-                if not(isempty(clusters.int.vHPC))
-                    for i = 1:size(clusters.int.vHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.vHPC(i),2),movement.aversive);
-                        [R , ttttt] = triggered_CCG(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.vInt.dHPCA = [cross.vInt.dHPCA , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-                
-                if not(isempty(clusters.int.dHPC))
-                    for i = 1:size(clusters.int.dHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.dHPC(i),2),movement.aversive);
-                        [R , ttttt] = triggered_CCG(patterns.all.aversive , cond.dHPC.aversive , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.dInt.dHPCA = [cross.dInt.dHPCA , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-            end
-            
-            
-            if sum(cond.dHPC.reward)>0
-                if not(isempty(clusters.int.vHPC))
-                    for i = 1:size(clusters.int.vHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.vHPC(i),2),movement.reward);
-                        [R , ttttt] = triggered_CCG(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.vInt.dHPCR = [cross.vInt.dHPCR , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-                
-                if not(isempty(clusters.int.dHPC))
-                    for i = 1:size(clusters.int.dHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.dHPC(i),2),movement.reward);
-                        [R , ttttt] = triggered_CCG(patterns.all.reward , cond.dHPC.reward , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.dInt.dHPCR = [cross.dInt.dHPCR , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-            end
-            
-            
-            % vHPC assemblies
-            if sum(cond.vHPC.aversive)>0
-                if not(isempty(clusters.int.vHPC))
-                    for i = 1:size(clusters.int.vHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.vHPC(i),2),movement.aversive);
-                        [R , ttttt] = triggered_CCG(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.vInt.vHPCA = [cross.vInt.vHPCA , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-                
-                if not(isempty(clusters.int.dHPC))
-                    for i = 1:size(clusters.int.dHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.dHPC(i),2),movement.aversive);
-                        [R , ttttt] = triggered_CCG(patterns.all.aversive , cond.vHPC.aversive , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.dInt.dHPCA = [cross.dInt.dHPCA , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-            end
-            
-            
-            if sum(cond.vHPC.reward)>0
-                if not(isempty(clusters.int.vHPC))
-                    for i = 1:size(clusters.int.vHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.vHPC(i),2),movement.reward);
-                        [R , ttttt] = triggered_CCG(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.vInt.vHPCR = [cross.vInt.vHPCR , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-                
-                if not(isempty(clusters.int.dHPC))
-                    for i = 1:size(clusters.int.dHPC,1)
-                        tmp = Restrict(spks(spks(:,1)==clusters.int.dHPC(i),2),movement.reward);
-                        [R , ttttt] = triggered_CCG(patterns.all.reward , cond.vHPC.reward , [bins' , Spikes], 1 , 0.005 , tmp , 5 , [],'Probability'); clear b
-                        cross.dInt.vHPCR = [cross.dInt.vHPCR , R]; clear R
-                        time = ttttt; clear ttttt
-                    end
-                end
-            end
+                end    
+                clear T C
+            end            
             
             clear aversiveTS aversiveTS_run baselineTS bins Cell_type_classification
-            clear cellulartype clusters Events group_dHPC group_vHPC i ii iii K
+            clear cellulartype clusters Events group_dHPC group_vHPC i ii iii K x
             clear Kinfo NREM REM numberD numberV p parameter patterns post pre
             clear SpikesD SpikesV spks spks_dHPC spks_vHPC Thresholded WAKE
             clear Kinfo K ii iii ripples ripplesD ripplesV ripple_event Spikes
+            clear behaviior rewardTS rewardTS_run aversiveTS aversiveTS_run
         end
     end
+    disp(' ')
+    disp(' ')
+    disp(' ')
 end
 
-% %Detection of lag where maximal value was detected
-% %Aversive
-% [h p] = max(cross_members.aversive.pre);
-% lags.aversive.pre = [];
-% for i = 1 : size(p,2)
-%     lags.aversive.pre = [lags.aversive.pre ; time(p(i))];
-% end
-%
-% [h p] = max(cross_members.aversive.post);
-% lags.aversive.post = [];
-% for i = 1 : size(p,2)
-%     lags.aversive.post = [lags.aversive.post ; time(p(i))];
-% end
-%
-% % Reward
-% [h p] = max(cross_members.reward.pre);
-% lags.reward.pre = [];
-% for i = 1 : size(p,2)
-%     lags.reward.pre = [lags.reward.pre ; time(p(i))];
-% end
-%
-% [h p] = max(cross_members.reward.post);
-% lags.reward.post = [];
-% for i = 1 : size(p)
-%     lags.reward.post = [lags.reward.post ; time(p(i))];
-% end
-%
+%% ColorMaps
+figure,
+subplot(221)
+cross.members.aversive(:,sum(isnan(cross.members.aversive))>0) = [];
+[i ii] = max(cross.members.aversive);
+[i ii] = sort(ii);
+imagesc(time,[1:1:size(cross.members.aversive,2)],cross.members.aversive(:,ii)'),caxis([-3 3]), colormap 'jet'
+
+cross.nonmembers.aversive(:,sum(isnan(cross.nonmembers.aversive))>0) = [];
+x = randperm(size(cross.nonmembers.aversive,2));
+tmp = cross.nonmembers.aversive(:,x);
+tmp = tmp(:,1:size(cross.members.aversive,2));
+subplot(222)
+[i ii] = max(tmp);
+[i ii] = sort(ii);
+imagesc(time,[1:1:size(tmp,2)],tmp(:,ii)'),caxis([-3 3]), colormap 'jet'
+
+subplot(223)
+cross.members.reward(:,sum(isnan(cross.members.reward))>0) = [];
+[i ii] = max(cross.members.reward);
+[i ii] = sort(ii);
+imagesc(time,[1:1:size(cross.members.reward,2)],cross.members.reward(:,ii)'),caxis([-3 3]), colormap 'jet'
+
+cross.nonmembers.reward(:,sum(isnan(cross.nonmembers.reward))>0) = [];
+x = randperm(size(cross.nonmembers.reward,2));
+tmp1 = cross.nonmembers.reward(:,x);
+tmp1 = tmp1(:,1:size(cross.members.reward,2));
+subplot(224)
+[i ii] = max(tmp1);
+[i ii] = sort(ii);
+imagesc(time,[1:1:size(tmp1,2)],tmp1(:,ii)'),caxis([-3 3]), colormap 'jet'
+
+%% Average
+figure
+subplot(121)
+plot(time,nanmean(cross.members.aversive,2),'r'), hold on
+ciplot(nanmean(cross.members.aversive,2) - nansem(cross.members.aversive')' , nanmean(cross.members.aversive,2) + nansem(cross.members.aversive')' , time , 'r'), alpha 0.5
+plot(time,nanmean(tmp,2)','k'),ylim([-0.3 0.5]) , xlim([-0.3 0.3])
+ciplot(nanmean(tmp,2) - nansem(tmp')' , nanmean(tmp,2) + nansem(tmp')' , time , 'k'), alpha 0.5
+xline(-0.025,'--')
+xline(0.025,'--')
 
 
+subplot(122)
+plot(time,nanmean(cross.members.reward,2),'b'), hold on
+ciplot(nanmean(cross.members.reward,2) - nansem(cross.members.reward')' , nanmean(cross.members.reward,2) + nansem(cross.members.reward')' , time , 'b'), alpha 0.5
+plot(time,nanmean(tmp1,2)','k'),ylim([-0.3 0.5]) , xlim([-0.3 0.3])
+ciplot(nanmean(tmp1,2) - nansem(tmp1')' , nanmean(tmp1,2) + nansem(tmp1')' , time , 'k'), alpha 0.5
+xline(-0.025,'--')
+xline(0.025,'--')
 end

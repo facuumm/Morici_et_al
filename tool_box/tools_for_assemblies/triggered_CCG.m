@@ -65,15 +65,20 @@ a = assembly_activity(patterns(:,cond) , spks');
 a = zscore(a,1,2);
 
 R = [];
+t = [];
 for i = 1:size(a,1)
     [pks,loc] = findpeaks(a(i,:),bins,'MinPeakHeight',th);
-    if size(events,2)>1
-        [p , t] = PHIST(events(:,2),loc,baseline,duration,binSize,1,mode);
-    else
-        [p , t] = PHIST(loc,events,baseline,duration,binSize,1,mode);
-    end
-    R = [R , p];
-    
+        if size(events,2)>1
+            if and(length(loc) > 5 , size(events,1) >5)
+                [p , t] = PHIST(loc,events(:,2),baseline,duration,binSize,1,mode);
+                R = [R , p];
+            end
+        else
+            if and(length(loc) > 5 , size(events,1) >5)
+                [p , t] = PHIST(events,loc,baseline,duration,binSize,1,mode);
+                R = [R , p];
+            end
+        end    
 end
 
 end

@@ -657,7 +657,7 @@ for tt = 1:length(path)
             clear ccg time x y count
             
             %% coordinated vRipples
-            x = (coordinatedV(:,2));
+            x = unique(coordinatedV(:,2));
             y = unique(coordinatedV(:,2));
             [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
@@ -711,7 +711,7 @@ for tt = 1:length(path)
                 tmp = and(y(:,2) > seed-0.1 , y(:,2) < seed+0.1);
                 if sum(and(y(:,2) > seed-0.1 , y(:,2) < seed+0.1))>1
                     tmp = y(tmp,:);
-                    bursts.uncoordinated.dHPC = [bursts.uncoordinated.dHPC ; tmp];
+                    bursts.uncoordinated.dHPC = [bursts.uncoordinated.dHPC ; tmp(1,1) tmp(end,3)];
                     count = count + 1;
                 end
                 clear seed tmp
@@ -739,7 +739,7 @@ for tt = 1:length(path)
                 tmp = and(y(:,2) > seed-0.1 , y(:,2) < seed+0.1);
                 if sum(and(y(:,2) > seed-0.1 , y(:,2) < seed+0.1))>1
                     tmp = y(tmp,:);
-                    bursts.uncoordinated.vHPC = [bursts.uncoordinated.vHPC ; tmp];
+                    bursts.uncoordinated.vHPC = [bursts.uncoordinated.vHPC ;  tmp(1,1) tmp(end,3)];
                     count = count + 1;
                 end
                 clear seed tmp
@@ -752,14 +752,45 @@ for tt = 1:length(path)
             clear ccg time x y count
      
             %%  Detection of coordinated bursts
-            x = [ bursts.dHPC.members(:,1)  bursts.dHPC.members(:,3)];
-            x = [x ; coordinated(:,1) coordinated(:,3)];
-            x = [x ;  bursts.vHPC.members(:,1)  bursts.vHPC.members(:,3)];
-            x = [x ; coordinatedV(:,1) coordinatedV(:,3)]; 
-                        
+            % compilation of dHPC members
+            y = [bursts.dHPC.members(:,1)  bursts.dHPC.members(:,3)];
+            % compilation of dHPC coordinated events
+            x = [coordinated(:,1) coordinated(:,3)];
+            % integration of both
+            z = [y;x];
+            % keep unique ones
+            [i ii iii] = unique(z(:,2));
+            z = z(ii,:); 
+            % sort events
+            [i ii] = sort(z(:,1));
+            z = z(ii,:);
+            % Merge events that are separated by 100ms
+            [z] = merge_events(z, 0.1); clear x xx i ii y
+            
+            % compilation of vHPC members
+            y = [bursts.vHPC.members(:,1)  bursts.vHPC.members(:,3)];
+            % compilation of vHPC coordinated events
+            x = [coordinatedV(:,1) coordinatedV(:,3)];
+            % integration of both
+            z1 = [y;x];
+            % keep unique ones
+            [i ii iii] = unique(z1(:,2));
+            z1 = z1(ii,:); 
+            % sort events
+            [i ii] = sort(z1(:,1));
+            z1 = z1(ii,:);
+            % Merge events that are separated by 100ms
+            [z1] = merge_events(z1, 0.1); clear x xx i ii y 
+
+            % Compilation of dHPC and vHPC events
+            x = [z ;z1]; clear z z1
+            %ordering of events
             [i ii] = sort(x(:,1));
             x = x(ii,:);
+            
+            % Merge overlapping events
             [x xx] = ConsolidateIntervals(x);
+            % Merge events that are separated by 100ms
             [bursts.coordinated] = merge_events(x, 0.1); clear x xx i ii
             
             bursts.uncoordinated.vHPC = merge_events(bursts.uncoordinated.vHPC , 0.1);
