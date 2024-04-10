@@ -2479,7 +2479,7 @@ tbl = array2table(c,"VariableNames", ...
 ylabels ={'Spatial correlation', 'Fr change', 'Overlap', 'Pf shift'}; 
 xlabels = {'Between', 'Within Ave', 'Within Rew'}; 
 figure(2);clf;hold on, 
-sgtitle('vHPC = # spks laps')
+sgtitle('vHPC random laps')
 for p=1:size(ylabels,2)
     subplot(1,4,p); hold on; 
     x = vhpc_lap(:,5);

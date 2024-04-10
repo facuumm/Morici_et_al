@@ -16,7 +16,7 @@ function [Response time modulated] = AssemblyResponse_to_valve(path)
 %
 % modulated: structure, it contains 1 if the average activity is above the
 %            90th percentile of a surrogated distribution constructed by
-%            shuffling the shocks timestamps 100 times.
+%            shuffling the valve timestamps 100 times.
 %            Same organization than Response
 %
 % other functions: CCG from FMA toolbox
