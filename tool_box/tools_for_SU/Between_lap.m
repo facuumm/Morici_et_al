@@ -48,6 +48,9 @@ while ~isempty(lap_spk)
 end
 clear lap_spk g 
 
+g1= sortrows(g1,1); 
+g2= sortrows(g2,1); 
+
 %Split spk and pos from each group
 spks_1 = Restrict(spks_ave,g1(:,2:3));
 pos_1 = Restrict(pos_ave,g1(:,2:3)); 

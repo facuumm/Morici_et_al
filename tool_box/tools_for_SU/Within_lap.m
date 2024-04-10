@@ -38,6 +38,10 @@ while ~isempty(lap_spk)
     end
     lap_spk(idx,:)=[]; 
 end
+
+g1= sortrows(g1,1); 
+g2= sortrows(g2,1); 
+
 clear lap_spk g 
 %% Split spk and pos from each group
 spks_1 = Restrict(spks_tmp,g1(:,2:3));

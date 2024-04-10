@@ -2447,7 +2447,7 @@ end
 ylabels ={'Spatial correlation', 'Fr change', 'Overlap', 'Pf shift'}; 
 xlabels = {'Between', 'Within Ave', 'Within Rew'}; 
 figure(1);clf;hold on, 
-sgtitle('dHPC random laps')
+sgtitle('dHPC  = # spks laps')
 for p=1:size(ylabels,2)
     subplot(1,4,p); hold on; 
     x = dhpc_lap(:,5);

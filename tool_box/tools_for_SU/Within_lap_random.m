@@ -22,8 +22,8 @@ for c=1:100
     temp = in_lap(randperm(size(in_lap,1)),:); 
     half = ceil(size(in_lap,1)/2); 
    
-    g1= temp(1:half,:);
-    g2=temp(half+1:end,:);
+    g1= sortrows(temp(1:half,:),1);
+    g2= sortrows(temp(half+1:end,:),1);
    
     %Split spk and pos from each lap 
     spks_1 = Restrict(spks_tmp,g1);

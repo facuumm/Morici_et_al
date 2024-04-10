@@ -239,7 +239,7 @@ for tt = 1:length(path)
         clear camara shock rightvalve leftvalve
         clear ejeX ejeY dX dY dX_int dY_int
         
-        if or(numberD >2 , numberV > 2)
+        if or(numberD >3 , numberV > 3)
             %% --- Aversive ---
             disp('Lets go for the assemblies')
             if isfile('dorsalventral_assemblies_aversive.mat')

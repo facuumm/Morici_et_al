@@ -29,8 +29,8 @@ for c = 1:100
     temp = in_lapA(randperm(size(in_lapA,1)),:); 
     half = ceil(size(in_lapA,1)/2); 
    
-    g1= temp(1:half,:);
-    g2=temp(half+1:end,:);
+    g1= sortrows(temp(1:half,:),1);
+    g2= sortrows(temp(half+1:end,:),1);
    
     %Split spk and pos from each lap 
     spks_1 = Restrict(spks_ave,g1);
@@ -47,8 +47,8 @@ for c = 1:100
     temp = in_lapR(randperm(size(in_lapR,1)),:); 
     half = ceil(size(in_lapR,1)/2); 
    
-    g1= temp(1:half,:);
-    g2=temp(half+1:end,:);
+    g1= sortrows(temp(1:half,:),1);
+    g2= sortrows(temp(half+1:end,:),1);
    
     %Split spk and pos from each lap 
     spks_1 = Restrict(spks_rew,g1);

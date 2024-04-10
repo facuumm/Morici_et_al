@@ -1,6 +1,6 @@
-function [Response time] = AssemblyResponse_to_shocks(path)
-% This function a CCG between putative-interneuron spiking activity and the
-% timestamps from assemblies peaks.
+function [Response time modulated] = AssemblyResponse_to_shocks(path)
+% This function calculate the average assemblies activity sourrounding the 
+% shock delivery.
 %
 % INPUTS
 % path: cell, inside each cell you should put the path of each session you
@@ -14,6 +14,11 @@ function [Response time] = AssemblyResponse_to_shocks(path)
 %
 % time: column vector, it contains the time axis for the plot.
 %
+% modulated: structure, it contains 1 if the average activity is above the
+%            90th percentile of a surrogated distribution constructed by
+%            shuffling the shocks timestamps 100 times.
+%            Same organization than Response
+%
 % other functions: CCG from FMA toolbox
 % Morci Juan Facundo 01/2024
 
@@ -21,6 +26,9 @@ function [Response time] = AssemblyResponse_to_shocks(path)
 % Initialization of structures that wil contain the outputs
 Response.dHPC.aversive = [];   Response.vHPC.aversive = [];  Response.joint.aversive = [];
 Response.dHPC.reward = [];   Response.vHPC.reward = [];  Response.joint.reward = [];
+
+modulated.dHPC.aversive = [];   modulated.vHPC.aversive = [];  modulated.joint.aversive = [];
+modulated.dHPC.reward = [];   modulated.vHPC.reward = [];  modulated.joint.reward = [];
 
 for tt = 1:length(path)
     %List of folders from the path
@@ -178,7 +186,7 @@ for tt = 1:length(path)
         clear camara shock rightvalve leftvalve
         clear ejeX ejeY dX dY dX_int dY_int
         
-        if or(numberD >2 , numberV > 2)
+        if or(numberD >3 , numberV > 3)
             %% --- Aversive ---
             disp('Lets go for the assemblies')
             if isfile('dorsalventral_assemblies_aversive.mat')
@@ -255,44 +263,50 @@ for tt = 1:length(path)
             %% SpikeTrain
             limits = [0 segments.Var1(end)/1000];
             cellulartype = [K(:,1) , K(:,4)];
-            [Spikes , bins , Clusters] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, 0.025, limits, [] , true, true);
+            [Spikes , bins , Clusters] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, 0.025, limits, [] , false, true);
             clear limits
             
             % Joint assemblies
             if sum(cond.both.aversive)>0
-                [average , time] = triggered_average_assemblies_response(Shocks_filt,patterns.all.aversive,cond.both.aversive,[bins' Spikes],[-2 3]);
+                [average , time , surrogate] = triggered_average_assemblies_response(Shocks_filt,patterns.all.aversive,cond.both.aversive,[bins' Spikes],[-2 3]);
                 Response.joint.aversive = [Response.joint.aversive , average]; clear average
+                modulated.joint.aversive = [modulated.joint.aversive , surrogate]; clear surrogate
             end
             
             
-            if sum(cond.both.reward)>0
-                [average , time] = triggered_average_assemblies_response(Shocks_filt,patterns.all.reward,cond.both.reward,[bins' Spikes],[-2 3]);
+            if sum(cond.both.reward)>1
+                [average , time , surrogate] = triggered_average_assemblies_response(Shocks_filt,patterns.all.reward,cond.both.reward,[bins' Spikes],[-2 3]);
                 Response.joint.reward = [Response.joint.reward , average]; clear average
+                modulated.joint.reward = [modulated.joint.reward , surrogate]; clear surrogate
             end
             
             % dHPC assemblies
             if sum(cond.dHPC.aversive)>0
-                [average , time] = triggered_average_assemblies_response(Shocks_filt,patterns.all.aversive,cond.dHPC.aversive,[bins' Spikes],[-2 3]);
+                [average , time , surrogate] = triggered_average_assemblies_response(Shocks_filt,patterns.all.aversive,cond.dHPC.aversive,[bins' Spikes],[-2 3]);
                 Response.dHPC.aversive = [Response.dHPC.aversive , average]; clear average                
+                modulated.dHPC.aversive = [modulated.dHPC.aversive , surrogate]; clear surrogate                
             end
             
             
             if sum(cond.dHPC.reward)>0
-                [average , time] = triggered_average_assemblies_response(Shocks_filt,patterns.all.reward,cond.dHPC.reward,[bins' Spikes],[-2 3]);
+                [average , time , surrogate] = triggered_average_assemblies_response(Shocks_filt,patterns.all.reward,cond.dHPC.reward,[bins' Spikes],[-2 3]);
                 Response.dHPC.reward = [Response.dHPC.reward , average]; clear average     
+                modulated.dHPC.reward = [modulated.dHPC.reward , surrogate]; clear surrogate     
             end
             
             
             % vHPC assemblies
             if sum(cond.vHPC.aversive)>0
-                 [average , time] = triggered_average_assemblies_response(Shocks_filt,patterns.all.aversive,cond.vHPC.aversive,[bins' Spikes],[-2 3]);
+                 [average , time , surrogate] = triggered_average_assemblies_response(Shocks_filt,patterns.all.aversive,cond.vHPC.aversive,[bins' Spikes],[-2 3]);
                 Response.vHPC.aversive = [Response.vHPC.aversive , average]; clear average    
+                modulated.vHPC.aversive = [modulated.vHPC.aversive , surrogate]; clear surrogate    
             end
             
             
             if sum(cond.vHPC.reward)>0
-                [average , time] = triggered_average_assemblies_response(Shocks_filt,patterns.all.reward,cond.vHPC.reward,[bins' Spikes],[-2 3]);
+                [average , time , surrogate] = triggered_average_assemblies_response(Shocks_filt,patterns.all.reward,cond.vHPC.reward,[bins' Spikes],[-2 3]);
                 Response.vHPC.reward = [Response.vHPC.reward , average]; clear average     
+                modulated.vHPC.reward = [modulated.vHPC.reward , surrogate]; clear surrogate     
             end
             
             clear aversiveTS aversiveTS_run baselineTS bins Cell_type_classification
@@ -306,14 +320,18 @@ for tt = 1:length(path)
     end
 end
 
-s = 4;
-
+s = 2;
 %% Joint
 % aversive
 figure,
 tmp1 = [];
+M1 = [];
 for i = 1 : size(Response.joint.aversive,2)
-    tmp1 = [tmp1 , Smooth(Response.joint.aversive(:,i),s)];
+%     if logical(modulated.joint.aversive(i))
+        t = Smooth(Response.joint.aversive(:,i),s);
+        tmp1 = [tmp1 , t];
+        M1 = [M1 , nanmean(t(81:100))];
+%     end
 end
 
 [~ , i] = min(abs(0-time)); [~ , ii] = min(abs(1-time));
@@ -325,8 +343,13 @@ xline(0,'--') , xline(1,'--'),caxis([-3 3])
 
 % Joint Reward
 tmp2 = [];
+M2 = [];
 for i = 1 : size(Response.joint.reward,2)
-    tmp2 = [tmp2 , Smooth(Response.joint.reward(:,i),s)];
+%     if logical(modulated.joint.reward(i))
+        t = Smooth(Response.joint.reward(:,i),s);
+        tmp2 = [tmp2 , t];
+        M2 = [M2 , nanmean(t(81:100))];
+%     end
 end
 
 [~ , i] = min(abs(0-time)); [~ , ii] = min(abs(1-time));
@@ -339,17 +362,27 @@ xline(0,'--') , xline(1,'--'),caxis([-3 3])
 figure
 plot(time,nanmean(tmp1,2),'r'),hold on
 ciplot(nanmean(tmp1,2)-nansem(tmp1')' , nanmean(tmp1,2)+nansem(tmp1')' , time,'r'),alpha 0.5
-plot(time,nanmean(tmp2,2),'b'),ylim([-0.2 1.2]), xlim([-2 3]),
+plot(time,nanmean(tmp2,2),'b'),ylim([-0.2 1.2]), xlim([-2 4]),
 ciplot(nanmean(tmp2,2)-nansem(tmp2')' , nanmean(tmp2,2)+nansem(tmp2')' , time,'b'),alpha 0.5
 xline(0,'--') , xline(1,'--')
 
+figure,
+x = [M1,M2];
+grps = [ones(1,length(M1)) , ones(1,length(M2))*2];
+scatter(grps,x,'filled','jitter','on', 'jitterAmount',0.1), hold on
+scatter([1 2] , [nanmean(M1) nanmean(M2)],'filled'), xlim([0 3]),ylim([-0.5 2.5])
+kstest(M1)
+kstest(M2)
+[h p] = ranksum(M1,M2)
 
 %% dHPC
 % aversive
 figure,
 tmp1 = [];
+M1 = [];
 for i = 1 : size(Response.dHPC.aversive,2)
     tmp1 = [tmp1 , Smooth(Response.dHPC.aversive(:,i),s)];
+    M1 = [M1 , nanmean(Smooth(Response.dHPC.aversive(41:61,i),s))];
 end
 
 [~ , i] = min(abs(0-time)); [~ , ii] = min(abs(1-time));
@@ -361,8 +394,10 @@ xline(0,'--') , xline(1,'--'),caxis([-3 3])
 
 % Joint Reward
 tmp2 = [];
+M2 = [];
 for i = 1 : size(Response.dHPC.reward,2)
     tmp2 = [tmp2 , Smooth(Response.dHPC.reward(:,i),s)];
+    M2 = [M2 , nanmean(Smooth(Response.dHPC.reward(41:61,i),s))];
 end
 
 [~ , i] = min(abs(0-time)); [~ , ii] = min(abs(1-time));
@@ -375,17 +410,26 @@ xline(0,'--') , xline(1,'--'),caxis([-3 3])
 figure
 plot(time,nanmean(tmp1,2),'r'),hold on
 ciplot(nanmean(tmp1,2)-nansem(tmp1')' , nanmean(tmp1,2)+nansem(tmp1')' , time,'r'),alpha 0.5
-plot(time,nanmean(tmp2,2),'b'),ylim([-0.2 1.2]), xlim([-2 3]),
+plot(time,nanmean(tmp2,2),'b'),ylim([-0.2 1.2]), xlim([-1 2]),
 ciplot(nanmean(tmp2,2)-nansem(tmp2')' , nanmean(tmp2,2)+nansem(tmp2')' , time,'b'),alpha 0.5
 xline(0,'--') , xline(1,'--')
 
-
+figure,
+x = [M1,M2];
+grps = [ones(1,length(M1)) , ones(1,length(M2))*2];
+scatter(grps,x,'filled','jitter','on', 'jitterAmount',0.1), hold on
+scatter([1 2] , [nanmean(M1) nanmean(M2)],'filled'), xlim([0 3]),ylim([-0.5 2.5])
+[h p] = ttest2(M1,M2)
 %% vHPC
 % aversive
 figure,
 tmp1 = [];
+M1 = [];
 for i = 1 : size(Response.vHPC.aversive,2)
-    tmp1 = [tmp1 , Smooth(Response.vHPC.aversive(:,i),s)];
+%     if logical(modulated.vHPC.aversive(i))
+        tmp1 = [tmp1 , Smooth(Response.vHPC.aversive(:,i),s)];
+        M1 = [M1 , nanmean(Smooth(Response.vHPC.aversive(41:61,i),s))];
+%     end
 end
 
 [~ , i] = min(abs(0-time)); [~ , ii] = min(abs(1-time));
@@ -397,8 +441,12 @@ xline(0,'--') , xline(1,'--'),caxis([-3 3])
 
 % Joint Reward
 tmp2 = [];
+M2 = [];
 for i = 1 : size(Response.vHPC.reward,2)
-    tmp2 = [tmp2 , Smooth(Response.vHPC.reward(:,i),s)];
+%     if logical(modulated.vHPC.reward(i))
+        tmp2 = [tmp2 , Smooth(Response.vHPC.reward(:,i),s)];
+        M2 = [M2 , nanmean(Smooth(Response.vHPC.reward(41:61,i),s))];
+%     end
 end
 
 [~ , i] = min(abs(0-time)); [~ , ii] = min(abs(1-time));
@@ -412,8 +460,14 @@ xline(0,'--') , xline(1,'--'),caxis([-3 3])
 figure
 plot(time,nanmean(tmp1,2),'r'),hold on
 ciplot(nanmean(tmp1,2)-nansem(tmp1')' , nanmean(tmp1,2)+nansem(tmp1')' , time,'r'),alpha 0.5
-plot(time,nanmean(tmp2,2),'b'),ylim([-0.2 1.2]), xlim([-2 3]),
+plot(time,nanmean(tmp2,2),'b'),ylim([-0.2 1.2]), xlim([-1 2]),
 ciplot(nanmean(tmp2,2)-nansem(tmp2')' , nanmean(tmp2,2)+nansem(tmp2')' , time,'b'),alpha 0.5
 xline(0,'--') , xline(1,'--')
 
+figure,
+x = [M1,M2];
+grps = [ones(1,length(M1)) , ones(1,length(M2))*2];
+scatter(grps,x,'filled','jitter','on', 'jitterAmount',0.1), hold on
+scatter([1 2] , [nanmean(M1) nanmean(M2)],'filled'), xlim([0 3]),ylim([-0.5 2.5])
+[h p] = ttest2(M1,M2)
 end

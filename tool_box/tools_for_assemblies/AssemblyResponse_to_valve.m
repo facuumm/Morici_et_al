@@ -1,13 +1,13 @@
-function [Response time modulated] = AssemblyResponse_to_shocks(path)
-% This function a CCG between putative-interneuron spiking activity and the
-% timestamps from assemblies peaks.
+function [Response time modulated] = AssemblyResponse_to_valve(path)
+% This function calculate the average assemblies activity sourrounding the 
+% valve opening.
 %
 % INPUTS
 % path: cell, inside each cell you should put the path of each session you
 %       want to analyze
 %
 % OUTPUT
-% Response: structure, it contains the triggered average response to the shocks.
+% Response: structure, it contains the triggered average response to the valve.
 %           Response.dHPC.aversive      Response.dHPC.reward
 %           Response.vHPC.aversive      Response.vHPC.reward
 %           Response.joint.aversive     Response.joint.reward
@@ -268,28 +268,28 @@ for tt = 1:length(path)
             
             % Joint assemblies
             if sum(cond.both.aversive)>0
-                [average , time , surrogate] = triggered_average_assemblies_response(Shocks_filt,patterns.all.aversive,cond.both.aversive,[bins' Spikes],[-2 4]);
+                [average , time , surrogate] = triggered_average_assemblies_response(Rewards_filt(:,1),patterns.all.aversive,cond.both.aversive,[bins' Spikes],[-2 3]);
                 Response.joint.aversive = [Response.joint.aversive , average]; clear average
                 modulated.joint.aversive = [modulated.joint.aversive , surrogate]; clear surrogate
             end
             
             
             if sum(cond.both.reward)>1
-                [average , time , surrogate] = triggered_average_assemblies_response(Shocks_filt,patterns.all.reward,cond.both.reward,[bins' Spikes],[-2 4]);
+                [average , time , surrogate] = triggered_average_assemblies_response(Rewards_filt(:,1),patterns.all.reward,cond.both.reward,[bins' Spikes],[-2 3]);
                 Response.joint.reward = [Response.joint.reward , average]; clear average
                 modulated.joint.reward = [modulated.joint.reward , surrogate]; clear surrogate
             end
             
             % dHPC assemblies
             if sum(cond.dHPC.aversive)>0
-                [average , time , surrogate] = triggered_average_assemblies_response(Shocks_filt,patterns.all.aversive,cond.dHPC.aversive,[bins' Spikes],[-2 4]);
+                [average , time , surrogate] = triggered_average_assemblies_response(Rewards_filt(:,1),patterns.all.aversive,cond.dHPC.aversive,[bins' Spikes],[-2 3]);
                 Response.dHPC.aversive = [Response.dHPC.aversive , average]; clear average                
                 modulated.dHPC.aversive = [modulated.dHPC.aversive , surrogate]; clear surrogate                
             end
             
             
             if sum(cond.dHPC.reward)>0
-                [average , time , surrogate] = triggered_average_assemblies_response(Shocks_filt,patterns.all.reward,cond.dHPC.reward,[bins' Spikes],[-2 4]);
+                [average , time , surrogate] = triggered_average_assemblies_response(Rewards_filt(:,1),patterns.all.reward,cond.dHPC.reward,[bins' Spikes],[-2 3]);
                 Response.dHPC.reward = [Response.dHPC.reward , average]; clear average     
                 modulated.dHPC.reward = [modulated.dHPC.reward , surrogate]; clear surrogate     
             end
@@ -297,14 +297,14 @@ for tt = 1:length(path)
             
             % vHPC assemblies
             if sum(cond.vHPC.aversive)>0
-                 [average , time , surrogate] = triggered_average_assemblies_response(Shocks_filt,patterns.all.aversive,cond.vHPC.aversive,[bins' Spikes],[-2 4]);
+                 [average , time , surrogate] = triggered_average_assemblies_response(Rewards_filt(:,1),patterns.all.aversive,cond.vHPC.aversive,[bins' Spikes],[-2 3]);
                 Response.vHPC.aversive = [Response.vHPC.aversive , average]; clear average    
                 modulated.vHPC.aversive = [modulated.vHPC.aversive , surrogate]; clear surrogate    
             end
             
             
             if sum(cond.vHPC.reward)>0
-                [average , time , surrogate] = triggered_average_assemblies_response(Shocks_filt,patterns.all.reward,cond.vHPC.reward,[bins' Spikes],[-2 4]);
+                [average , time , surrogate] = triggered_average_assemblies_response(Rewards_filt(:,1),patterns.all.reward,cond.vHPC.reward,[bins' Spikes],[-2 3]);
                 Response.vHPC.reward = [Response.vHPC.reward , average]; clear average     
                 modulated.vHPC.reward = [modulated.vHPC.reward , surrogate]; clear surrogate     
             end
@@ -330,7 +330,7 @@ for i = 1 : size(Response.joint.aversive,2)
 %     if logical(modulated.joint.aversive(i))
         t = Smooth(Response.joint.aversive(:,i),s);
         tmp1 = [tmp1 , t];
-        M1 = [M1 , nanmean(t(81:121))];
+        M1 = [M1 , nanmean(t(81:100))];
 %     end
 end
 
@@ -348,7 +348,7 @@ for i = 1 : size(Response.joint.reward,2)
 %     if logical(modulated.joint.reward(i))
         t = Smooth(Response.joint.reward(:,i),s);
         tmp2 = [tmp2 , t];
-        M2 = [M2 , nanmean(t(81:121))];
+        M2 = [M2 , nanmean(t(81:100))];
 %     end
 end
 
@@ -426,10 +426,10 @@ figure,
 tmp1 = [];
 M1 = [];
 for i = 1 : size(Response.vHPC.aversive,2)
-    if logical(modulated.vHPC.aversive(i))
+%     if logical(modulated.vHPC.aversive(i))
         tmp1 = [tmp1 , Smooth(Response.vHPC.aversive(:,i),s)];
         M1 = [M1 , nanmean(Smooth(Response.vHPC.aversive(41:61,i),s))];
-    end
+%     end
 end
 
 [~ , i] = min(abs(0-time)); [~ , ii] = min(abs(1-time));
@@ -443,10 +443,10 @@ xline(0,'--') , xline(1,'--'),caxis([-3 3])
 tmp2 = [];
 M2 = [];
 for i = 1 : size(Response.vHPC.reward,2)
-    if logical(modulated.vHPC.reward(i))
+%     if logical(modulated.vHPC.reward(i))
         tmp2 = [tmp2 , Smooth(Response.vHPC.reward(:,i),s)];
         M2 = [M2 , nanmean(Smooth(Response.vHPC.reward(41:61,i),s))];
-    end
+%     end
 end
 
 [~ , i] = min(abs(0-time)); [~ , ii] = min(abs(1-time));
