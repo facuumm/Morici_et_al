@@ -123,6 +123,9 @@ fr_R= nanmean(curveR.rate);
 %Fr change
 fr_change = abs((fr_A - fr_R)/(fr_A + fr_R));
 
+%Change in fr
+change_fr2 = (fr_R - fr_A)/(fr_R + fr_A);
+
 %Rate overlap
 if fr_A<=fr_R 
     overlap = fr_A/fr_R;
@@ -138,7 +141,7 @@ spatial = s(1,2);
 shift = abs(statsA.x(1) - statsR.x(1)); 
 
 %Save 
-between_lap = [spatial, fr_change, overlap,shift];    
+between_lap = [spatial, fr_change, overlap,shift,change_fr2];    
 
 % Control plot 
 % figure;hold on; 

@@ -53,6 +53,9 @@ for c=1:100
                     
     %Fr change
     fr_change = abs((fr_A - fr_R)/(fr_A + fr_R));
+    
+    %Change in fr
+    change_fr2 = (fr_R - fr_A)/(fr_R + fr_A);
 
     %Rate overlap
     if fr_A<=fr_R 
@@ -72,7 +75,7 @@ for c=1:100
     between(c,2)=fr_change;
     between(c,3)=overlap;
     between(c,4)=shift;
-    
+    between(c,5)=change_fr2; 
    
 end 
 between = mean(between);

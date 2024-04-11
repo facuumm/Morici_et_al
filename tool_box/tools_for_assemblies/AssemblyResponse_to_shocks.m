@@ -326,12 +326,22 @@ s = 2;
 figure,
 tmp1 = [];
 M1 = [];
+peaksAU = [];
+peaksAD = [];
 for i = 1 : size(Response.joint.aversive,2)
-%     if logical(modulated.joint.aversive(i))
+    if logical(modulated.joint.aversive(i))
         t = Smooth(Response.joint.aversive(:,i),s);
         tmp1 = [tmp1 , t];
         M1 = [M1 , nanmean(t(81:100))];
-%     end
+        [peaks loc] = findpeaks(t,'MinPeakHeight',0.5);
+        peaksAU = [peaksAU ; time(loc)'];
+    else
+        t = Smooth(Response.joint.aversive(:,i),s);
+        tmp1 = [tmp1 , t];
+        M1 = [M1 , nanmean(t(81:100))];
+        [peaks loc] = findpeaks(t,'MinPeakHeight',0.5);
+        peaksAD = [peaksAD ; time(loc)'];
+    end
 end
 
 [~ , i] = min(abs(0-time)); [~ , ii] = min(abs(1-time));
@@ -344,12 +354,22 @@ xline(0,'--') , xline(1,'--'),caxis([-3 3])
 % Joint Reward
 tmp2 = [];
 M2 = [];
+peaksRU = [];
+peaksRD = [];
 for i = 1 : size(Response.joint.reward,2)
-%     if logical(modulated.joint.reward(i))
+    if logical(modulated.joint.reward(i))
         t = Smooth(Response.joint.reward(:,i),s);
         tmp2 = [tmp2 , t];
         M2 = [M2 , nanmean(t(81:100))];
-%     end
+        [peaks loc] = findpeaks(t,'MinPeakHeight',0.5);
+        peaksRU = [peaksRU ; time(loc)'];
+    else
+        t = Smooth(Response.joint.reward(:,i),s);
+        tmp2 = [tmp2 , t];
+        M2 = [M2 , nanmean(t(81:100))];
+        [peaks loc] = findpeaks(t,'MinPeakHeight',0.5);
+        peaksRD = [peaksRD ; time(loc)'];
+    end
 end
 
 [~ , i] = min(abs(0-time)); [~ , ii] = min(abs(1-time));
@@ -374,6 +394,11 @@ scatter([1 2] , [nanmean(M1) nanmean(M2)],'filled'), xlim([0 3]),ylim([-0.5 2.5]
 kstest(M1)
 kstest(M2)
 [h p] = ranksum(M1,M2)
+
+%% scatter
+y = [peaksAU ; peaksAD ; peaksRU ; peaksRD];
+x = [ones(length(peaksAU),1) ; ones(length(peaksAD),1)*2 ; ones(length(peaksRU),1)*3 ; ones(length(peaksRD),1)*4];
+scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),xlim([0 5]),ylim([-2 3])
 
 %% dHPC
 % aversive
@@ -470,4 +495,42 @@ grps = [ones(1,length(M1)) , ones(1,length(M2))*2];
 scatter(grps,x,'filled','jitter','on', 'jitterAmount',0.1), hold on
 scatter([1 2] , [nanmean(M1) nanmean(M2)],'filled'), xlim([0 3]),ylim([-0.5 2.5])
 [h p] = ttest2(M1,M2)
+
+
+%% percentage
+figure
+A = (sum(modulated.dHPC.aversive)/length(modulated.dHPC.aversive))*100;
+N = (((sum(modulated.dHPC.aversive)/length(modulated.dHPC.aversive))*100)-100)*-1;
+subplot(231), pie([A N] , {'Up-modulated' , 'Non-moduklated'})
+title('dHPC Aversive - Shock')
+
+A = (sum(modulated.vHPC.aversive)/length(modulated.vHPC.aversive))*100;
+N = (((sum(modulated.vHPC.aversive)/length(modulated.vHPC.aversive))*100)-100)*-1;
+subplot(232), pie([A N] , {'Up-modulated' , 'Non-moduklated'})
+title('vHPC Aversive - Shock')
+
+
+A = (sum(modulated.joint.aversive)/length(modulated.joint.aversive))*100;
+N = (((sum(modulated.joint.aversive)/length(modulated.joint.aversive))*100)-100)*-1;
+subplot(233), pie([A N] , {'Up-modulated' , 'Non-moduklated'})
+title('joint Aversive - Shock')
+
+
+A = (sum(modulated.dHPC.reward)/length(modulated.dHPC.reward))*100;
+N = (((sum(modulated.dHPC.reward)/length(modulated.dHPC.reward))*100)-100)*-1;
+subplot(234), pie([A N] , {'Up-modulated' , 'Non-moduklated'})
+title('dHPC Reward - Shock')
+
+A = (sum(modulated.vHPC.reward)/length(modulated.vHPC.reward))*100;
+N = (((sum(modulated.vHPC.reward)/length(modulated.vHPC.reward))*100)-100)*-1;
+subplot(235), pie([A N] , {'Up-modulated' , 'Non-moduklated'})
+title('vHPC Reward - Shock')
+
+
+A = (sum(modulated.joint.reward)/length(modulated.joint.reward))*100;
+N = (((sum(modulated.joint.reward)/length(modulated.joint.reward))*100)-100)*-1;
+subplot(236), pie([A N] , {'Up-modulated' , 'Non-moduklated'})
+title('joint Reward - Shock')
+
+
 end

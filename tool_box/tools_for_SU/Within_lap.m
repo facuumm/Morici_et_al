@@ -60,6 +60,8 @@ fr_2= nanmean(curve2.rate);
 %Fr change
 fr_change = abs((fr_1 - fr_2)/(fr_1 + fr_2));
 
+change_fr2 = (fr_1 - fr_2)/(fr_1 + fr_2);
+
 %Rate overlap
 if fr_1<=fr_2 
    overlap = fr_1/fr_2;
@@ -81,7 +83,7 @@ shift = abs(stats1.x(1) - stats2.x(1));
 % sgtitle('Firing curvs laps');
     
 
-within_lap = [spatial, fr_change, overlap,shift]; 
+within_lap = [spatial, fr_change, overlap,shift,change_fr2]; 
 
 end
 

@@ -97,8 +97,11 @@ for c=1:100
     fr_1= nanmean(curve1.rate);
     fr_2= nanmean(curve2.rate);
                     
-    %Fr change
+    %Fr change absolute 
     fr_change = abs((fr_1 - fr_2)/(fr_1 + fr_2));
+    
+    %Change in fr
+    change_fr2 = (fr_1 - fr_2)/(fr_1 + fr_2);
 
     %Rate overlap
     if fr_1<=fr_2 
@@ -125,6 +128,7 @@ for c=1:100
     within(c,2)=fr_change;
     within(c,3)=overlap;
     within(c,4)=shift;
+    within(c,5)=change_fr2;
     
    
 end 
