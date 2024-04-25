@@ -40,6 +40,9 @@ function [Members , AssemblyTemplates , EigenValues] = assembly_patterns(SpikeCo
 %   Example: If the max(abs(template)) was a negative value, the templated was
 %   multiplied by -1
 
+EigenValues.values = [];
+EigenValues.lambda = [];
+
 if nargin<2
     opts.threshold.method = 'MarcenkoPastur';
     opts.Patterns.method = 'ICA';
@@ -158,6 +161,7 @@ end
 
 EigenValues.values = eigenvalues(eigenvalues>lambda_max);
 EigenValues.lambda = lambda_max;
+
 
 end
 

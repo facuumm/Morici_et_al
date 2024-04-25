@@ -5,21 +5,11 @@ clc
 %% Parameters
 path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 
-% What par of the code I want to run
-S = logical(1);   % Reactivation Strength Calculation
-MUAselection = logical(0); % to select ripples by their MUA
-W = 'N'; % to select what kind of ripples I want to check
-% E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
-% D= uncoordinated dorsal, V= uncoordinated ventral
-% CB = cooridnated bursts
-% N= NREM, R= REM
-TA =  logical(0); % Trigger Reactivation Strength
-
 % for SU
 criteria_fr = 0; %criteria to include or not a SU into the analysis
 criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
 criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
-binSize = 0.025; %for qssemblie detection qnd qxctivity strength
+binSize = [0.025]; %for qssemblie detection qnd qxctivity strength
 
 % Behavior
 minimal_speed = 7; % minimal speed to detect quite periods
@@ -39,9 +29,9 @@ for tt = 1:length(path)
     % Extract only those that are directories.
     subFolders = files(dirFlags);
     clear files dirFlags
-    num_assembliesR = [];
-    num_assembliesA = [];
     for t = 1 : length(subFolders)-2
+        num_assembliesR = [];
+        num_assembliesA = [];
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
@@ -245,12 +235,13 @@ for tt = 1:length(path)
         
         %% Assemblies detection
         if or(numberD > 3 , numberV > 3)
+            for i = 1 : size(binSize,2)
             % --- Aversive ---
             disp('Lets go for the assemblies')
-            if isfile('dorsalventral_assemblies_aversiveVF.mat')
-                disp('Loading Aversive template')
-                load('dorsalventral_assemblies_aversive.mat')
-            else
+%             if isfile('dorsalventral_assemblies_aversiveVF.mat')
+%                 disp('Loading Aversive template')
+%                 load('dorsalventral_assemblies_aversive.mat')
+%             else
                 disp('Detection of assemblies using Aversive template')
                 % --- Options for assemblies detection ---
                 opts.Patterns.method = 'ICA';
@@ -264,10 +255,10 @@ for tt = 1:length(path)
                 limits = aversiveTS_run./1000;
                 events = [];
                 events = movement.aversive;
-                [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
+                [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize(i), limits, events, false,false);
                 [Th , pat , eig] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
                 save([cd,'\dorsalventral_assemblies_aversiveVF.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')
-            end
+%             end
             
             Thresholded.aversive.all = Th;
             patterns.all.aversive = pat;
@@ -295,13 +286,13 @@ for tt = 1:length(path)
                 cond.vHPC.aversive = and(cond2 , not(cond1));
                 cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
             end
-            num_assembliesA = [num_assembliesA ; sum(cond.both.aversive) sum(cond.dHPC.aversive) sum(cond.vHPC.aversive)];
+            num_assembliesA = [num_assembliesA , sum(cond.both.aversive) sum(cond.dHPC.aversive) sum(cond.vHPC.aversive)];
             
             % --- Reward ---
             disp('Loading Reward template')
-            if isfile('dorsalventral_assemblies_rewardVF.mat')
-                load('dorsalventral_assemblies_reward.mat')
-            else
+%             if isfile('dorsalventral_assemblies_rewardVF.mat')
+%                 load('dorsalventral_assemblies_reward.mat')
+%             else
                 disp('Detection of assemblies using Rewarded template')
                 % --- Options for assemblies detection ---
                 opts.Patterns.method = 'ICA';
@@ -315,10 +306,10 @@ for tt = 1:length(path)
                 limits = rewardTS_run./1000;
                 events = [];
                 events = movement.reward;
-                [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
+                [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize(i), limits, events, false,false);
                 [Th , pat , eig] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
                 save([cd,'\dorsalventral_assemblies_rewardVF.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')
-            end
+%             end
             
             Thresholded.reward.all = Th;
             patterns.all.reward = pat;
@@ -346,7 +337,8 @@ for tt = 1:length(path)
                 cond.vHPC.reward = and(cond2 , not(cond1));
                 cond.both.reward = and(cond1 , cond2); clear cond1 cond2
             end
-            num_assembliesR = [num_assembliesR ; sum(cond.both.reward) sum(cond.dHPC.reward) sum(cond.vHPC.reward)];
+            num_assembliesR = [num_assembliesR , sum(cond.both.reward) sum(cond.dHPC.reward) sum(cond.vHPC.reward)];
+            
             
             %% Similarity Index Calculation
             [r.AR , p.AR] = SimilarityIndex(patterns.all.aversive , patterns.all.reward);
@@ -365,7 +357,9 @@ for tt = 1:length(path)
             percentages = [percentages  ; sum(cond.dHPC.aversive) , sum(cond.dHPC.reward) , sum(sum(AR.dHPC)) , sum(cond.vHPC.aversive) , sum(cond.vHPC.reward) , sum(sum(AR.vHPC)) , sum(cond.both.aversive) , sum(cond.both.reward) , sum(sum(AR.both))];
             clear A R r p
             
-            
+            end
+            Number_of_assemblies.aversive = [Number_of_assemblies.aversive ; num_assembliesA];
+            Number_of_assemblies.reward = [Number_of_assemblies.reward ; num_assembliesR];
         end
         disp(' ')
         clear A aversiveTS aversiveTS_run baselineTS rewardTS rewardTS_run
@@ -381,9 +375,36 @@ for tt = 1:length(path)
         clear spks spks_dHPC spks_vHPC ripples cooridnated_event
         clear cooridnated_eventDV cooridnated_eventVD segments
     end
-    
-    Number_of_assemblies.aversive = [Number_of_assemblies.aversive ; sum(num_assembliesA)];
-    Number_of_assemblies.reward = [Number_of_assemblies.reward ; sum(num_assembliesR)];
-    clear num_assembliesA num_assembliesR
+        clear num_assembliesA num_assembliesR
     
 end
+
+
+%% Ven Graphs for similarity Index
+% dHPC Assemblies
+p1 = (sum(percentages(:,1))./sum(sum(percentages(:,2))))*100;
+p2 = (sum(percentages(:,2))./sum(sum(percentages(:,2:3))))*100;
+
+A = [ p1 p2 ];
+I = (sum(percentages(:,1))./sum(sum(percentages(:,2:3))))*100;
+
+subplot(131),venn(A,I), xlim([-7 11]), ylim([-6 6])
+
+% vHPC Assemblies
+p1 = (sum(percentages(:,4))./sum(sum(percentages(:,4:5))))*100;
+p2 = (sum(percentages(:,5))./sum(sum(percentages(:,4:5))))*100;
+
+A = [ p1 p2 ];
+I = (sum(percentages(:,6))./sum(sum(percentages(:,4:5))))*100;
+
+subplot(132),venn(A,I), xlim([-7 11]), ylim([-6 6])
+
+
+% joint Assemblies
+p1 = (sum(percentages(:,7))./sum(sum(percentages(:,7:8))))*100;
+p2 = (sum(percentages(:,8))./sum(sum(percentages(:,7:8))))*100;
+
+A = [ p1 p2 ];
+I = (sum(percentages(:,9))./sum(sum(percentages(:,7:8))))*100;
+
+subplot(133),venn(A,I), xlim([-7 11]), ylim([-6 6])

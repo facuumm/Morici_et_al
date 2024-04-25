@@ -1,4 +1,4 @@
-clear
+% clear
 clc
 % close all
 
@@ -6,7 +6,7 @@ clc
 path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 
 % What par of the code I want to run
-S = logical(0);   % Reactivation Strength Calculation
+S = logical(1);   % Reactivation Strength Calculation
 W = 'N'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % D= uncoordinated dorsal, V= uncoordinated ventral
@@ -108,7 +108,8 @@ for tt = 1:length(path)
         else
             config = 2;
         end
-        
+%         save([cd,'\session_organization.mat'],'config','segments','rewardTS_run','rewardTS','aversiveTS_run','aversiveTS','baselineTS')
+
         %% Awake
         disp('Uploading digital imputs')
         % Load digitalin.mat
@@ -405,9 +406,9 @@ for tt = 1:length(path)
         if or(numberD > 3 , numberV > 3)
             % --- Aversive ---
             disp('Lets go for the assemblies')
-            if isfile('dorsalventral_assemblies_aversive.mat')
+            if isfile('dorsalventral_assemblies_aversiveVF.mat')
                 disp('Loading Aversive template')
-                load('dorsalventral_assemblies_aversive.mat')
+                load('dorsalventral_assemblies_aversiveVF.mat')
             end
             
             Thresholded.aversive.all = Th;
@@ -440,8 +441,8 @@ for tt = 1:length(path)
             
             % --- Reward ---
             disp('Loading Reward template')
-            if isfile('dorsalventral_assemblies_reward.mat')
-                load('dorsalventral_assemblies_reward.mat')
+            if isfile('dorsalventral_assemblies_rewardVF.mat')
+                load('dorsalventral_assemblies_rewardVF.mat')
             end
             
             Thresholded.reward.all = Th;
@@ -472,23 +473,6 @@ for tt = 1:length(path)
             end
             num_assembliesR = [num_assembliesR ; sum(cond.both.reward) sum(cond.dHPC.reward) sum(cond.vHPC.reward)];
             
-            %% Similarity Index Calculation
-            [r.AR , p.AR] = SimilarityIndex(patterns.all.aversive , patterns.all.reward);
-            A = sum(p.AR,1)>=1;
-            R = sum(p.AR,2)>=1; R = R';
-            
-            AR.dHPC = cond.dHPC.aversive .* cond.dHPC.reward';
-            AR.dHPC = and(AR.dHPC , p.AR);
-            
-            AR.vHPC = cond.vHPC.aversive .* cond.vHPC.reward';
-            AR.vHPC = and(AR.vHPC , p.AR);
-            
-            AR.both = cond.both.aversive .* cond.both.reward';
-            AR.both = and(AR.both , p.AR);
-            
-            percentages = [percentages  ; tt sum(cond.dHPC.aversive) , sum(cond.dHPC.reward) , sum(sum(AR.dHPC)) , sum(cond.vHPC.aversive) , sum(cond.vHPC.reward) , sum(sum(AR.vHPC)) , sum(cond.both.aversive) , sum(cond.both.reward) , sum(sum(AR.both))];
-            clear A R r p
-            
             %% SpikeTrains construction
             limits = [0 segments.Var1(end)/1000];
             events = [];
@@ -501,10 +485,20 @@ for tt = 1:length(path)
                     is.sws.baseline = InIntervals(bins,NREM.baseline);
                     is.sws.reward = InIntervals(bins,NREM.reward);
                     is.sws.aversive = InIntervals(bins,NREM.aversive);
+                    
+                    is.sws.timestamps.sleep.aversive = NREM.aversive;
+                    is.sws.timestamps.sleep.reward = NREM.reward;
+                    is.sws.timestamps.sleep.baseline = NREM.baseline;
+                    
                 elseif strcmp(W,'R')
                     is.sws.baseline = InIntervals(bins,REM.baseline);
                     is.sws.reward = InIntervals(bins,REM.reward);
                     is.sws.aversive = InIntervals(bins,REM.aversive);
+                    
+                    is.sws.timestamps.sleep.aversive = REM.aversive;
+                    is.sws.timestamps.sleep.reward = REM.reward;
+                    is.sws.timestamps.sleep.baseline = REM.baseline;
+                    
                 elseif or(or(strcmp(W,'E'),strcmp(W,'DV')),strcmp(W,'VD'))
                     if and(RD,RV)
                         % coordinated event
@@ -557,8 +551,15 @@ for tt = 1:length(path)
                 is.sws.runaversive = InIntervals(bins,movement.aversive);
                 is.sws.runreward = InIntervals(bins,movement.reward);
                 
-                is.aversive = InIntervals(bins,aversiveTS_run./1000);
-                is.reward = InIntervals(bins,rewardTS_run./1000);
+                is.sws.timestamps.run.aversive = InIntervals(bins,aversiveTS_run./1000);
+                is.sws.timestamps.run.reward = InIntervals(bins,rewardTS_run./1000);
+                
+                %% Save timestamps
+                is.sws.timestamps.aversiveSleep = aversiveTS./1000;
+                is.sws.timestamps.aversiveRun = aversiveTS_run./1000;
+                is.sws.timestamps.rewardSleep = rewardTS./1000;
+                is.sws.timestamps.rewardRun = rewardTS_run./1000;
+                is.sws.timestamps.baselineSleep = baselineTS./1000;
                 
                 %% Reactivation Strenght
 %                 if and(numberD >= criteria_n(1),numberV >= criteria_n(2))
@@ -1129,83 +1130,9 @@ for tt = 1:length(path)
     Number_of_assemblies.aversive = [Number_of_assemblies.aversive ; sum(num_assembliesA)];
     Number_of_assemblies.reward = [Number_of_assemblies.reward ; sum(num_assembliesR)];
     clear num_assembliesA num_assembliesR
-    
 end
+
 % save([cd,'\Reactivation_Strength_Data_Normalized_NREM.mat'] , 'reactivation')
-
-%% Plot Strenght Reactivation
-%  Mean Activation Strength for joint assemblies
-figure(1)
-x = [reactivation.aversive.dvHPC(:,9) ; reactivation.aversive.dvHPC(:,8)]%-reactivation.aversive.dvHPC(:,9))%./((reactivation.aversive.dvHPC(:,8)+reactivation.aversive.dvHPC(:,9)));
-y = [reactivation.reward.dvHPC(:,9) ; reactivation.reward.dvHPC(:,8)]%-reactivation.reward.dvHPC(:,9))%./(reactivation.reward.dvHPC(:,8)+reactivation.reward.dvHPC(:,9));
-
-
-kstest(x)
-kstest(y)
-% [h, p] = ttest2(x,y)  
-% [h, p] = signrank(y,0)
-% [h, p] = signrank(x,0)
-
-subplot(131),
-grps = [ones(size(reactivation.aversive.dvHPC(:,8),1),1) ; ones(size(reactivation.aversive.dvHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.dvHPC(:,8),1),1)*3 ; ones(size(reactivation.reward.dvHPC(:,8),1),1)*4];
-Y = [x;y];
-scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2 3 4] , [nanmean(reactivation.aversive.dvHPC(:,9)) nanmean(reactivation.aversive.dvHPC(:,8)) nanmean(reactivation.reward.dvHPC(:,9)) nanmean(reactivation.reward.dvHPC(:,8))],'filled'),xlim([0 5]),ylim([-0.2 1.2])
-
-clear grps
-grps = [ones(size(reactivation.aversive.dvHPC(:,8),1),1) ; ones(size(reactivation.aversive.dvHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.dvHPC(:,8),1),1) ; ones(size(reactivation.reward.dvHPC(:,8),1),1)*2];
-grps = [grps , [ones(size(x,1),1) ; ones(size(y,1),1)*2]];
-[~,~,stats]  = anovan(Y,{grps(:,1) grps(:,2)},'model','interaction','varnames',{'sleep','condition'})
-[results,~,~,gnames] = multcompare(stats,"Dimension",[1 2]);
-
-%  for dHPC assemblies
-figure(1)
-x = [reactivation.aversive.dHPC(:,9) ; reactivation.aversive.dHPC(:,8)]%-reactivation.aversive.dvHPC(:,9))%./((reactivation.aversive.dvHPC(:,8)+reactivation.aversive.dvHPC(:,9)));
-y = [reactivation.reward.dHPC(:,9) ; reactivation.reward.dHPC(:,8)]%-reactivation.reward.dvHPC(:,9))%./(reactivation.reward.dvHPC(:,8)+reactivation.reward.dvHPC(:,9));
-
-
-kstest(x)
-kstest(y)
-% [h, p] = ttest2(x,y)  
-% [h, p] = signrank(y,0)
-% [h, p] = signrank(x,0)
-
-subplot(132),
-grps = [ones(size(reactivation.aversive.dHPC(:,8),1),1) ; ones(size(reactivation.aversive.dHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.dHPC(:,8),1),1)*3 ; ones(size(reactivation.reward.dHPC(:,8),1),1)*4];
-Y = [x;y];
-scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2 3 4] , [nanmean(reactivation.aversive.dHPC(:,9)) nanmean(reactivation.aversive.dHPC(:,8)) nanmean(reactivation.reward.dHPC(:,9)) nanmean(reactivation.reward.dHPC(:,8))],'filled'),xlim([0 5]),ylim([-0.2 1.2])
-
-clear grps
-grps = [ones(size(reactivation.aversive.dHPC(:,8),1),1) ; ones(size(reactivation.aversive.dHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.dHPC(:,8),1),1) ; ones(size(reactivation.reward.dHPC(:,8),1),1)*2];
-grps = [grps , [ones(size(x,1),1) ; ones(size(y,1),1)*2]];
-[p,~,stats]  = anovan(Y,{grps(:,1) grps(:,2)},'model','interaction','varnames',{'sleep','condition'})
-[results,~,~,gnames] = multcompare(stats,"Dimension",[1 2]);
-
-
-%  for vHPC assemblies
-figure(1)
-x = [reactivation.aversive.vHPC(:,9) ; reactivation.aversive.vHPC(:,8)]%-reactivation.aversive.dvHPC(:,9))%./((reactivation.aversive.dvHPC(:,8)+reactivation.aversive.dvHPC(:,9)));
-y = [reactivation.reward.vHPC(:,9) ; reactivation.reward.vHPC(:,8)]%-reactivation.reward.dvHPC(:,9))%./(reactivation.reward.dvHPC(:,8)+reactivation.reward.dvHPC(:,9));
-
-
-kstest(x)
-kstest(y)
-% [h, p] = ttest2(x,y)  
-% [h, p] = signrank(y,0)
-% [h, p] = signrank(x,0)
-
-subplot(133),
-grps = [ones(size(reactivation.aversive.vHPC(:,8),1),1) ; ones(size(reactivation.aversive.vHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.vHPC(:,8),1),1)*3 ; ones(size(reactivation.reward.vHPC(:,8),1),1)*4];
-Y = [x;y];
-scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2 3 4] , [nanmean(reactivation.aversive.vHPC(:,9)) nanmean(reactivation.aversive.vHPC(:,8)) nanmean(reactivation.reward.vHPC(:,9)) nanmean(reactivation.reward.vHPC(:,8))],'filled'),xlim([0 5]),ylim([-0.2 1.2])
-
-clear grps
-grps = [ones(size(reactivation.aversive.vHPC(:,8),1),1) ; ones(size(reactivation.aversive.vHPC(:,8),1),1)*2 ; ones(size(reactivation.reward.vHPC(:,8),1),1) ; ones(size(reactivation.reward.vHPC(:,8),1),1)*2];
-grps = [grps , [ones(size(x,1),1) ; ones(size(y,1),1)*2]];
-[~,~,stats]  = anovan(Y,{grps(:,1) grps(:,2)},'model','interaction','varnames',{'sleep','condition'})
-[results,~,~,gnames] = multcompare(stats,"Dimension",[1 2]);
 
 %% Peaks mean for joint assemblies
 figure
@@ -1214,7 +1141,7 @@ y = reactivation.aversive.dvHPC(:,1);
 
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = ranksum(x,y)  
 [h, p] = signrank(y,0)
 [h, p] = signrank(x,0)
 
@@ -1229,7 +1156,7 @@ x = reactivation.reward.dHPC(:,1);
 y = reactivation.aversive.dHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = ranksum(x,y)  
 [h, p] = signrank(y,0)
 [h, p] = signrank(x,0)
 
@@ -1244,7 +1171,7 @@ x = reactivation.reward.vHPC(:,1);
 y = reactivation.aversive.vHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = ranksum(x,y)  
 [h, p] = signrank(y,0)
 [h, p] = signrank(x,0)
 
@@ -1430,34 +1357,6 @@ subplot(133)
 fitlm(reactivation.reward.vHPC(:,4) , reactivation.reward.vHPC(:,1))
 plot(ans),xlim([0 60]),ylim([-1 1])
 
-%% Ven Graphs for similarity Index
-% dHPC Assemblies
-p1 = (sum(percentages(:,1))./sum(sum(percentages(:,1:2))))*100;
-p2 = (sum(percentages(:,2))./sum(sum(percentages(:,1:2))))*100;
-
-A = [ p1 p2 ];
-I = (sum(percentages(:,3))./sum(sum(percentages(:,1:2))))*100;
-
-subplot(131),venn(A,I), xlim([-5 10]), ylim([-5 5])
-
-% vHPC Assemblies
-p1 = (sum(percentages(:,4))./sum(sum(percentages(:,4:5))))*100;
-p2 = (sum(percentages(:,5))./sum(sum(percentages(:,4:5))))*100;
-
-A = [ p1 p2 ];
-I = (sum(percentages(:,6))./sum(sum(percentages(:,4:5))))*100;
-
-subplot(132),venn(A,I), xlim([-5 10]), ylim([-5 5])
-
-
-% joint Assemblies
-p1 = (sum(percentages(:,7))./sum(sum(percentages(:,7:8))))*100;
-p2 = (sum(percentages(:,8))./sum(sum(percentages(:,7:8))))*100;
-
-A = [ p1 p2 ];
-I = (sum(percentages(:,9))./sum(sum(percentages(:,7:8))))*100;
-
-subplot(133),venn(A,I), xlim([-5 10]), ylim([-5 5])
 
 
 %% Plot Activity Strength

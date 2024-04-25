@@ -1,42 +1,26 @@
-function [cross time] = cross_between_members_assemblies(path)
-% This function a CCG between member-member and member-non_member.
-% It iterates acrsoss the path and perform this operation in each session.
-% The data is restricted to the active periods (>7cm/sec, at least 2 sec)
-% that we used to detect the assemblies.
-%
-% INPUTS
-% path: cell, inside each cell you should put the path of each session you
-%       want to analyze
-%
-% OUTPUT
-% cross_members: structure, it contains the CCG for aversive and reward
-%                joint assemblies.
-%                cross_members.aversive = [];  cross_members.reward = [];
-%
-% cross_nonmembers: structure, same as the output described above.
-%
-% time: column vector, it contains the time axis for the CCG plot.
-%
-% External functions: FMA toolbox
-% Morci Juan Facundo 03/2024
-%
-% Reference: Oberto et al, 2022: 'Distributed cell assemblies spanning 
-%            prefrontal cortex and striatum'. Current Biology.
-%            doi: https://doi.org/10.1016/j.cub.2021.10.007
+clear
+clc
+% close all
 
-% Parameters to define periods of activity
-minimal_speed = 7;
-minimal_speed_time = 2;
+%% Parameters
+path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 
-% for CCG
-binSize = 0.005; % bisize in seconds
-smooth = 4; % smooth factor
+% for SU
+criteria_fr = 0; %criteria to include or not a SU into the analysis
+criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
+criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
+binSize = [0.005 0.01 0.025 0.05 ]; %for qssemblie detection qnd qxctivity strength
 
-% Initialization of structures that wil contain the outputs
-cross.members.aversive = [];  cross.members.reward = [];
-cross.nonmembers.aversive = [];  cross.nonmembers.reward = [];
-time = [];
+% Behavior
+minimal_speed = 7; % minimal speed to detect quite periods
+minimal_speed_time = 2; % minimal time to detect quite periods
 
+percentages = [];
+
+Number_of_assemblies.aversive = [];
+Number_of_assemblies.reward = [];
+
+%% Main loop, to iterate across sessions
 for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
@@ -45,9 +29,11 @@ for tt = 1:length(path)
     % Extract only those that are directories.
     subFolders = files(dirFlags);
     clear files dirFlags
-    
     for t = 1 : length(subFolders)-2
-        disp(' ')
+        num_assembliesR = [];
+        num_assembliesA = [];
+        percentagesA = [];
+        
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
@@ -90,6 +76,13 @@ for tt = 1:length(path)
             end
         end
         clear y A R
+        
+        % Defining what condition was first
+        if aversiveTS_run(1) < rewardTS_run(1)
+            config = 1;
+        else
+            config = 2;
+        end
         
         %% Awake
         disp('Uploading digital imputs')
@@ -164,7 +157,7 @@ for tt = 1:length(path)
         movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
 %         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
         clear tmp start stop
-        
+
         %% Spikes
         % Load Units
         disp('Uploading Spiking activity')
@@ -175,7 +168,7 @@ for tt = 1:length(path)
         K = [K.cluster_id(K.group(:,1) == 'g') , Kinfo.ch(K.group(:,1) == 'g'),]; % defining good clusters
         % Load neuronal classification
         load('Cell_type_classification')
-        K = [K , Cell_type_classification(:,6:7)];
+        K = [K , Cell_type_classification(:,6:8)];
         group_dHPC = K(K(:,2) > 63,:);
         group_vHPC = K(K(:,2) <= 63,:);
         
@@ -195,47 +188,46 @@ for tt = 1:length(path)
         spks(:,2) = double(spks(:,2))./20000;
         
         % Selection of celltype to analyze
-        cellulartype = [K(:,1) , K(:,4)];
-        
+        if criteria_type == 0 %pyr
+            cellulartype = [K(:,1) , K(:,4)];
+        elseif criteria_type == 1 % int
+            cellulartype = [K(:,1) , not(K(:,4))];
+        elseif criteria_type == 2 % all
+            cellulartype = [K(:,1) , ones(length(K),1)];
+        end
         
         %% Counting the Number f SU
         numberD = 0;
         clusters.all = [];
         clusters.dHPC = [];
-        clusters.int.dHPC = [];
         for ii=1:size(group_dHPC,1)
             cluster = group_dHPC(ii,1);
             Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
             if Cellulartype
                 a = length(Restrict(spks(spks(:,1)==cluster,2),aversiveTS_run./1000)) / ((aversiveTS_run(2)-aversiveTS_run(1))/1000);
                 r = length(Restrict(spks(spks(:,1)==cluster,2),rewardTS_run./1000)) / ((rewardTS_run(2)-rewardTS_run(1))/1000);
-                if or(a > 0 ,  r > 0)
+                if or(a > criteria_fr ,  r > criteria_fr)
                     numberD = numberD+1;
                     clusters.all = [clusters.all ; cluster];
                     clusters.dHPC = [clusters.dHPC ; cluster];
                 end
-            else
-                clusters.int.dHPC = [clusters.int.dHPC ; cluster];
             end
             clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
         end
         
         numberV = 0;
         clusters.vHPC = [];
-        clusters.int.vHPC = [];
         for ii=1:size(group_vHPC,1)
             cluster = group_vHPC(ii,1);
             Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
             if Cellulartype
                 a = length(Restrict(spks(spks(:,1)==cluster,2),aversiveTS_run./1000)) / ((aversiveTS_run(2)-aversiveTS_run(1))/1000);
                 r = length(Restrict(spks(spks(:,1)==cluster,2),rewardTS_run./1000)) / ((rewardTS_run(2)-rewardTS_run(1))/1000);
-                if or(a > 0 ,  r > 0)
+                if or(a > criteria_fr ,  r > criteria_fr)
                     numberV = numberV+1;
                     clusters.all = [clusters.all ; cluster];
                     clusters.vHPC = [clusters.vHPC ; cluster];
                 end
-            else
-                clusters.int.vHPC = [clusters.int.vHPC ; cluster];
             end
             clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
         end
@@ -243,16 +235,32 @@ for tt = 1:length(path)
         clear camara shock rightvalve leftvalve
         clear ejeX ejeY dX dY dX_int dY_int
         
-        if or(numberD >2 , numberV > 2)
-            %% --- Aversive ---
+        %% Assemblies detection
+        if or(numberD > 3 , numberV > 3)
+            for i = 1 : size(binSize,2)
+            % --- Aversive ---
             disp('Lets go for the assemblies')
-            if isfile('dorsalventral_assemblies_aversive.mat')
-                disp('Loading Aversive template')
-                load('dorsalventral_assemblies_aversive.mat')
-            else
-                Th = [];
-                pat = [];
-            end
+%             if binSize(i) == 0.025
+%                 disp('Loading Aversive template')
+%                 load('dorsalventral_assemblies_aversive.mat')
+%             else
+                disp('Detection of assemblies using Aversive template')
+                % --- Options for assemblies detection ---
+                opts.Patterns.method = 'ICA';
+                opts.threshold.method= 'MarcenkoPastur';
+                opts.Patterns.number_of_iterations= 500;
+                opts.threshold.permutations_percentile = 0.9;
+                opts.threshold.number_of_permutations = 500;
+                opts.Patterns.number_of_iterations = 500;
+                opts.Members.method = 'Sqrt';
+                
+                limits = aversiveTS_run./1000;
+                events = [];
+                events = movement.aversive;
+                [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize(i), limits, events, false,false);
+                [Th , pat , eig] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
+%                 save([cd,'\dorsalventral_assemblies_aversiveVF.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')
+%             end
             
             Thresholded.aversive.all = Th;
             patterns.all.aversive = pat;
@@ -274,21 +282,37 @@ for tt = 1:length(path)
                     cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
                 end
             else
-                cond1 =  logical(0); %checking of dHPC SU
+                cond1 =  false; %checking of dHPC SU
                 cond2 =  logical(0); %checking of vHPC SU
                 cond.dHPC.aversive = and(cond1 , not(cond2));
                 cond.vHPC.aversive = and(cond2 , not(cond1));
                 cond.both.aversive = and(cond1 , cond2); clear cond1 cond2
             end
+            num_assembliesA = [num_assembliesA , sum(cond.both.aversive) sum(cond.dHPC.aversive) sum(cond.vHPC.aversive)];
             
-            %% --- Reward ---
+            % --- Reward ---
             disp('Loading Reward template')
-            if isfile('dorsalventral_assemblies_reward.mat')
-                load('dorsalventral_assemblies_reward.mat')
-            else
-                Th = [];
-                pat = [];
-            end
+%             if binSize(i) == 0.025
+%                 load('dorsalventral_assemblies_reward.mat')
+%             else
+                disp('Detection of assemblies using Rewarded template')
+                % --- Options for assemblies detection ---
+                opts.Patterns.method = 'ICA';
+                opts.threshold.method= 'MarcenkoPastur';
+                opts.Patterns.number_of_iterations= 500;
+                opts.threshold.permutations_percentile = 0.9;
+                opts.threshold.number_of_permutations = 500;
+                opts.Patterns.number_of_iterations = 500;
+                opts.Members.method = 'Sqrt';
+                
+                limits = rewardTS_run./1000;
+                events = [];
+                events = movement.reward;
+                [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize(i), limits, events, false,false);
+                [Th , pat , eig] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
+%                 save([cd,'\dorsalventral_assemblies_rewardVF.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')
+%             end
+            
             Thresholded.reward.all = Th;
             patterns.all.reward = pat;
             clear Th pat
@@ -315,199 +339,99 @@ for tt = 1:length(path)
                 cond.vHPC.reward = and(cond2 , not(cond1));
                 cond.both.reward = and(cond1 , cond2); clear cond1 cond2
             end
+            num_assembliesR = [num_assembliesR , sum(cond.both.reward) sum(cond.dHPC.reward) sum(cond.vHPC.reward)];
             
             
-            %% CCG
-            % Joint assemblies
-            % Aversive assemblies
-            if sum(cond.both.aversive)>0
-                T = Thresholded.aversive.all(:,cond.both.aversive);
-                C = [clusters.dHPC ; clusters.vHPC];
+            %% Similarity Index Calculation
+            
+            
+            if and(not(isempty(patterns.all.aversive)) , not(isempty(patterns.all.reward)))
+                [r.AR , p.AR] = SimilarityIndex(patterns.all.aversive , patterns.all.reward);
+                A = sum(p.AR,1)>=1;
+                R = sum(p.AR,2)>=1; R = R';
                 
-                % Between members
-                for i = 1 : size(T,2)
-                    for ii = 1 :size(clusters.dHPC,1)
-                        clustD = clusters.dHPC(ii);
-                        if T(ii,i)
-                            x = spks(spks(:,1)==clustD,2);
-                            x = Restrict(x,movement.aversive);
-                            for iii = 1:size(clusters.vHPC,1)
-                                clustV = clusters.vHPC(iii);
-                                if T(size(clusters.dHPC,1)+iii,i)
-                                    y = spks(spks(:,1)==clustV,2);
-                                    y = Restrict(y,movement.aversive);
-                                    if and(length(x) >= 5 , length(y) >= 5)
-                                        [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                        [ccg,time] = CCG(s,ids,'binSize',binSize,'duration',1,'smooth',smooth,'mode','ccg');
-%                                         if not(sum(isnan(ccg(:,1,2)))>0)
-                                            cross.members.aversive = [cross.members.aversive , zscore(ccg(:,1,2))];
-%                                         end
-                                        clear y s ids groups ccg
-                                    end
-                                end
-                                clear clustV
-                            end
-                        end
-                        clear clustD
-                    end
-                end
+                AR.dHPC = cond.dHPC.aversive .* cond.dHPC.reward';
+                AR.dHPC = and(AR.dHPC , p.AR);
                 
-                T = sum(T,2)>0; % to select only SU that were not members in any assemblie
-                % Between nonmember-nonmember
-                for i = 1 : size(T,2)
-                    for ii = 1 :size(clusters.dHPC,1)
-                        clustD = clusters.dHPC(ii);
-                        if not(T(ii,i))
-                            x = spks(spks(:,1)==clustD,2);
-                            x = Restrict(x,movement.aversive);
-                            for iii = 1:size(clusters.vHPC,1)
-                                clustV = clusters.vHPC(iii);
-                                if not(T(size(clusters.dHPC,1)+iii,i))
-                                    y = spks(spks(:,1)==clustV,2);
-                                    y = Restrict(y,movement.aversive);
-                                    if and(length(x) >= 5 , length(y) >= 5)
-                                        [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                        [ccg,time] = CCG(s,ids,'binSize',binSize,'duration',1,'smooth',smooth,'mode','ccg');
-%                                         if not(sum(isnan(ccg(:,1,2)))>0)
-                                            cross.nonmembers.aversive = [cross.nonmembers.aversive , zscore(ccg(:,1,2))];
-%                                         end
-                                        clear y s ids groups ccg
-                                    end
-                                end
-                                clear clustV
-                            end
-                        end
-                        clear clustD
-                    end
-                end
-                clear T C
+                AR.vHPC = cond.vHPC.aversive .* cond.vHPC.reward';
+                AR.vHPC = and(AR.vHPC , p.AR);
+                
+                AR.both = cond.both.aversive .* cond.both.reward';
+                AR.both = and(AR.both , p.AR);
+            else
+                AR.dHPC = 0;
+                AR.vHPC = 0;
+                AR.both = 0;
             end
             
-            % Reward assemblies
-            if sum(cond.both.reward)>0
-                T = Thresholded.reward.all(:,cond.both.reward);
-                C = [clusters.dHPC ; clusters.vHPC];
-                
-                % Between members
-                for i = 1 : size(T,2)
-                    for ii = 1 :size(clusters.dHPC,1)
-                        clustD = clusters.dHPC(ii);
-                        if T(ii,i)
-                            x = spks(spks(:,1)==clustD,2);
-                            x = Restrict(x,movement.reward);
-                            for iii = 1:size(clusters.vHPC,1)
-                                clustV = clusters.vHPC(iii);
-                                if T(size(clusters.dHPC,1)+iii,i)
-                                    y = spks(spks(:,1)==clustV,2);
-                                    y = Restrict(y,movement.reward);
-                                    if and(length(x) >= 5 , length(y) >= 5)
-                                        [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                        [ccg,time] = CCG(s,ids,'binSize',binSize,'duration',1,'smooth',smooth,'mode','ccg');
-%                                         if not(sum(isnan(ccg(:,1,2)))>0)
-                                            cross.members.reward = [cross.members.reward , zscore(ccg(:,1,2))];
-%                                         end
-                                        clear y s ids groups ccg
-                                    end
-                                end
-                                clear clustV
-                            end
-                        end
-                        clear clustD
-                    end
-                end
-                
-                T = sum(T,2)>0;% to select only SU that were not members in any assemblie
-                % Between nonmembers
-                for i = 1 : size(T,2)
-                    for ii = 1 :size(clusters.dHPC,1)
-                        clustD = clusters.dHPC(ii);
-                        if not(T(ii,i))
-                            x = spks(spks(:,1)==clustD,2);
-                            x = Restrict(x,movement.reward);
-                            for iii = 1:size(clusters.vHPC,1)
-                                clustV = clusters.vHPC(iii);
-                                if not(T(size(clusters.dHPC,1)+iii,i))
-                                    y = spks(spks(:,1)==clustV,2);
-                                    y = Restrict(y,movement.reward);
-                                    if and(length(x) >= 5 , length(y) >= 5)
-                                        [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                        [ccg,time] = CCG(s,ids,'binSize',binSize,'duration',1,'smooth',smooth,'mode','ccg');
-%                                         if not(sum(isnan(ccg(:,1,2)))>0)
-                                            cross.nonmembers.reward = [cross.nonmembers.reward , zscore(ccg(:,1,2))];
-%                                         end
-                                        clear y s ids groups ccg
-                                    end
-                                end
-                                clear clustV
-                            end
-                        end
-                        clear clustD
-                    end
-                end    
-                clear T C
-            end            
+            percentagesA = [percentagesA  , sum(sum(AR.both)) , sum(sum(AR.dHPC)) , sum(sum(AR.vHPC))];
+            clear A R r p
+            clear patterns Thresholded cond 
             
-            clear aversiveTS aversiveTS_run baselineTS bins Cell_type_classification
-            clear cellulartype clusters Events group_dHPC group_vHPC i ii iii K x
-            clear Kinfo NREM REM numberD numberV p parameter patterns post pre
-            clear SpikesD SpikesV spks spks_dHPC spks_vHPC Thresholded WAKE
-            clear Kinfo K ii iii ripples ripplesD ripplesV ripple_event Spikes
-            clear behaviior rewardTS rewardTS_run aversiveTS aversiveTS_run
+            end
+            Number_of_assemblies.aversive = [Number_of_assemblies.aversive ; num_assembliesA];
+            Number_of_assemblies.reward = [Number_of_assemblies.reward ; num_assembliesR];
+            percentages = [percentages ; percentagesA]; clear percentagesA
         end
+        disp(' ')
+        clear A aversiveTS aversiveTS_run baselineTS rewardTS rewardTS_run
+        clear behavior bins Cell_type_classification cellulartype cond
+        clear is K Kinfo group_dHPC group_vHPC matrixC matrixD matrixV
+        clear NREM REM WAKE segmentation tmp cond config
+        clear spiketrains_dHPC spiketrains_vHPC opts MUA
+        clear patterns Thresholded i  ii numberD numberV movement cross crossN
+        clear Spikes bins Clusters Shocks_filt Rewards_filt config n_SU_D n_SU_V
+        clear clusters coordinated coordinated_ripple_bursts coordinatedV
+        clear cooridnated_event coordinatedV_refined coordinatedV_refined
+        clear ripple_bursts ripple_event ripplesD ripplesV
+        clear spks spks_dHPC spks_vHPC ripples cooridnated_event
+        clear cooridnated_eventDV cooridnated_eventVD segments
     end
-    disp(' ')
-    disp(' ')
-    disp(' ')
+        clear num_assembliesA num_assembliesR
+    
 end
 
-%% ColorMaps
-figure,
-subplot(221)
-cross.members.aversive(:,sum(isnan(cross.members.aversive))>0) = [];
-[i ii] = max(cross.members.aversive);
-[i ii] = sort(ii);
-imagesc(time,[1:1:size(cross.members.aversive,2)],cross.members.aversive(:,ii)'),caxis([-3 3]), colormap 'jet'
-
-cross.nonmembers.aversive(:,sum(isnan(cross.nonmembers.aversive))>0) = [];
-x = randperm(size(cross.nonmembers.aversive,2));
-tmp = cross.nonmembers.aversive(:,x);
-tmp = tmp(:,1:size(cross.members.aversive,2));
-subplot(222)
-[i ii] = max(tmp);
-[i ii] = sort(ii);
-imagesc(time,[1:1:size(tmp,2)],tmp(:,ii)'),caxis([-3 3]), colormap 'jet'
-
-subplot(223)
-cross.members.reward(:,sum(isnan(cross.members.reward))>0) = [];
-[i ii] = max(cross.members.reward);
-[i ii] = sort(ii);
-imagesc(time,[1:1:size(cross.members.reward,2)],cross.members.reward(:,ii)'),caxis([-3 3]), colormap 'jet'
-
-cross.nonmembers.reward(:,sum(isnan(cross.nonmembers.reward))>0) = [];
-x = randperm(size(cross.nonmembers.reward,2));
-tmp1 = cross.nonmembers.reward(:,x);
-tmp1 = tmp1(:,1:size(cross.members.reward,2));
-subplot(224)
-[i ii] = max(tmp1);
-[i ii] = sort(ii);
-imagesc(time,[1:1:size(tmp1,2)],tmp1(:,ii)'),caxis([-3 3]), colormap 'jet'
-
-%% Average
 figure
-subplot(121)
-plot(time,nanmean(cross.members.aversive,2),'r'), hold on
-ciplot(nanmean(cross.members.aversive,2) - nansem(cross.members.aversive')' , nanmean(cross.members.aversive,2) + nansem(cross.members.aversive')' , time , 'r'), alpha 0.5
-plot(time,nanmean(tmp,2)','k'),ylim([-0.3 0.6]) , xlim([-0.3 0.6])
-ciplot(nanmean(tmp,2) - nansem(tmp')' , nanmean(tmp,2) + nansem(tmp')' , time , 'k'), alpha 0.5
-xline(-0.025,'--')
-xline(0.025,'--')
+subplot(231),bar([1 2 3 4] , [sum(Number_of_assemblies.aversive(:,1)) sum(Number_of_assemblies.aversive(:,4)) sum(Number_of_assemblies.aversive(:,7)) sum(Number_of_assemblies.aversive(:,10))]),ylim([0 100])
+subplot(232),bar([1 2 3 4] , [sum(Number_of_assemblies.aversive(:,2)) sum(Number_of_assemblies.aversive(:,5)) sum(Number_of_assemblies.aversive(:,8)) sum(Number_of_assemblies.aversive(:,11))]),ylim([0 150])
+subplot(233),bar([1 2 3 4] , [sum(Number_of_assemblies.aversive(:,3)) sum(Number_of_assemblies.aversive(:,6)) sum(Number_of_assemblies.aversive(:,9)) sum(Number_of_assemblies.aversive(:,12))]),ylim([0 45])
+
+subplot(234),bar([1 2 3 4] , [sum(Number_of_assemblies.reward(:,1)) sum(Number_of_assemblies.reward(:,4)) sum(Number_of_assemblies.reward(:,7)) sum(Number_of_assemblies.reward(:,10))]),ylim([0 100])
+subplot(235),bar([1 2 3 4] , [sum(Number_of_assemblies.reward(:,2)) sum(Number_of_assemblies.reward(:,5)) sum(Number_of_assemblies.reward(:,8)) sum(Number_of_assemblies.reward(:,11))]),ylim([0 150])
+subplot(236),bar([1 2 3 4] , [sum(Number_of_assemblies.reward(:,3)) sum(Number_of_assemblies.reward(:,6)) sum(Number_of_assemblies.reward(:,9)) sum(Number_of_assemblies.reward(:,12))]),ylim([0 45])
+
+figure
+subplot(131),bar([1 2 3 4] , [sum(percentages(:,1)) sum(percentages(:,4)) sum(percentages(:,7)) sum(percentages(:,10))]),ylim([0 20])
+subplot(132),bar([1 2 3 4] , [sum(percentages(:,2)) sum(percentages(:,5)) sum(percentages(:,8)) sum(percentages(:,11))]),ylim([0 60])
+subplot(133),bar([1 2 3 4] , [sum(percentages(:,3)) sum(percentages(:,6)) sum(percentages(:,9)) sum(percentages(:,12))]),ylim([0 25])
 
 
-subplot(122)
-plot(time,nanmean(cross.members.reward,2),'b'), hold on
-ciplot(nanmean(cross.members.reward,2) - nansem(cross.members.reward')' , nanmean(cross.members.reward,2) + nansem(cross.members.reward')' , time , 'b'), alpha 0.5
-plot(time,nanmean(tmp1,2)','k'),ylim([-0.3 0.6]) , xlim([-0.3 0.6])
-ciplot(nanmean(tmp1,2) - nansem(tmp1')' , nanmean(tmp1,2) + nansem(tmp1')' , time , 'k'), alpha 0.5
-xline(-0.025,'--')
-xline(0.025,'--')
-end
+ID1 = sum(percentages(:,1) + percentages(:,2) + percentages(:,3))./(Number_of_assemblies.aversive(:,1) + Number_of_assemblies.aversive(:,2) + Number_of_assemblies.aversive(:,3) + Number_of_assemblies.reward(:,1) + Number_of_assemblies.reward(:,2) +  Number_of_assemblies.reward(:,3));
+ID2 = sum(percentages(:,4) + percentages(:,5) + percentages(:,6))./(Number_of_assemblies.aversive(:,4) + Number_of_assemblies.aversive(:,5) + Number_of_assemblies.aversive(:,6) + Number_of_assemblies.reward(:,4) + Number_of_assemblies.reward(:,5) +  Number_of_assemblies.reward(:,6));
+ID3 = sum(percentages(:,7) + percentages(:,8) + percentages(:,9))./(Number_of_assemblies.aversive(:,7) + Number_of_assemblies.aversive(:,8) + Number_of_assemblies.aversive(:,9) + Number_of_assemblies.reward(:,7) + Number_of_assemblies.reward(:,8) +  Number_of_assemblies.reward(:,9));
+ID4 = sum(percentages(:,10) + percentages(:,11) + percentages(:,12))./(Number_of_assemblies.aversive(:,10) + Number_of_assemblies.aversive(:,11) + Number_of_assemblies.aversive(:,10) + Number_of_assemblies.reward(:,10) + Number_of_assemblies.reward(:,11) +  Number_of_assemblies.reward(:,12));
+
+
+IDs = [ID1 ; ID2 ; ID3 ; ID4];
+grps = [ones(length(ID1),1) ; ones(length(ID2),1)*2 ; ones(length(ID3),1)*3 ; ones(length(ID4),1)*4];
+
+figure,
+boxplot(IDs,grps),hold on
+kruskalwallis(IDs,grps)
+
+figure
+subplot(4,3,1),histogram(Number_of_assemblies.aversive(:,1),'BinEdges',[0:1:8]),ylim([0 30])
+subplot(4,3,2),histogram(Number_of_assemblies.aversive(:,2),'BinEdges',[0:1:8]),ylim([0 30])
+subplot(4,3,3),histogram(Number_of_assemblies.aversive(:,3),'BinEdges',[0:1:8]),ylim([0 30])
+
+subplot(4,3,4),histogram(Number_of_assemblies.aversive(:,4),'BinEdges',[0:1:8]),ylim([0 30])
+subplot(4,3,5),histogram(Number_of_assemblies.aversive(:,5),'BinEdges',[0:1:8]),ylim([0 30])
+subplot(4,3,6),histogram(Number_of_assemblies.aversive(:,6),'BinEdges',[0:1:8]),ylim([0 30])
+
+subplot(4,3,7),histogram(Number_of_assemblies.aversive(:,7),'BinEdges',[0:1:8]),ylim([0 30])
+subplot(4,3,8),histogram(Number_of_assemblies.aversive(:,8),'BinEdges',[0:1:8]),ylim([0 30])
+subplot(4,3,9),histogram(Number_of_assemblies.aversive(:,9),'BinEdges',[0:1:8]),ylim([0 30])
+
+subplot(4,3,10),histogram(Number_of_assemblies.aversive(:,10),'BinEdges',[0:1:8]),ylim([0 30])
+subplot(4,3,11),histogram(Number_of_assemblies.aversive(:,11),'BinEdges',[0:1:8]),ylim([0 30])
+subplot(4,3,12),histogram(Number_of_assemblies.aversive(:,12),'BinEdges',[0:1:8]),ylim([0 30])

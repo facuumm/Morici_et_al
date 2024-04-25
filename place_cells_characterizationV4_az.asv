@@ -24,7 +24,7 @@ minimal_speed_time = 2; % minimal time to detect quite periods
 comp = {'laps'}; %{'within'};
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Main loop, to iterate across sessions
+%% Main loop, to iterate across sessions ORIGINAL - within/between by bins 
 for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
@@ -471,7 +471,7 @@ for tt = 1:length(path)
                 
                 spks = spks_vHPC(spks_vHPC(:,1)==cluster,2); % select tspk from cluster
               
-                % Select neurons with fr greater than tresh in aversive or reward - PC criteria 1   
+                % Select neurons with mean fr greater than tresh in aversive or reward - PC criteria 1   
                 tresh = 0.1; % hz
                 spks_tmp = Restrict(spks,movement.reward);
                 fr_rew= size(spks_tmp,1)/sum(movement.reward(:,2)-movement.reward(:,1));
@@ -542,7 +542,7 @@ for tt = 1:length(path)
 %                     figure(3);clf; hold on; plot(pos_tmp(:,2),pos_tmp(:,1),'color', [.3 .3 .3]);hold on; 
 %                     %Find interpolated position of each spike:
 %                     xs = interp1(pos_tmp(:,1),pos_tmp(:,2),spks_tmp);
-%                     scatter(xs,spks_tmp,'*'); 
+%                     scatter(xs,spks_tmp,'filled','MarkerFaceColor','red'); 
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     
 
@@ -1428,6 +1428,477 @@ for tt = 1:length(path)
     disp(' ')
 end
 
+%% Main loop spliting by random laps  
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+    
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd(session)
+        %Loading TS of the sessions
+        disp('Uploading session time stamps')
+        x = dir([cd,'\*.cat.evt']);
+        segments = readtable([cd,'\',x.name],'FileType','text');
+        clear x
+        % TimeStamps of begening and end of the sleep and awake trials
+        % Reward and Aversive trials
+        aversiveTS = [];
+        aversiveTS_run = [];
+        rewardTS = [];
+        rewardTS_run = [];
+        for y = 1 : height(segments)
+            % Baseline sleep session TS detection
+            if y == 1
+                baselineTS(1,1) = segments.Var1(y);
+            elseif y ==2
+                baselineTS(1,2) = segments.Var1(y);
+            end
+            % Aversive sleep session TS detection
+            if strcmp(segments.Var2{y},'aversive')
+                if strcmp(segments.Var3{y},'End')
+                    aversiveTS(1,1) = segments.Var1(y+1);
+                    aversiveTS(1,2) = segments.Var1(y+2);
+                    aversiveTS_run(1,1) = segments.Var1(y-1);
+                    aversiveTS_run(1,2) = segments.Var1(y);
+                    A = y;
+                end
+                % Rewarded sleep session TS detection
+            elseif strcmp(segments.Var2{y},'reward')
+                if strcmp(segments.Var3{y},'End')
+                    rewardTS(1,1) = segments.Var1(y+1);
+                    rewardTS(1,2) = segments.Var1(y+2);
+                    rewardTS_run(1,1) = segments.Var1(y-1);
+                    rewardTS_run(1,2) = segments.Var1(y);
+                    R = y;
+                end
+            end
+        end
+        clear y
+        
+        %Session output
+        dHPC_lap = {};% one cell per pc
+        vHPC_lap = {}; 
+        
+        %% Awake
+        disp('Uploading digital imputs')
+        % Load digitalin.mat
+        load('digitalin.mat')
+        %Shocks selection
+        Shocks_filt = Restrict(shock,aversiveTS_run ./1000);
+        % Keep only the first shock of each TTL (first from 20)
+        count = 1;
+        deff = [];
+        for i = 1:length(Shocks_filt)
+            if count == 1
+                deff = [deff ; Shocks_filt(i,1)];
+            end
+            if count ==20
+                count = 0;
+            end
+            count = count + 1;
+        end
+        Shocks_filt = deff;
+        clear count deff shock i
+        %Rewards selection
+        Rewards_filt = Restrict([leftvalve ; rightvalve],rewardTS_run ./1000);
+        disp('Uploading DLC outputs')
+        camara = ((camara(:,2)-camara(:,1))/2)+camara(:,1);
+        % periods of movment during each condition
+        if rewardTS_run(1) < aversiveTS_run(1)
+            load('laps1.mat','posx','posy');
+            [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            %         [camaraR2,~] = find((camara(:,1)-rewardTS_run(2)/1000)<0,1,'last'); %TimeStamp of the ending of aversive
+            pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
+            behavior.pos.reward = [pos];
+            behavior.speed.reward = LinearVelocity(pos,0);
+            behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
+            behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
+            clear pos camaraR posx posy
+            load('laps2.mat','posx','posy');
+            [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
+            behavior.pos.aversive = [pos];
+            behavior.speed.aversive = LinearVelocity(pos,0);
+            behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
+            behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
+            clear pos camaraR
+        else
+            load('laps2.mat','posx','posy');
+            [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            %         [camaraR2,~] = find((camara(:,1)-rewardTS_run(2)/1000)<0,1,'last'); %TimeStamp of the ending of aversive
+            pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
+            behavior.pos.reward = [pos];
+            behavior.speed.reward = LinearVelocity(pos,0);
+            behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
+            behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
+            clear pos camaraR posx posy
+            load('laps1.mat','posx','posy');
+            [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int; %saving corrected pos
+            behavior.pos.aversive = [pos];
+            behavior.speed.aversive = LinearVelocity(pos,0);
+            behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
+            behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
+            clear pos camaraA posx posy
+        end
+        %Video sampling rate 
+        dt = (mean(diff(behavior.pos.aversive(:,1)))); 
+        
+        % Generation of no-movements periods
+        % Reward
+        start = behavior.speed.reward(1,1);   stop = behavior.speed.reward(end,1);
+        movement.reward = InvertIntervals(behavior.quiet.reward , start , stop); %keep only those higher than criteria
+        movement.reward(movement.reward(:,2) - movement.reward(:,1) <1,:)=[];
+        clear tmp start stop
+        % Aversive
+        start = behavior.speed.aversive(1,1);   stop = behavior.speed.aversive(end,1);
+        movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
+        movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
+        clear tmp start stop
+
+        %% Spikes
+        %Load Units
+        disp('Uploading Spiking activity')
+        cd 'Spikesorting'
+        spks = double([readNPY('spike_clusters.npy') readNPY('spike_times.npy')]);
+        K = tdfread('cluster_group.tsv'); % import clusters ID and groups (MUA,Noise,Good)
+        Kinfo = tdfread('cluster_info.tsv'); % import information of clusters
+        K = [K.cluster_id(K.group(:,1) == 'g') , Kinfo.ch(K.group(:,1) == 'g'),]; % defining good clusters
+        % Load neuronal classification
+        load('Cell_type_classification')
+        K = [K , Cell_type_classification(:,6:7)];
+        group_dHPC = K(K(:,2) > 63,:);
+        group_vHPC = K(K(:,2) <= 63,:);
+        %Loop to select dorsal or ventral LFP and SU
+        % z=1 --> dorsal
+        % z=2 --> ventral
+        for z = 1:2
+            if z == 1
+                n_SU_D = [n_SU_D ; length(group_dHPC)];
+                spks_dHPC = spks(ismember(spks(:,1),group_dHPC(:,1)),:); %keep spks from good clusters
+            else
+                n_SU_V = [n_SU_V ; length(group_vHPC)];
+                spks_vHPC = spks(ismember(spks(:,1),group_vHPC(:,1)),:); %keep spks from good clusters
+            end
+        end
+        clear z
+        spks_vHPC(:,2) = double(spks_vHPC(:,2))./20000;
+        spks_dHPC(:,2) = double(spks_dHPC(:,2))./20000;
+        % Selection of celltype to analyze
+        if criteria_type == 0 %pyr
+            cellulartype = [K(:,1) , K(:,4)];
+        elseif criteria_type == 1 % int
+            cellulartype = [K(:,1) , not(K(:,4))];
+        elseif criteria_type == 2 % all
+            cellulartype = [K(:,1) , ones(length(K),1)];
+        end
+        % Definition of the emotional transition
+        if aversiveTS_run(1)<rewardTS_run(1)
+            cond = 1; % 1 if the order was Aversive -> Reward
+        else
+            cond = 2;% 1 if the order was Reward -> Aversive
+        end
+        
+        %% Firing maps calculation
+        disp('dHPC Firing rate map calculation')
+        
+        for ii=1:size(group_dHPC,1)
+
+            cluster = group_dHPC(ii,1);
+            celltype = logical(cellulartype(cellulartype(:,1) == cluster,2));
+            
+            if celltype % check if pyr
+                
+                spks = spks_dHPC(spks_dHPC(:,1)==cluster,2); % select tspk from cluster
+
+                % --- Aversive ---
+                spks_ave = spks; 
+                pos_ave = behavior.pos.aversive(:,1:2); 
+                in_maze = ToIntervals(pos_ave(:,1),and(pos_ave(:,2)>30 , pos_ave(:,2)<180));% eliminating the extrems of the maze
+                    
+                %Check lenght of in_maze segments to define real laps
+                in_lapA = []; % keeps only full laps (maybe too restrictive)
+                    for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_ave(pos_ave(:,1)==ini,2); 
+                        fin_pos = pos_ave(pos_ave(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>100
+                             in_lapA = [in_lapA;in_maze(ix,:)]; 
+                        end
+                    end
+                    
+                %Restrict spk and position to laps and movement periods
+                spks_ave = Restrict(spks_ave,in_lapA);spks_ave = Restrict(spks_ave , movement.aversive); % Restrict spikes to movement periods and laps
+                    
+                pos_ave = Restrict(pos_ave,in_lapA);pos_ave = Restrict(pos_ave, movement.aversive); % Restrict pos to movement periods and laps
+                pos_ave(:,2) = pos_ave(:,2)-min(pos_ave(:,2)); pos_ave(:,2) = pos_ave(:,2)/max(pos_ave(:,2)); %normalization of position
+               
+                % --- Reward ---
+                spks_rew = spks; 
+                pos_rew = behavior.pos.reward(:,1:2);
+                in_maze = ToIntervals(pos_rew(:,1),and(pos_rew(:,2)>30 , pos_rew(:,2)<180));% eliminating the extrems of the maze
+               
+                %Check lenght of in_maze segments to define real laps
+                in_lapR = []; 
+                    for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_rew(pos_rew(:,1)==ini,2); 
+                        fin_pos = pos_rew(pos_rew(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>100
+                             in_lapR = [in_lapR;in_maze(ix,:)]; 
+                        end
+                    end 
+                    
+                %Restrict spk and position to laps and movement periods
+                spks_rew = Restrict(spks_rew,in_lapR); spks_rew = Restrict(spks_rew, movement.reward); % Restrict to movement periods
+                pos_rew = Restrict(pos_rew,in_lapR); pos_rew = Restrict(pos_rew , movement.reward);
+                pos_rew(:,2) = pos_rew(:,2)-min(pos_rew(:,2)); pos_rew(:,2) = pos_rew(:,2)/max(pos_rew(:,2)); %normalization of position 
+                    
+                    %%%%%%%%Control plot %%%%%%%%%%
+%                     figure(1);clf; hold on;subplot(1,2,1); plot(pos_ave(:,2),pos_ave(:,1),'color', [.3 .3 .3]);hold on; 
+%                     Find interpolated position of each spike:
+%                     xs = interp1(pos_ave(:,1),pos_ave(:,2),spks_ave);scatter(xs,spks_ave,'*'); 
+%                     title(['Aversive - Mean fr:',num2str(fr_ave)]);
+%                    
+%                     subplot(1,2,2); plot(pos_rew(:,2),pos_rew(:,1),'color', [.3 .3 .3]);hold on; 
+%                     Find interpolated position of each spike:
+%                     xs = interp1(pos_rew(:,1),pos_rew(:,2),spks_rew); scatter(xs,spks_rew,'*');
+%                     title(['Reward- Mean fr:',num2str(fr_rew)]);
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                    
+   
+                %Checking pc criteria
+                % 1. Mean firing rate above tresh; 2. At least 1 pf > 4 bins in one of the cond  
+     
+                [curveA , statsA] = FiringCurve(pos_ave , spks_ave , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4, 'minPeak' , 0.2);
+                [curveR , statsR] = FiringCurve(pos_rew , spks_rew , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4, 'minPeak' , 0.2);
+                    
+                fr_ave= size(spks_ave,1)/sum(in_lapA(:,2)-in_lapA(:,1)); 
+                fr_rew= size(spks_rew,1)/sum(in_lapR(:,2)-in_lapR(:,1)); 
+                tresh=0.1; % mean firng rate treshold 
+                    
+                %if there is no PF, assigne 0 to correct assesment in the next if
+                if isempty(statsA.field)
+                      statsA.field=0;
+                end 
+                if isempty(statsR.field)
+                      statsR.field=0;
+                end 
+                    
+                    if and(or(sum(statsA.field(:,:,1))>= 4 , sum(statsR.field(:,:,1))>= 4),or(fr_ave>tresh,fr_rew>tresh)) % you are a PC  
+                    
+                    %Subsampling laps - keep the same number of laps in each condition. 
+                    % Selects the n_lap of the cond with less laps, and randomly select *100 times n_lap from the cond with more laps 
+                    % and caluclate within/between comparisons 
+                    
+                        if size(in_lapR,1)> size(in_lapA,1) % if more laps in rew
+                            n_lap = size(in_lapA,1); 
+                            [within_mean1,within_mean2,between] = pc_parameters_laps(n_lap,pos_rew,spks_rew,in_lapR,pos_ave,spks_ave,in_lapA,sigma,Xedges);
+                            withinA = within_mean2;
+                            withinR = within_mean1;                     
+                        elseif size(in_lapR,1)< size(in_lapA,1)  %if more laps in ave
+                            n_lap = size(in_lapR,1); 
+                            [within_mean1,within_mean2,between] = pc_parameters_laps(n_lap,pos_ave,spks_ave,in_lapA,pos_rew,spks_rew,in_lapR,sigma,Xedges);                            
+                            withinA = within_mean1;
+                            withinR = within_mean2;
+                        else % equal # laps in cond 
+                            [withinA] = Within_lap_random(pos_ave,spks_ave,in_lapA,sigma,Xedges);
+                            [withinR] = Within_lap_random(pos_rew,spks_rew,in_lapR,sigma,Xedges);
+                            [between] = Between_lap_random(pos_ave,spks_ave,in_lapA,pos_rew,spks_rew,in_lapR,sigma,Xedges);
+                        end 
+                    
+                    % Save PC varaiables 
+                       
+                    n.id = cluster; 
+                    n.n_lap =n_lap; 
+                    n.fr_mean.ave= fr_ave;
+                    n.fr_mean.rew= fr_rew;
+                    n.frMap_ave = curveA.rate;
+                    n.frMap_rew = curveR.rate;
+                    n.stats_ave = statsA;
+                    n.stats_rew = statsR;
+                    n.between = between;
+                    n.within.ave = withinA; 
+                    n.within.rew = withinR;
+       
+                    dHPC_lap{ii}= n;
+                    end 
+            end
+        end
+
+        disp('vHPC Firing rate map calculation')
+        for ii=1:size(group_vHPC,1)
+
+            cluster = group_vHPC(ii,1);
+            celltype = logical(cellulartype(cellulartype(:,1) == cluster,2));
+            
+            if celltype % check if pyr
+                
+                spks = spks_dHPC(spks_dHPC(:,1)==cluster,2); % select tspk from cluster
+
+                % --- Aversive ---
+                spks_ave = spks; 
+                pos_ave = behavior.pos.aversive(:,1:2); 
+                in_maze = ToIntervals(pos_ave(:,1),and(pos_ave(:,2)>30 , pos_ave(:,2)<180));% eliminating the extrems of the maze
+                    
+                %Check lenght of in_maze segments to define real laps
+                in_lapA = []; % keeps only full laps (maybe too restrictive)
+                    for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_ave(pos_ave(:,1)==ini,2); 
+                        fin_pos = pos_ave(pos_ave(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>100
+                             in_lapA = [in_lapA;in_maze(ix,:)]; 
+                        end
+                    end
+                    
+                %Restrict spk and position to laps and movement periods
+                spks_ave = Restrict(spks_ave,in_lapA);spks_ave = Restrict(spks_ave , movement.aversive); % Restrict spikes to movement periods and laps
+                    
+                pos_ave = Restrict(pos_ave,in_lapA);pos_ave = Restrict(pos_ave, movement.aversive); % Restrict pos to movement periods and laps
+                pos_ave(:,2) = pos_ave(:,2)-min(pos_ave(:,2)); pos_ave(:,2) = pos_ave(:,2)/max(pos_ave(:,2)); %normalization of position
+               
+                % --- Reward ---
+                spks_rew = spks; 
+                pos_rew = behavior.pos.reward(:,1:2);
+                in_maze = ToIntervals(pos_rew(:,1),and(pos_rew(:,2)>30 , pos_rew(:,2)<180));% eliminating the extrems of the maze
+               
+                %Check lenght of in_maze segments to define real laps
+                in_lapR = []; 
+                    for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_rew(pos_rew(:,1)==ini,2); 
+                        fin_pos = pos_rew(pos_rew(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>100
+                             in_lapR = [in_lapR;in_maze(ix,:)]; 
+                        end
+                    end 
+                    
+                %Restrict spk and position to laps and movement periods
+                spks_rew = Restrict(spks_rew,in_lapR); spks_rew = Restrict(spks_rew, movement.reward); % Restrict to movement periods
+                pos_rew = Restrict(pos_rew,in_lapR); pos_rew = Restrict(pos_rew , movement.reward);
+                pos_rew(:,2) = pos_rew(:,2)-min(pos_rew(:,2)); pos_rew(:,2) = pos_rew(:,2)/max(pos_rew(:,2)); %normalization of position 
+                    
+                    %%%%%%%%Control plot %%%%%%%%%%
+                    figure(1);clf; hold on;subplot(1,2,1); plot(pos_ave(:,2),pos_ave(:,1),'color', [.3 .3 .3]);hold on; 
+                    %Find interpolated position of each spike:
+                    xs = interp1(pos_ave(:,1),pos_ave(:,2),spks_ave);scatter(xs,spks_ave,'*'); 
+                    title(['Aversive - Mean fr:',num2str(fr_ave)]);
+                   
+                    subplot(1,2,2); plot(pos_rew(:,2),pos_rew(:,1),'color', [.3 .3 .3]);hold on; 
+                    %Find interpolated position of each spike:
+                    xs = interp1(pos_rew(:,1),pos_rew(:,2),spks_rew); scatter(xs,spks_rew,'*');
+                    title(['Reward- Mean fr:',num2str(fr_rew)]);
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                    
+   
+                %Checking pc criteria
+                % 1. Mean firing rate above tresh; 2. At least 1 pf > 4 bins in one of the cond  
+     
+                [curveA , statsA] = FiringCurve(pos_ave , spks_ave , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4, 'minPeak' , 0.2);
+                [curveR , statsR] = FiringCurve(pos_rew , spks_rew , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4, 'minPeak' , 0.2);
+                    
+                fr_ave= size(spks_ave,1)/sum(in_lapA(:,2)-in_lapA(:,1)); 
+                fr_rew= size(spks_rew,1)/sum(in_lapR(:,2)-in_lapR(:,1)); 
+                tresh=0.1; % mean firng rate treshold 
+                    
+                %if there is no PF, assigne 0 to correct assesment in the next if
+                if isempty(statsA.field)
+                      statsA.field=0;
+                end 
+                if isempty(statsR.field)
+                      statsR.field=0;
+                end 
+                    
+                    if and(or(sum(statsA.field(:,:,1))>= 4 , sum(statsR.field(:,:,1))>= 4),or(fr_ave>tresh,fr_rew>tresh)) % you are a PC  
+                    
+                    %Subsampling laps - keep the same number of laps in each condition. 
+                    % Selects the n_lap of the cond with less laps, and randomly select *100 times n_lap from the cond with more laps 
+                    % and caluclate within/between comparisons 
+                    
+                        if size(in_lapR,1)> size(in_lapA,1) % if more laps in rew
+                            n_lap = size(in_lapA,1); 
+                            [within_mean1,within_mean2,between] = pc_parameters_laps(n_lap,pos_rew,spks_rew,in_lapR,pos_ave,spks_ave,in_lapA,sigma,Xedges);
+                            withinA = within_mean2;
+                            withinR = within_mean1;                     
+                        elseif size(in_lapR,1)< size(in_lapA,1)  %if more laps in ave
+                            n_lap = size(in_lapR,1); 
+                            [within_mean1,within_mean2,between] = pc_parameters_laps(n_lap,pos_ave,spks_ave,in_lapA,pos_rew,spks_rew,in_lapR,sigma,Xedges);                            
+                            withinA = within_mean1;
+                            withinR = within_mean2;
+                        else % equal # laps in cond 
+                            [withinA] = Within_lap_random(pos_ave,spks_ave,in_lapA,sigma,Xedges);
+                            [withinR] = Within_lap_random(pos_rew,spks_rew,in_lapR,sigma,Xedges);
+                            [between] = Between_lap_random(pos_ave,spks_ave,in_lapA,pos_rew,spks_rew,in_lapR,sigma,Xedges);
+                        end 
+                    
+                    % Save PC varaiables 
+                       
+                    n.id = cluster; 
+                    n.n_lap =n_lap; 
+                    n.frMap_ave = curveA.rate;
+                    n.frMap_rew = curveR.rate;
+                    n.stats_ave = statsA;
+                    n.stats_rew = statsR;
+                    n.between = between;
+                    n.within.ave = withinA; 
+                    n.within.rew = withinR;
+       
+                    vHPC_lap{ii}= n;
+                    end 
+            end
+        end     
+
+    %% Saveing PC INFO 
+    if ~isempty(dHPC_lap)
+        dHPC_lap = dHPC_lap(~cellfun('isempty',dHPC_lap));
+        save([cd,'\dHPC_pc_lap.mat'],'dHPC_lap'); 
+    end
+    if ~isempty(vHPC_lap)
+        vHPC_lap = vHPC_lap(~cellfun('isempty',vHPC_lap));
+        save([cd,'\vHPC_pc_lap.mat'],'vHPC_lap'); 
+    end
+  
+
+        
+        clear aversiveTS aversiveTS_run rewardTS rewardTS_run baselineTS
+        clear behavior camara Cell_type_classification cellulartype cluster
+        clear group_dHPC group_vHPC K Kinfo leftvalve rightvalve movement R
+        clear Rewards_filt Shocks_filt spks_dHPC spks_vHPC r rZ
+        clear cluster cluster_dHPC cluster_vHPC coordinated coordinatedV coordinatedV_refined
+        clear camaraA count dX dX_int dY dY_int gc grps i ii MUA segments tmp WAKE REM NREM
+        disp(['-- Finished folder #' , num2str(t) , ' from rat #' , num2str(tt) , ' ---'])
+        disp('  ')
+    end
+    disp(['-------- Finished rat#' , num2str(tt) , ' --------'])
+    disp(' ')
+end
+
 %% Remapping parameters plots and stats 
 % Load remapping parameters and creates matrix to plot and stats.
 % Prev to run this section, you should have run the main loop. So, this
@@ -1463,37 +1934,34 @@ for tt = 1:length(path)
         %Loading pc matrix of the sessions
         disp('Uploading session pc matrix');
         try
-            load('dHPC_pc.mat');
-        catch 
-            dHPC = []; disp(['No dHPC_pc.mat file in ',session]);
-        end 
-        try
-            load('vHPC_pc.mat');
-        catch
-            vHPC= []; disp(['No vHPC_pc.mat file in ',session]);
-        end
-        
-        %Save session parameters 
-        for d=1:size(dHPC,2)
-            pc = dHPC{d}; 
+            load('dHPC_pc_lap.mat');
+             %Save session parameters 
+        for d=1:size(dHPC_lap,2)
+            pc = dHPC_lap{d}; 
             bet = [pc.between,1]; 
             wa = [pc.within.ave,2];
             wr = [pc.within.rew,3];
             dhpc_temp = [dhpc_temp;bet;wa;wr]; 
             
         end
-
-        for d=1:size(vHPC,2)
-            pc = vHPC{d}; 
-            bet = [pc.between,1]; 
-            wa = [pc.within.ave,2];
-            wr = [pc.within.rew,3];
-            vhpc_temp = [vhpc_temp;bet;wa;wr]; 
-            
+        catch 
+            dHPC = []; disp(['No dHPC_pc_lap.mat file in ',session]);
+        end 
+        try
+            load('vHPC_pc_lap.mat');
+            for d=1:size(vHPC_lap,2)
+                pc = vHPC_lap{d}; 
+                bet = [pc.between,1]; 
+                wa = [pc.within.ave,2];
+                wr = [pc.within.rew,3];
+                vhpc_temp = [vhpc_temp;bet;wa;wr]; 
+            end 
+     
+        catch
+            vHPC= []; disp(['No vHPC_pc_lap.mat file in ',session]);
         end
         
-    end
-    
+    end 
     %Save sub parameters 
     dhpc_sub = [dhpc_sub;dhpc_temp];
     vhpc_sub = [vhpc_sub;vhpc_temp];
@@ -1581,7 +2049,7 @@ c = multcompare(stats)
 tbl = array2table(c,"VariableNames", ...
     ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
 
-%% Total number of recorded neurons - next time put this inseide the main loop
+%% Total number of recorded neurons - next time put this inside the main loop
 clear
 clc
 close all
@@ -1644,6 +2112,77 @@ n_total(any(isnan(n_total), 2), :) = [];
 size(unique(n_total(n_total(:,1)==165,2)))
 
 sum(n_total(n_total(:,1)==132,6))
+
+%% PC total number 
+clear
+clc
+close all
+% Parameters
+path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\ready';'\\Maryjackson\e\Rat103\usable';'\\Maryjackson\e\Rat132\recordings\in_pyr'; '\\Maryjackson\e\Rat165\in_pyr'; ...
+    '\\Maryjackson\e\Rat126\Ephys\in_Pyr'};%List of folders from the path
+
+%Output matrix 
+dhpc_pc = [];
+vhpc_pc = [];
+
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+    dhpc_temp = [];
+    vhpc_temp = [];
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd([session,'\Spikesorting'])
+        %Loading pc matrix of the sessions
+        disp('Uploading session pc matrix');
+        try
+            load('dHPC_pc_lap.mat');
+        catch 
+            dHPC = []; disp(['No dHPC_pc_lap.mat file in ',session]);
+        end 
+        try
+            load('vHPC_pc_la.mat');
+        catch
+            vHPC= []; disp(['No vHPC_pc.mat file in ',session]);
+        end
+        
+        %Save session sub parameters 
+        for d=1:size(dHPC,2)
+            pc = dHPC{d}; 
+            bet = [pc.lap.between_r,1]; 
+            wa = [pc.lap.ave_r,2];
+            wr = [pc.lap.rew_r,3];
+            dhpc_temp = [dhpc_temp;bet;wa;wr]; 
+            
+        end
+
+        for d=1:size(vHPC,2)
+            pc = vHPC{d}; 
+            bet = [pc.lap.between_r,1]; 
+            wa = [pc.lap.ave_r,2];
+            wr = [pc.lap.rew_r,3];
+            vhpc_temp = [vhpc_temp;bet;wa;wr]; 
+            
+        end
+        
+    end
+    
+    %Save sub parameters 
+    dhpc_lap = [dhpc_lap;dhpc_temp];
+    vhpc_lap = [vhpc_lap;vhpc_temp];
+     
+end 
+
+
+
+
+
 
 %% PC stability - within 1st and 2nd 
 % 1.Compares remapping parameters between the 1st and the 2nd half of the
@@ -3103,7 +3642,7 @@ data= [dhpc_fr(:,p), ones(size(dhpc_fr,1),1); ...
 
  
 figure;clf;hold on, 
-sgtitle('dHPC original')
+sgtitle('dHPC random laps')
     y = data(:,1);
     x= data(:,2);
     c = [.3,.3,.3];
@@ -3133,7 +3672,7 @@ data= [vhpc_fr(:,p), ones(size(vhpc_fr,1),1); ...
        vhpc_fr(:,p+1), ones(size(vhpc_fr,1),1)*2; ...
        vhpc_fr(:,p+2), ones(size(vhpc_fr,1),1)*3]; 
 figure;clf;hold on, 
-sgtitle('vHPC original')
+sgtitle('vHPC random laps')
     y = data(:,1);
     x= data(:,2);
     c = [.3,.3,.3];
@@ -3147,9 +3686,416 @@ sgtitle('vHPC original')
     scatter(x,y, "filled");
 % Paired non-parametric anova - Friedman test
 %Prepare data to test
-temp = vhpc_fr(:,p:p+2);
-temp(any(isnan(temp), 2), :) = [];
+temp = vhpc_fr(:,p:p+2); % One column for each group 
+temp(any(isnan(temp), 2), :) = []; % Friedman test does not allow nans
+%Test
 [p,~,stats] =  friedman(temp); 
 c = multcompare(stats)
 tbl = array2table(c,"VariableNames", ...
     ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
+%% PLOT examples 
+
+clear
+clc
+close all
+path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\ready';'\\Maryjackson\e\Rat103\usable';'\\Maryjackson\e\Rat132\recordings\in_pyr'; '\\Maryjackson\e\Rat165\in_pyr'; ...
+    '\\Maryjackson\e\Rat126\Ephys\in_Pyr'};%List of folders from the path
+n_SU_V = [];
+n_SU_D = [];
+Xedges = 60; %number of bins for RateMap construction - 3cm bin
+sigma = 2;%round(15/(180/Xedges)); %defined for gauss kernel of 15cm
+binSize = 0.001; % bin size for replay events detection
+bin_size = 1; % to bin pos ans spks in between/within  
+% Behavior
+minimal_speed = 2.5;% minimal speed to detect quite periods
+minimal_speed_time = 2; % minimal time to detect quite periods
+
+
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+    
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd(session)
+        %Loading TS of the sessions
+        disp('Uploading session time stamps')
+        x = dir([cd,'\*.cat.evt']);
+        segments = readtable([cd,'\',x.name],'FileType','text');
+        clear x
+        % TimeStamps of begening and end of the sleep and awake trials
+        % Reward and Aversive trials
+        aversiveTS = [];
+        aversiveTS_run = [];
+        rewardTS = [];
+        rewardTS_run = [];
+        for y = 1 : height(segments)
+            % Baseline sleep session TS detection
+            if y == 1
+                baselineTS(1,1) = segments.Var1(y);
+            elseif y ==2
+                baselineTS(1,2) = segments.Var1(y);
+            end
+            % Aversive sleep session TS detection
+            if strcmp(segments.Var2{y},'aversive')
+                if strcmp(segments.Var3{y},'End')
+                    aversiveTS(1,1) = segments.Var1(y+1);
+                    aversiveTS(1,2) = segments.Var1(y+2);
+                    aversiveTS_run(1,1) = segments.Var1(y-1);
+                    aversiveTS_run(1,2) = segments.Var1(y);
+                    A = y;
+                end
+                % Rewarded sleep session TS detection
+            elseif strcmp(segments.Var2{y},'reward')
+                if strcmp(segments.Var3{y},'End')
+                    rewardTS(1,1) = segments.Var1(y+1);
+                    rewardTS(1,2) = segments.Var1(y+2);
+                    rewardTS_run(1,1) = segments.Var1(y-1);
+                    rewardTS_run(1,2) = segments.Var1(y);
+                    R = y;
+                end
+            end
+        end
+        clear y
+
+        
+        %% Awake
+        disp('Uploading digital imputs')
+        % Load digitalin.mat
+        load('digitalin.mat')
+        %Shocks selection
+        Shocks_filt = Restrict(shock,aversiveTS_run ./1000);
+        % Keep only the first shock of each TTL (first from 20)
+        count = 1;
+        deff = [];
+        for i = 1:length(Shocks_filt)
+            if count == 1
+                deff = [deff ; Shocks_filt(i,1)];
+            end
+            if count ==20
+                count = 0;
+            end
+            count = count + 1;
+        end
+        Shocks_filt = deff;
+        clear count deff shock i
+        %Rewards selection
+        Rewards_filt = Restrict([leftvalve ; rightvalve],rewardTS_run ./1000);
+        disp('Uploading DLC outputs')
+        camara = ((camara(:,2)-camara(:,1))/2)+camara(:,1);
+        % periods of movment during each condition
+        if rewardTS_run(1) < aversiveTS_run(1)
+            load('laps1.mat','posx','posy');
+            [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            %         [camaraR2,~] = find((camara(:,1)-rewardTS_run(2)/1000)<0,1,'last'); %TimeStamp of the ending of aversive
+            pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
+            behavior.pos.reward = [pos];
+            behavior.speed.reward = LinearVelocity(pos,0);
+            behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
+            behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
+            clear pos camaraR posx posy
+            load('laps2.mat','posx','posy');
+            [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
+            behavior.pos.aversive = [pos];
+            behavior.speed.aversive = LinearVelocity(pos,0);
+            behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
+            behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
+            clear pos camaraR
+        else
+            load('laps2.mat','posx','posy');
+            [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            %         [camaraR2,~] = find((camara(:,1)-rewardTS_run(2)/1000)<0,1,'last'); %TimeStamp of the ending of aversive
+            pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
+            behavior.pos.reward = [pos];
+            behavior.speed.reward = LinearVelocity(pos,0);
+            behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
+            behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
+            clear pos camaraR posx posy
+            load('laps1.mat','posx','posy');
+            [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int; %saving corrected pos
+            behavior.pos.aversive = [pos];
+            behavior.speed.aversive = LinearVelocity(pos,0);
+            behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
+            behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
+            clear pos camaraA posx posy
+        end
+        %Video sampling rate 
+        dt = (mean(diff(behavior.pos.aversive(:,1)))); 
+        
+        % Generation of no-movements periods
+        % Reward
+        start = behavior.speed.reward(1,1);   stop = behavior.speed.reward(end,1);
+        movement.reward = InvertIntervals(behavior.quiet.reward , start , stop); %keep only those higher than criteria
+        movement.reward(movement.reward(:,2) - movement.reward(:,1) <1,:)=[];
+        clear tmp start stop
+        % Aversive
+        start = behavior.speed.aversive(1,1);   stop = behavior.speed.aversive(end,1);
+        movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
+        movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
+        clear tmp start stop
+
+        %% Spikes
+        %Load Units
+        disp('Uploading Spiking activity')
+        cd 'Spikesorting'
+        spks = double([readNPY('spike_clusters.npy') readNPY('spike_times.npy')]);
+        K = tdfread('cluster_group.tsv'); % import clusters ID and groups (MUA,Noise,Good)
+        Kinfo = tdfread('cluster_info.tsv'); % import information of clusters
+        K = [K.cluster_id(K.group(:,1) == 'g') , Kinfo.ch(K.group(:,1) == 'g'),]; % defining good clusters
+        % Load neuronal classification
+        load('Cell_type_classification')
+        K = [K , Cell_type_classification(:,6:7)];
+        group_dHPC = K(K(:,2) > 63,:);
+        group_vHPC = K(K(:,2) <= 63,:);
+        %Loop to select dorsal or ventral LFP and SU
+        % z=1 --> dorsal
+        % z=2 --> ventral
+        for z = 1:2
+            if z == 1
+                n_SU_D = [n_SU_D ; length(group_dHPC)];
+                spks_dHPC = spks(ismember(spks(:,1),group_dHPC(:,1)),:); %keep spks from good clusters
+            else
+                n_SU_V = [n_SU_V ; length(group_vHPC)];
+                spks_vHPC = spks(ismember(spks(:,1),group_vHPC(:,1)),:); %keep spks from good clusters
+            end
+        end
+        clear z
+        spks_vHPC(:,2) = double(spks_vHPC(:,2))./20000;
+        spks_dHPC(:,2) = double(spks_dHPC(:,2))./20000;
+        % Selection of celltype to analyze
+        if criteria_type == 0 %pyr
+            cellulartype = [K(:,1) , K(:,4)];
+        elseif criteria_type == 1 % int
+            cellulartype = [K(:,1) , not(K(:,4))];
+        elseif criteria_type == 2 % all
+            cellulartype = [K(:,1) , ones(length(K),1)];
+        end
+       
+        
+        %% Firing maps calculation
+        disp('Plot dHPC Firing rate map')
+
+        % Select pc from already run
+        try
+            load('dHPC_pc.mat');
+        catch 
+            dHPC = []; disp(['No dHPC_pc.mat file in ',session]);
+        end 
+        try
+            load('vHPC_pc.mat');
+        catch
+            vHPC= []; disp(['No vHPC_pc.mat file in ',session]);
+        end
+        dhpc_pc = [];
+        for d=1:size(dHPC,2)
+            pc = dHPC{d}; 
+            dhpc_pc = [dhpc_pc;pc.id]; 
+            
+        end
+
+        vhpc_pc = [];
+        for d=1:size(vHPC,2)
+            pc = vHPC{d}; 
+            vhpc_pc = [vhpc_pc;pc.id]; 
+            
+        end
+        
+        group_dHPC = group_dHPC(ismember(group_dHPC(:,1),dhpc_pc),:);
+        group_vHPC = group_vHPC(ismember(group_vHPC(:,1),vhpc_pc),:);
+        
+        % Plotting: 
+        for ii=1:size(group_dHPC,1)
+            cluster = group_dHPC(ii,1);
+
+            spks = spks_dHPC(spks_dHPC(:,1)==cluster,2); % select tspk from cluster
+              
+            
+            % --- Aversive ---
+            spks_tmp = spks; 
+            pos_tmp = behavior.pos.aversive(:,1:2); 
+            in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<180));% eliminating the extrems of the maze
+                    
+            %Check lenght of in_maze segments to define real laps
+             in_lapA = []; % keeps only full laps (maybe too restrictive)
+             for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_tmp(pos_tmp(:,1)==ini,2); 
+                        fin_pos = pos_tmp(pos_tmp(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>100
+                             in_lapA = [in_lapA;in_maze(ix,:)]; 
+                        end
+              end
+ 
+            %Restrict spk and position to laps and movement periods
+            spks_tmp = Restrict(spks_tmp,in_lapA);spks_tmp = Restrict(spks_tmp , movement.aversive); % Restrict spikes to movement periods
+            pos_tmp = Restrict(pos_tmp,in_lapA);
+            pos_tmp = Restrict(pos_tmp, movement.aversive); % Restrict pos to movement periods
+
+            pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
+  
+            %Firing curve construction
+             [curveA , statsA] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4, 'minPeak' , 0.2);
+             curveA_dhpc = curveA.rate; 
+
+                    
+          %%%%%%% PLOT
+          figure; hold on; 
+          sgtitle(['dHPC ',session(end-14:end),' id ',num2str(cluster),' iteration ',num2str(ii)])
+          subplot(4,2,[1 5]); hold on; plot(pos_tmp(:,2),pos_tmp(:,1),'color','red');hold on; axis tight;
+          title('Aversive');
+          %Find interpolated position of each spike:
+          xs = interp1(pos_tmp(:,1),pos_tmp(:,2),spks_tmp); scatter(xs,spks_tmp,'filled', 'MarkerFaceColor',[.3 .3 .3]); 
+          %Fr map 
+          subplot(4,2,7); hold on;imagesc(curveA.rate), colormap 'jet';
+  
+          % --- Reward ---
+          spks_tmp = spks; 
+          pos_tmp = behavior.pos.reward(:,1:2);
+          in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<180));% eliminating the extrems of the maze
+                    
+          %Check lenght of in_maze segments to define real laps
+          in_lapR = []; 
+          for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_tmp(pos_tmp(:,1)==ini,2); 
+                        fin_pos = pos_tmp(pos_tmp(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>100
+                             in_lapR = [in_lapR;in_maze(ix,:)]; 
+                        end
+          end 
+                    
+
+          %Restrict spks and pos to valid laps 
+          spks_tmp = Restrict(spks_tmp,in_lapR); spks_tmp = Restrict(spks_tmp, movement.reward); % Restrict to movement periods
+          pos_tmp = Restrict(pos_tmp,in_lapR); pos_tmp = Restrict(pos_tmp , movement.reward);
+          pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
+
+          %Firing curve construction
+          [curveR , statsR] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
+          curveR_dhpc = curveR.rate;
+                    
+          subplot(4,2,[2 6]); hold on; plot(pos_tmp(:,2),pos_tmp(:,1),'color',[0.175 0.54 0.60] );hold on; axis tight;
+          title('Reward');
+          %Find interpolated position of each spike:
+          xs = interp1(pos_tmp(:,1),pos_tmp(:,2),spks_tmp); scatter(xs,spks_tmp,'filled', 'MarkerFaceColor',[.3 .3 .3]); 
+          %Fr map 
+          subplot(4,2,8); hold on;imagesc(curveR.rate), colormap 'jet';
+
+        end
+        
+        disp('Plot vHPC Firing rate map')
+          
+        for ii=1:size(group_vHPC,1)
+            cluster = group_vHPC(ii,1);
+
+            spks = spks_vHPC(spks_vHPC(:,1)==cluster,2); % select tspk from cluster
+              
+            
+            % --- Aversive ---
+            spks_tmp = spks; 
+            pos_tmp = behavior.pos.aversive(:,1:2); 
+            in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<180));% eliminating the extrems of the maze
+                    
+            %Check lenght of in_maze segments to define real laps
+             in_lapA = []; % keeps only full laps (maybe too restrictive)
+             for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_tmp(pos_tmp(:,1)==ini,2); 
+                        fin_pos = pos_tmp(pos_tmp(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>100
+                             in_lapA = [in_lapA;in_maze(ix,:)]; 
+                        end
+              end
+ 
+            %Restrict spk and position to laps and movement periods
+            spks_tmp = Restrict(spks_tmp,in_lapA);spks_tmp = Restrict(spks_tmp , movement.aversive); % Restrict spikes to movement periods
+            pos_tmp = Restrict(pos_tmp,in_lapA);
+            pos_tmp = Restrict(pos_tmp, movement.aversive); % Restrict pos to movement periods
+
+            pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
+  
+            %Firing curve construction
+             [curveA , statsA] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4, 'minPeak' , 0.2);
+             curveA_dhpc = curveA.rate; 
+
+                    
+          %%%%%%% PLOT
+          figure; hold on; 
+          sgtitle(['vHPC ',session(end-14:end),' id ',num2str(cluster),' iteration ',num2str(ii)])
+          subplot(4,2,[1 5]); hold on; plot(pos_tmp(:,2),pos_tmp(:,1),'color', 'red');hold on; axis tight;
+          title('Aversive');
+          %Find interpolated position of each spike:
+          xs = interp1(pos_tmp(:,1),pos_tmp(:,2),spks_tmp); scatter(xs,spks_tmp,'filled', 'MarkerFaceColor',[.3 .3 .3] ); 
+          %Fr map 
+          subplot(4,2,7); hold on;imagesc(curveA.rate), colormap 'jet';
+  
+          % --- Reward ---
+          spks_tmp = spks; 
+          pos_tmp = behavior.pos.reward(:,1:2);
+          in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<180));% eliminating the extrems of the maze
+                    
+          %Check lenght of in_maze segments to define real laps
+          in_lapR = []; 
+          for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_tmp(pos_tmp(:,1)==ini,2); 
+                        fin_pos = pos_tmp(pos_tmp(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>100
+                             in_lapR = [in_lapR;in_maze(ix,:)]; 
+                        end
+          end 
+                    
+
+          %Restrict spks and pos to valid laps 
+          spks_tmp = Restrict(spks_tmp,in_lapR); spks_tmp = Restrict(spks_tmp, movement.reward); % Restrict to movement periods
+          pos_tmp = Restrict(pos_tmp,in_lapR); pos_tmp = Restrict(pos_tmp , movement.reward);
+          pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
+
+          %Firing curve construction
+          [curveR , statsR] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
+          curveR_dhpc = curveR.rate;
+                    
+          subplot(4,2,[2 6]); hold on; plot(pos_tmp(:,2),pos_tmp(:,1),'color',[0.175 0.54 0.60]);hold on; axis tight;
+          title('Reward');
+          %Find interpolated position of each spike:
+          xs = interp1(pos_tmp(:,1),pos_tmp(:,2),spks_tmp); scatter(xs,spks_tmp,'filled', 'MarkerFaceColor',[.3 .3 .3]); 
+          %Fr map 
+          subplot(4,2,8); hold on;imagesc(curveR.rate), colormap 'jet';
+
+       end
+        
+
+        disp(['-- Finished folder #' , num2str(t) , ' from rat #' , num2str(tt) , ' ---'])
+        disp('  ')
+    end
+    disp(['-------- Finished rat#' , num2str(tt) , ' --------'])
+    disp(' ')
+ end

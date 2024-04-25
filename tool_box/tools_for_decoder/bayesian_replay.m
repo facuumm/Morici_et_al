@@ -52,8 +52,8 @@ for i = 1:size(time,2)-1
 end
 Cr = Cr.*dt; clear i
 
-[Pr, prMax] = placeBayes(Cr, RateMap, dt); 
-
+% [Pr, prMax] = placeBayes(Cr, RateMap, dt); 
+[Pr, prMax] = placeBayesLogBuffered1(Cr, RateMap, dt); 
  
 end
 % 

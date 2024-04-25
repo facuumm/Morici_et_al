@@ -46,7 +46,11 @@ for ii=1:length(clusters)
         [tmp,bins]=binspikes(spks,freq,limits);
         
         if smooth
-           tmp = gaussfilt(bins,tmp,(binSize)/sqrt(12));
+            try
+                tmp = gaussfilt(bins,tmp,(binSize)/sqrt(12));
+            catch
+                tmp = tmp;
+            end
         end
         
         SpksTrains = [SpksTrains , tmp];
@@ -58,7 +62,7 @@ for ii=1:length(clusters)
 end
 
 if normalization
-    times = SubtractIntervals(limits,events);
+%     times = SubtractIntervals(limits,events);
 %     S = mean(SpksTrains(InIntervals(bins,times),:),1);
 %     SS = std(SpksTrains(InIntervals(bins,times),:),1);
 %     SpksTrains = (SpksTrains - S) ./ SS;

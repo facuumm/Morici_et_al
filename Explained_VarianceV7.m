@@ -188,16 +188,15 @@ for tt = 1:length(path)
         % z=2 --> ventral
         for z = 1:2
             if z == 1
-                n_SU_D = [n_SU_D ; length(group_dHPC)];
                 spks_dHPC = spks(ismember(spks(:,1),group_dHPC(:,1)),:); %keep spks from good clusters
             else
-                n_SU_V = [n_SU_V ; length(group_vHPC)];
                 spks_vHPC = spks(ismember(spks(:,1),group_vHPC(:,1)),:); %keep spks from good clusters
             end
         end
         clear z
         spks_vHPC(:,2) = double(spks_vHPC(:,2))./20000;
         spks_dHPC(:,2) = double(spks_dHPC(:,2))./20000;
+        
         % Selection of celltype to analyze
         if criteria_type == 0 %pyr
             cellulartype = [K(:,1) , K(:,4)];
@@ -218,63 +217,46 @@ for tt = 1:length(path)
         limits = [0 segments.Var1(end)/1000];
         spiketrains_dHPC.pyr = [];        spiketrains_dHPC.int = [];
         spiketrains_vHPC.pyr = [];        spiketrains_vHPC.int = [];
+        clusters.dHPC = [];
         for ii=1:size(group_dHPC,1)
             cluster = group_dHPC(ii,1);
-            Cellulartype = logical(Cell_type_classification(Cell_type_classification(:,1) == cluster,7));
+            Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
             if Cellulartype
-                spks = spks_dHPC(spks_dHPC(:,1)==cluster,2);
-                [tmp,bins]=binspikes(spks,freq,limits);
-%                 is.sleep.baseline = InIntervals(bins,baselineTS./1000);                 is.sleep.reward = InIntervals(bins,rewardTS./1000);
-%                 is.sleep.aversive = InIntervals(bins,aversiveTS./1000);                 is.run.reward = InIntervals(bins,rewardTS_run./1000);
-%                 is.run.aversive = InIntervals(bins,aversiveTS_run./1000);
-%                 fr1 = sum(tmp(is.sleep.baseline))/(baselineTS(2)/1000);
-%                 fr2 = sum(tmp(is.sleep.reward))/((rewardTS(2)-rewardTS(1))/1000);
-%                 fr3 = sum(tmp(is.sleep.aversive))/((aversiveTS(2)-aversiveTS(1))/1000);
-%                 fr4 = sum(tmp(is.run.reward))/((rewardTS_run(2)-rewardTS_run(1))/1000);
-%                 fr5 = sum(tmp(is.run.aversive))/((aversiveTS_run(2)-aversiveTS_run(1))/1000);
-%                 
-%                 FiringRate.dHPC.baseline = [FiringRate.dHPC.baseline ; fr1];
-%                 FiringRate.dHPC.reward = [FiringRate.dHPC.reward ; fr2];
-%                 FiringRate.dHPC.aversive = [FiringRate.dHPC.aversive ; fr3];
-%                 
-%                 if and(and(fr1>criteria_fr , fr2 > criteria_fr),fr3>criteria_fr)
-                    spiketrains_dHPC.pyr = [spiketrains_dHPC.pyr , (tmp)];
-%                 end
+                clusters.dHPC = [clusters.dHPC ; cluster];
+%                 spks = spks_vHPC(spks_vHPC(:,1)==cluster,2);
+%                 [tmp,bins]=binspikes(spks,freq,limits);
+%                spiketrains_vHPC.pyr = [spiketrains_vHPC.pyr , (tmp)];
             end
             clear spks tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5
         end
         
+        clusters.vHPC = [];
         for ii=1:size(group_vHPC,1)
             cluster = group_vHPC(ii,1);
-            Cellulartype = logical(Cell_type_classification(Cell_type_classification(:,1) == cluster,7));
+            Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
             if Cellulartype
-                spks = spks_vHPC(spks_vHPC(:,1)==cluster,2);
-                [tmp,bins]=binspikes(spks,freq,limits);
-%                 is.sleep.baseline = InIntervals(bins,baselineTS./1000);                 is.sleep.reward = InIntervals(bins,rewardTS./1000);
-%                 is.sleep.aversive = InIntervals(bins,aversiveTS./1000);                 is.run.reward = InIntervals(bins,rewardTS_run./1000);
-%                 is.run.aversive = InIntervals(bins,aversiveTS_run./1000);
-%                 fr1 = sum(tmp(is.sleep.baseline))/(baselineTS(2)/1000);
-%                 fr2 = sum(tmp(is.sleep.reward))/((rewardTS(2)-rewardTS(1))/1000);
-%                 fr3 = sum(tmp(is.sleep.aversive))/((aversiveTS(2)-aversiveTS(1))/1000);
-%                 fr4 = sum(tmp(is.run.reward))/((rewardTS_run(2)-rewardTS_run(1))/1000);
-%                 fr5 = sum(tmp(is.run.aversive))/((aversiveTS_run(2)-aversiveTS_run(1))/1000);
-%                 
-%                 FiringRate.vHPC.baseline = [FiringRate.vHPC.baseline ; fr1];
-%                 FiringRate.vHPC.reward = [FiringRate.vHPC.reward ; fr2];
-%                 FiringRate.vHPC.aversive = [FiringRate.vHPC.aversive ; fr3];                
-%                 
-%                 if and(and(fr1>criteria_fr , fr2 > criteria_fr),fr3>criteria_fr)
-                    spiketrains_vHPC.pyr = [spiketrains_vHPC.pyr , (tmp)];
-%                 end
+                clusters.vHPC = [clusters.vHPC ; cluster];
+%                 spks = spks_vHPC(spks_vHPC(:,1)==cluster,2);
+%                 [tmp,bins]=binspikes(spks,freq,limits);
+%                spiketrains_vHPC.pyr = [spiketrains_vHPC.pyr , (tmp)];
             end
             clear spks tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5
         end
-        clear freq limits
-        clear spks spks_dHPC spks_vHPC camara shock rightvalve leftvalve
-        clear ejeX ejeY dX dY dX_int dY_int
+        
         
         %% Explained variance calculation
-        if and(size(spiketrains_vHPC.pyr,2) >= criteria_n(1),size(spiketrains_dHPC.pyr,2) >= criteria_n(2))
+        if and(size(clusters.dHPC,1) >= criteria_n(1),size(clusters.vHPC,1) >= criteria_n(2))
+        % SpikeTrains construction
+        limits = [0 segments.Var1(end)/1000];
+        events = [];
+        [spiketrains_dHPC.pyr , bins , Clusters] = spike_train_construction(spks_dHPC, clusters.dHPC, cellulartype, binSize, limits, events, false, false);
+        [spiketrains_vHPC.pyr , bins , Clusters] = spike_train_construction(spks_vHPC, clusters.vHPC, cellulartype, binSize, limits, events, false, false);
+        clear limits events
+        
+        clear freq limits
+        clear spks spks_dHPC spks_vHPC camara shock rightvalve leftvalve
+        clear ejeX ejeY dX dY dX_int dY_int            
+            
             disp('Lets go for the SUs')
             %Restricting bins inside each condition
             is.baseline.sws = InIntervals(bins,NREM.baseline);
@@ -481,11 +463,11 @@ end
 % save([cd,'\Explained_Variance_REM.mat'] , 'EV')
 
 figure
-subplot(1,2,1),boxplot([EV.reward.dvHPC(:,1) , EV.reward.dvHPC(:,2)]) , ylim([0 4]), [h p] =ranksum(EV.reward.dvHPC(:,1) , EV.reward.dvHPC(:,2),'tail','left'),hold on
+subplot(1,2,1),boxplot([EV.reward.dvHPC(:,1) , EV.reward.dvHPC(:,2)]) , ylim([0 4]), [h p] =ranksum(EV.reward.dvHPC(:,1) , EV.reward.dvHPC(:,2)),hold on
 x = [[EV.reward.dvHPC(:,1) ; EV.reward.dvHPC(:,2)] , [ones(length(EV.reward.dvHPC),1) ; ones(length(EV.reward.dvHPC),1)*2]];
 scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1)
 
-subplot(1,2,2),boxplot([EV.aversive.dvHPC(:,1) , EV.aversive.dvHPC(:,2)]) , ylim([0 4]), [h p] =ranksum(EV.aversive.dvHPC(:,1) , EV.aversive.dvHPC(:,2),'tail','left'),hold on
+subplot(1,2,2),boxplot([EV.aversive.dvHPC(:,1) , EV.aversive.dvHPC(:,2)]) , ylim([0 4]), [h p] =ranksum(EV.aversive.dvHPC(:,1) , EV.aversive.dvHPC(:,2)),hold on
 x = [[EV.aversive.dvHPC(:,1) ; EV.aversive.dvHPC(:,2)] , [ones(length(EV.aversive.dvHPC),1) ; ones(length(EV.aversive.dvHPC),1)*2]];
 scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1)
 
