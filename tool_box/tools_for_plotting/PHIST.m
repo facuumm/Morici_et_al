@@ -23,7 +23,7 @@ function [p , t] = PHIST(Times1,Times2,baseline,d,b,sm,mode)
 [s,ids,groups] = CCGParameters(Times1,ones(length(Times1),1),Times2,ones(length(Times2),1)*2);
 [ccg,T] = CCG(s,ids,'binSize',b,'duration',d,'smooth',sm,'mode','ccg');
 
-if and(isempty(mode) , not(isempty(baseline)))
+if and(isempty(mode) , isempty(baseline))
     ccg = (ccg(:,1,2)./length(Times1))./b;
 end
 

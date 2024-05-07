@@ -382,11 +382,11 @@ end
 
 %% Ven Graphs for similarity Index
 % dHPC Assemblies
-p1 = (sum(percentages(:,1))./sum(sum(percentages(:,2))))*100;
-p2 = (sum(percentages(:,2))./sum(sum(percentages(:,2:3))))*100;
+p1 = (sum(percentages(:,1))./sum(sum(percentages(:,1:2))))*100;
+p2 = (sum(percentages(:,2))./sum(sum(percentages(:,1:2))))*100;
 
 A = [ p1 p2 ];
-I = (sum(percentages(:,1))./sum(sum(percentages(:,2:3))))*100;
+I = (sum(percentages(:,3))./sum(sum(percentages(:,1:2))))*100;
 
 subplot(131),venn(A,I), xlim([-7 11]), ylim([-6 6])
 

@@ -19,7 +19,7 @@ criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
 criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
 binSize = 0.025; %for qssemblie detection qnd qxctivity strength
 normalization = true; % to define if normalization over Reactivation Strength is applied or not
-th = 5; % threshold for peak detection
+th = 1; % threshold for peak detection
 iterations = 100; % number of iterations for downsampling
 
 % Storage variables
@@ -496,11 +496,12 @@ for i = 1 : size(cumulative.aversive.dvHPC,2)
 %     s1 = corrcoef(t',[1:1:size(t,1)]);
     f = fitlm(t',[1:1:size(t,1)],'linear');
     coefficients.aversive = [coefficients.aversive, f.Coefficients{:, 'Estimate'}];
-    c = [c , (Smooth(cumulative.aversive.dvHPC(:,i),2))]; clear f 
-    RA = [RA ; nanmean(cumulative.aversive.dvHPC(1:5,i))  nanmean(cumulative.aversive.dvHPC(11:20,i))  nanmean(cumulative.aversive.dvHPC(21:30,i))  nanmean(cumulative.aversive.dvHPC(31:40,i))];
+    c = [c , (Smooth(cumulative.aversive.dvHPC(:,i),1))]; clear f 
+%     RA = [RA ; nanmean(cumulative.aversive.dvHPC(1:5,i))  nanmean(cumulative.aversive.dvHPC(11:20,i))  nanmean(cumulative.aversive.dvHPC(21:30,i))  nanmean(cumulative.aversive.dvHPC(31:40,i))];
 end
+% c(end,:) = [];
 plot(nanmean(c,2),'r'),hold on
-ciplot(nanmean(c',1)-nansem(c'),nanmean(c',1)+nansem(c'),[1:180],'r'),alpha 0.5
+ciplot(nanmean(c',1)-nansem(c'),nanmean(c',1)+nansem(c'),[1:120],'r'),alpha 0.5
 
 c = [];
 coefficients.reward = [];
@@ -510,15 +511,18 @@ for i = 1 : size(cumulative.reward.dvHPC,2)
 %     s1 = corrcoef(t',[1:1:size(t,1)]);
     f = fitlm(t',[1:1:size(t,1)],'linear');
     coefficients.reward = [coefficients.reward, f.Coefficients{:, 'Estimate'}];
-    c = [c , (Smooth(cumulative.reward.dvHPC(:,i),2))]; clear f 
-    RR = [RR ; nanmean(cumulative.reward.dvHPC(1:5,i))  nanmean(cumulative.reward.dvHPC(11:20,i))  nanmean(cumulative.reward.dvHPC(21:30,i))  nanmean(cumulative.reward.dvHPC(31:40,i))];
+    c = [c , (Smooth(cumulative.reward.dvHPC(:,i),1))]; clear f 
+%     RR = [RR ; nanmean(cumulative.reward.dvHPC(1:5,i))  nanmean(cumulative.reward.dvHPC(11:20,i))  nanmean(cumulative.reward.dvHPC(21:30,i))  nanmean(cumulative.reward.dvHPC(31:40,i))];
 end
+% c(end,:) = [];
 plot(nanmean(c,2),'b'),hold on
-ciplot(nanmean(c',1)-nansem(c'),nanmean(c',1)+nansem(c'),[1:180],'b'),alpha 0.5
+ciplot(nanmean(c',1)-nansem(c'),nanmean(c',1)+nansem(c'),[1:120],'b'),alpha 0.5
 
 figure,
 grps = [ones(length(coefficients.reward),1) ; ones(length(coefficients.aversive),1)*2];
-x = [RR(:,1) ; RA(:,1)];
+x = [coefficients.reward(1,:)' ; coefficients.aversive(1,:)'];
+boxplot(x,grps)
+
 cdfplot(coefficients.reward(2,:)),hold on
 cdfplot(coefficients.aversive(2,:)),hold on
 

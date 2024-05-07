@@ -189,9 +189,9 @@ for tt = 1:length(path)
         if or(numberD >3 , numberV > 3)
             %% --- Aversive ---
             disp('Lets go for the assemblies')
-            if isfile('dorsalventral_assemblies_aversive.mat')
+            if isfile('dorsalventral_assemblies_aversiveVF.mat')
                 disp('Loading Aversive template')
-                load('dorsalventral_assemblies_aversive.mat')
+                load('dorsalventral_assemblies_aversiveVF.mat')
             else
                 Th = [];
                 pat = [];
@@ -226,8 +226,8 @@ for tt = 1:length(path)
             
             %% --- Reward ---
             disp('Loading Reward template')
-            if isfile('dorsalventral_assemblies_reward.mat')
-                load('dorsalventral_assemblies_reward.mat')
+            if isfile('dorsalventral_assemblies_rewardVF.mat')
+                load('dorsalventral_assemblies_rewardVF.mat')
             else
                 Th = [];
                 pat = [];
@@ -272,7 +272,6 @@ for tt = 1:length(path)
                 Response.joint.aversive = [Response.joint.aversive , average]; clear average
                 modulated.joint.aversive = [modulated.joint.aversive , surrogate]; clear surrogate
             end
-            
             
             if sum(cond.both.reward)>1
                 [average , time , surrogate] = triggered_average_assemblies_response(Shocks_filt,patterns.all.reward,cond.both.reward,[bins' Spikes],[-2 3]);
@@ -333,13 +332,13 @@ for i = 1 : size(Response.joint.aversive,2)
         t = Smooth(Response.joint.aversive(:,i),s);
         tmp1 = [tmp1 , t];
         M1 = [M1 , nanmean(t(81:100))];
-        [peaks loc] = findpeaks(t,'MinPeakHeight',0.5);
+        [peaks loc] = findpeaks(t,'MinPeakHeight',0.1);
         peaksAU = [peaksAU ; time(loc)'];
     else
         t = Smooth(Response.joint.aversive(:,i),s);
         tmp1 = [tmp1 , t];
         M1 = [M1 , nanmean(t(81:100))];
-        [peaks loc] = findpeaks(t,'MinPeakHeight',0.5);
+        [peaks loc] = findpeaks(t,'MinPeakHeight',0.1);
         peaksAD = [peaksAD ; time(loc)'];
     end
 end
@@ -361,13 +360,13 @@ for i = 1 : size(Response.joint.reward,2)
         t = Smooth(Response.joint.reward(:,i),s);
         tmp2 = [tmp2 , t];
         M2 = [M2 , nanmean(t(81:100))];
-        [peaks loc] = findpeaks(t,'MinPeakHeight',0.5);
+        [peaks loc] = findpeaks(t,'MinPeakHeight',0.1);
         peaksRU = [peaksRU ; time(loc)'];
     else
         t = Smooth(Response.joint.reward(:,i),s);
         tmp2 = [tmp2 , t];
         M2 = [M2 , nanmean(t(81:100))];
-        [peaks loc] = findpeaks(t,'MinPeakHeight',0.5);
+        [peaks loc] = findpeaks(t,'MinPeakHeight',0.1);
         peaksRD = [peaksRD ; time(loc)'];
     end
 end
@@ -396,6 +395,7 @@ kstest(M2)
 [h p] = ranksum(M1,M2)
 
 %% scatter
+figure,
 y = [peaksAU ; peaksAD ; peaksRU ; peaksRD];
 x = [ones(length(peaksAU),1) ; ones(length(peaksAD),1)*2 ; ones(length(peaksRU),1)*3 ; ones(length(peaksRD),1)*4];
 scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),xlim([0 5]),ylim([-2 3])

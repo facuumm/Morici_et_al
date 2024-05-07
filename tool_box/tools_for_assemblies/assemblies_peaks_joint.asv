@@ -1,6 +1,6 @@
-function [P R] = reactivation_strength_members(patterns , cond , SpikeTrain, th ,thresholded, numberSU , timestamps)
-% This function will calculate the Reactivation Rate normalized by the
-% presleep considering only bins that showed cross-firing of members
+function [peaks] = assemblies_peaks_joint(patterns , cond , SpikeTrain, thresholded, numberSU)
+% This function will use different thresholds (th: 1-15) to deteact peaks and
+% will calculates the percentage of bins that have cross-members activation
 %
 % [R] = reactivation_strength(patterns , cond , SpikeTrain , is , th , type)
 %
@@ -38,11 +38,6 @@ function [P R] = reactivation_strength_members(patterns , cond , SpikeTrain, th 
 %
 % Morici Juan Facundo 04/2024
 
-% variables for cumulative construction
-w = 60; % bin size in sec
-tempo = 2700; %maximal value in sec
-
-
 bins = SpikeTrain(:,1);
 dt = bins(2)-bins(1); % delta time
 spks = SpikeTrain(:,2:end);
@@ -52,41 +47,15 @@ thresholded = thresholded(:,cond);
 a = assembly_activity(patterns(:,cond) , spks');
 a = zscore(a,1,2);
 
-R = [];
+peaks = cell(size(a,1),1);
 template = spks >0;
-
-for ii = 1:size(a,1)
-    
-    template2 = template .* thresholded(:,ii)';
+for i = 1:size(a,1)
+    template2 = template .* thresholded(:,i)';
     template2 = and(sum(template2(:,1:numberSU(1)),2)>0 , sum(template2(:,numberSU(1)+1:end),2)>0);
-    [pks.all,loc.all] = findpeaks(a(ii,:),bins,'MinPeakHeight',th);
-    
-    template2 = bins(template2);
-    
-    template3 = ismember(loc.all,template2);
-    template3 = loc.all(template3);
-    
-    timePost = sum(timestamps.PostSleep(:,2) - timestamps.PostSleep(:,1));
-    timePre = sum(timestamps.PreSleep(:,2) - timestamps.PreSleep(:,1));
-    strength = ((size(Restrict(template3,timestamps.PostSleep),1) / timePost) / (size(Restrict(template3,timestamps.PreSleep),1) / timePre));
-    
-    R = [R ; strength];
-    
-    % concatenation of peaks
-    temporal = [];
-    iterator = 0;
-    for ii = 1 : size(timestamps.PostSleep,1)
-        t = Restrict(loc.all,timestamps.PostSleep(ii,:));
-        t = (t - timestamps.PostSleep(ii,1));
-        temporal = [temporal ; t + iterator];
-        iterator = (timestamps.PostSleep(ii,2)-timestamps.PostSleep(ii,1))+iterator; % concatenation of time segments
-        clear t
-    end
-    h = histcounts(temporal,'BinEdges',[0 : w : tempo]);
-    P = [P , h']; clear h
-    
-    
-    clear template2 template3 result temporal iterator
+    [pks.all,loc.all] = findpeaks(a(i,:),bins,'MinPeakHeight',1);
+    pull = bins(template2);
+    result = loc.all(ismember(loc.all,pull));
+    peaks{i} = result; clear template2 template3 result
 end
 
 end

@@ -1,4 +1,4 @@
-function [P] = (patterns , cond , SpikeTrain, thresholded, numberSU)
+function [peaks] = assemblies_peaks_joint(patterns , cond , SpikeTrain, thresholded, numberSU)
 % This function will use different thresholds (th: 1-15) to deteact peaks and
 % will calculates the percentage of bins that have cross-members activation
 %
@@ -47,21 +47,15 @@ thresholded = thresholded(:,cond);
 a = assembly_activity(patterns(:,cond) , spks');
 a = zscore(a,1,2);
 
-P = [];
+peaks = cell(size(a,1),1);
 template = spks >0;
-for i = 1:16
-    tmp = [];
-    for ii = 1:size(a,1)
-        
-        template2 = template .* thresholded(:,ii)';
-        template2 = and(sum(template2(:,1:numberSU(1)),2)>0 , sum(template2(:,numberSU(1)+1:end),2)>0);
-        [pks.all,loc.all] = findpeaks(a(ii,:),'MinPeakHeight',i-1);
-        
-        template3 = template2(loc.all);
-        result = (sum(template3) / size(template3,1))*100;
-        tmp = [tmp ; result]; clear template2 template3 result
-    end
-    P = [P , tmp]; clear tmp
+for i = 1:size(a,1)
+    template2 = template .* thresholded(:,i)';
+    template2 = and(sum(template2(:,1:numberSU(1)),2)>0 , sum(template2(:,numberSU(1)+1:end),2)>0);
+    [pks.all,loc.all] = findpeaks(a(i,:),bins,'MinPeakHeight',1);
+    pull = bins(template2);
+    result = loc.all(ismember(loc.all,pull));
+    peaks{i} = result; clear template2 template3 result
 end
 
 end

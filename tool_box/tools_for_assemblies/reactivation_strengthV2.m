@@ -72,8 +72,8 @@ function [R P] = reactivation_strengthV2(patterns , cond , SpikeTrain , Is , th 
 %
 % Morici Juan Facundo 02/2024
 
-tempo = 3600; % to restrictin time the amount of sleep that I want to include
-w = 10;
+tempo = 7200; % to restrictin time the amount of sleep that I want to include
+w = 60;
 bins = SpikeTrain(:,1);
 dt = bins(2)-bins(1); % delta time
 spks = SpikeTrain(:,2:end);
@@ -112,9 +112,13 @@ for i = 1:size(a,1)
                 iterator = (tmp1(ii,2)-tmp1(ii,1))+iterator; % concatenation of time segments
                 clear t
             end
-%             h = histcounts(temporal,'BinEdges',[0 : w : tempo]);
-            h = histcounts(temporal,10);
-            P = [P , h']; clear h
+%             limits = [0 sum(tmp1(:,2)-tmp1(:,1))];
+%             e = sum(tmp1(:,2)-tmp1(:,1)) / w;
+%             [h,b]=binspikes(temporal,1/e,limits);
+%             h = h(1:w);
+%             P = [P , h./(e/60)]; clear h
+            h = histcounts(temporal,'BinEdges',[0 : w : tempo]);
+            P = [P , h']; clear h    
             
             if normalization
                 M1 = Restrict([loc.all pks.all'],tmp1);
@@ -196,9 +200,13 @@ for i = 1:size(a,1)
                 iterator = (tmp1(ii,2)-tmp1(ii,1))+iterator; % concatenation of time segments
                 clear t
             end
-%             h = histcounts(temporal,'BinEdges',[0 : w : tempo]);
-            h = histcounts(temporal,10);
-            P = [P , h']; clear h
+%             limits = [0 sum(tmp1(:,2)-tmp1(:,1))];
+%             e = sum(tmp1(:,2)-tmp1(:,1)) / w;
+%             [h,b]=binspikes(temporal,1/e,limits);
+%             h = h(1:w);
+%             P = [P , h./(e/60)]; clear h
+            h = histcounts(temporal,'BinEdges',[0 : w : tempo]);
+            P = [P , h']; clear h  
             
             if normalization
                 M1 = Restrict([loc.all pks.all'],tmp1);
@@ -278,9 +286,13 @@ for i = 1:size(a,1)
                 iterator = (tmp1(ii,2)-tmp1(ii,1))+iterator; % concatenation of time segments
                 clear t
             end
-%             h = histcounts(temporal,'BinEdges',[0 : w : tempo]);
-            h = histcounts(temporal,10);
-            P = [P , h']; clear h
+%             limits = [0 sum(tmp1(:,2)-tmp1(:,1))];
+%             e = sum(tmp1(:,2)-tmp1(:,1)) / w;
+%             [h,b]=binspikes(temporal,1/e,limits);
+%             h = h(1:w);
+%             P = [P , h./(e/60)]; clear h
+            h = histcounts(temporal,'BinEdges',[0 : w : tempo]);
+            P = [P , h']; clear h  
             
             if normalization
                 M1 = Restrict([loc.all pks.all'],tmp1);
@@ -356,9 +368,13 @@ for i = 1:size(a,1)
                 iterator = (tmp1(ii,2)-tmp1(ii,1))+iterator; % concatenation of time segments
                 clear t
             end
-%             h = histcounts(temporal,'BinEdges',[0 : w : tempo]);
-            h = histcounts(temporal,10);
-            P = [P , h']; clear h
+%             limits = [0 sum(tmp1(:,2)-tmp1(:,1))];
+%             e = sum(tmp1(:,2)-tmp1(:,1)) / w;
+%             [h,b]=binspikes(temporal,1/e,limits);
+%             h = h(1:w);
+%             P = [P , h./(e/60)]; clear h
+            h = histcounts(temporal,'BinEdges',[0 : w : tempo]);
+            P = [P , h']; clear h  
             
             if normalization
                 M1 = Restrict([loc.all pks.all'],tmp1);

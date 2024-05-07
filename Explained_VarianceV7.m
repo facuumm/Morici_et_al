@@ -10,9 +10,9 @@ time_criteria = 1; % minimal time to include a NREM epoch (in min)
 
 % for SU
 criteria_fr = 0; %criteria to include or not a SU into the analysis
-criteria_n = [6 6]; % minimal number of neurons from each structure [vHPC dHPC]
+criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
 criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
-binSize = 0.05;
+binSize = 0.025;
 n_SU_V = 0;
 n_SU_D = 0;
 
@@ -43,117 +43,11 @@ for tt = 1:length(path)
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
+
         %Loading TS of the sessions
         disp('Uploading session time stamps')
-        x = dir([cd,'\*.cat.evt']);
-        segments = readtable([cd,'\',x.name],'FileType','text');
-        clear x
-        % TimeStamps of begening and end of the sleep and awake trials
-        % Reward and Aversive trials
-        aversiveTS = [];
-        aversiveTS_run = [];
-        rewardTS = [];
-        rewardTS_run = [];
-        for y = 1 : height(segments)
-            % Baseline sleep session TS detection
-            if y == 1
-                baselineTS(1,1) = segments.Var1(y);
-            elseif y ==2
-                baselineTS(1,2) = segments.Var1(y);
-            end
-            % Aversive sleep session TS detection
-            if strcmp(segments.Var2{y},'aversive')
-                if strcmp(segments.Var3{y},'End')
-                    aversiveTS(1,1) = segments.Var1(y+1);
-                    aversiveTS(1,2) = segments.Var1(y+2);
-                    aversiveTS_run(1,1) = segments.Var1(y-1);
-                    aversiveTS_run(1,2) = segments.Var1(y);
-                    A = y;
-                end
-                % Rewarded sleep session TS detection
-            elseif strcmp(segments.Var2{y},'reward')
-                if strcmp(segments.Var3{y},'End')
-                    rewardTS(1,1) = segments.Var1(y+1);
-                    rewardTS(1,2) = segments.Var1(y+2);
-                    rewardTS_run(1,1) = segments.Var1(y-1);
-                    rewardTS_run(1,2) = segments.Var1(y);
-                    R = y;
-                end
-            end
-        end
-        clear y
-        
-        %% Awake
-        disp('Uploading digital imputs')
-        % Load digitalin.mat
-        load('digitalin.mat')
-        disp('Uploading DLC outputs')
-        camara = ((camara(:,2)-camara(:,1))/2)+camara(:,1);
-        % periods of movment during eacj condition
-        if rewardTS_run(1) < aversiveTS_run(1)
-            load('laps1.mat','posx','posy');
-            [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
-            pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
-            %interpolation of dropped frames
-            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
-            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
-            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
-            behavior.pos.reward = [pos];
-            behavior.speed.reward = LinearVelocity(pos,0);
-            behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
-            behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
-            clear pos camaraR posx posy
-            load('laps2.mat','posx','posy');
-            [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
-            pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
-            %interpolation of dropped frames
-            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
-            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
-            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
-            behavior.pos.aversive = [pos];
-            behavior.speed.aversive = LinearVelocity(pos,0);
-            behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
-            behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
-            clear pos camaraR
-        else
-            load('laps2.mat','posx','posy');
-            [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
-            %         [camaraR2,~] = find((camara(:,1)-rewardTS_run(2)/1000)<0,1,'last'); %TimeStamp of the ending of aversive
-            pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
-            %interpolation of dropped frames
-            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
-            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
-            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
-            behavior.pos.reward = [pos];
-            behavior.speed.reward = LinearVelocity(pos,0);
-            behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
-            behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
-            clear pos camaraR posx posy
-            load('laps1.mat','posx','posy');
-            [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
-            pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
-            %interpolation of dropped frames
-            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
-            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
-            pos(:,2) =dX_int; pos(:,3) =dY_int; %saving corrected pos
-            behavior.pos.aversive = [pos];
-            behavior.speed.aversive = LinearVelocity(pos,0);
-            behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
-            behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
-            clear pos camaraA posx posy
-        end
-        
-        % Generation of no-movements periods
-        % Reward
-        start = behavior.speed.reward(1,1);   stop = behavior.speed.reward(end,1);
-        movement.reward = InvertIntervals(behavior.quiet.reward , start , stop); %keep only those higher than criteria
-%         movement.reward(movement.reward(:,2) - movement.reward(:,1) <1,:)=[]; %eliminate 1sec segments
-        clear tmp start stop
-        % Aversive
-        start = behavior.speed.aversive(1,1);   stop = behavior.speed.aversive(end,1);
-        movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
-%         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
-        clear tmp start stop
+        load('session_organization.mat')
+        load('behavioral_data.mat')
         
         %% load sleep states
         disp('Uploading sleep scoring')
@@ -161,15 +55,15 @@ for tt = 1:length(path)
         REM.all = ToIntervals(states==5);    NREM.all = ToIntervals(states==3);    WAKE.all = ToIntervals(states==1);
         clear x states
         
-%         NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
+        %         NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
         NREM.baseline = Restrict(NREM.all,baselineTS./1000);
         NREM.aversive = Restrict(NREM.all,aversiveTS./1000);
-        NREM.reward = Restrict(NREM.all,rewardTS./1000);    
+        NREM.reward = Restrict(NREM.all,rewardTS./1000);
         
         REM.baseline = Restrict(REM.all,baselineTS./1000);
         REM.aversive = Restrict(REM.all,aversiveTS./1000);
         REM.reward = Restrict(REM.all,rewardTS./1000);
-                
+        
         %% Spikes
         %Load Units
         disp('Uploading Spiking activity')
@@ -223,9 +117,9 @@ for tt = 1:length(path)
             Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
             if Cellulartype
                 clusters.dHPC = [clusters.dHPC ; cluster];
-%                 spks = spks_vHPC(spks_vHPC(:,1)==cluster,2);
-%                 [tmp,bins]=binspikes(spks,freq,limits);
-%                spiketrains_vHPC.pyr = [spiketrains_vHPC.pyr , (tmp)];
+                %                 spks = spks_vHPC(spks_vHPC(:,1)==cluster,2);
+                %                 [tmp,bins]=binspikes(spks,freq,limits);
+                %                spiketrains_vHPC.pyr = [spiketrains_vHPC.pyr , (tmp)];
             end
             clear spks tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5
         end
@@ -236,9 +130,9 @@ for tt = 1:length(path)
             Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
             if Cellulartype
                 clusters.vHPC = [clusters.vHPC ; cluster];
-%                 spks = spks_vHPC(spks_vHPC(:,1)==cluster,2);
-%                 [tmp,bins]=binspikes(spks,freq,limits);
-%                spiketrains_vHPC.pyr = [spiketrains_vHPC.pyr , (tmp)];
+                %                 spks = spks_vHPC(spks_vHPC(:,1)==cluster,2);
+                %                 [tmp,bins]=binspikes(spks,freq,limits);
+                %                spiketrains_vHPC.pyr = [spiketrains_vHPC.pyr , (tmp)];
             end
             clear spks tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5
         end
@@ -246,16 +140,16 @@ for tt = 1:length(path)
         
         %% Explained variance calculation
         if and(size(clusters.dHPC,1) >= criteria_n(1),size(clusters.vHPC,1) >= criteria_n(2))
-        % SpikeTrains construction
-        limits = [0 segments.Var1(end)/1000];
-        events = [];
-        [spiketrains_dHPC.pyr , bins , Clusters] = spike_train_construction(spks_dHPC, clusters.dHPC, cellulartype, binSize, limits, events, false, false);
-        [spiketrains_vHPC.pyr , bins , Clusters] = spike_train_construction(spks_vHPC, clusters.vHPC, cellulartype, binSize, limits, events, false, false);
-        clear limits events
-        
-        clear freq limits
-        clear spks spks_dHPC spks_vHPC camara shock rightvalve leftvalve
-        clear ejeX ejeY dX dY dX_int dY_int            
+            % SpikeTrains construction
+            limits = [0 segments.Var1(end)/1000];
+            events = [];
+            [spiketrains_dHPC.pyr , bins , Clusters] = spike_train_construction(spks_dHPC, clusters.dHPC, cellulartype, binSize, limits, events, false, false);
+            [spiketrains_vHPC.pyr , bins , Clusters] = spike_train_construction(spks_vHPC, clusters.vHPC, cellulartype, binSize, limits, events, false, false);
+            clear limits events
+            
+            clear freq limits
+            clear spks spks_dHPC spks_vHPC camara shock rightvalve leftvalve
+            clear ejeX ejeY dX dY dX_int dY_int
             
             disp('Lets go for the SUs')
             %Restricting bins inside each condition
@@ -263,37 +157,42 @@ for tt = 1:length(path)
             is.reward.sws = InIntervals(bins,NREM.reward);
             is.aversive.sws = InIntervals(bins,NREM.aversive);
             
-%             is.baseline.sws = InIntervals(bins,REM.baseline);
-%             is.aversive.sws = InIntervals(bins,REM.aversive);
-%             is.reward.sws = InIntervals(bins,REM.reward);
+            %             is.baseline.sws = InIntervals(bins,REM.baseline);
+            %             is.aversive.sws = InIntervals(bins,REM.aversive);
+            %             is.reward.sws = InIntervals(bins,REM.reward);
             
             is.aversive.run = InIntervals(bins,movement.aversive);
             is.reward.run = InIntervals(bins,movement.reward);
             
-%             is.aversive.run = InIntervals(bins,aversiveTS_run./1000);
-%             is.reward.run = InIntervals(bins,rewardTS_run./1000);
-
+            %             is.aversive.run = InIntervals(bins,aversiveTS_run./1000);
+            %             is.reward.run = InIntervals(bins,rewardTS_run./1000);
+            
             %%
             if and(and(~isempty(NREM.aversive),~isempty(NREM.reward)),~isempty(NREM.baseline))
-                if aversiveTS_run(1)>rewardTS_run(1)
+                if aversiveTS_run(1) > rewardTS_run(1)
                     %% Reward
+                    TS.pre = Restrict(NREM.baseline,[NREM.baseline(end,2)-3600 NREM.baseline(end,2)]);
+                    TS.post = Restrict(NREM.reward,[NREM.reward(1,1) NREM.reward(1,1)+3600]);
+                    TS.pre = InIntervals(bins, TS.pre);
+                    TS.post = InIntervals(bins, TS.post);
+                    
                     % Correlation Matrix Calculation
-                    x = [spiketrains_dHPC.pyr(is.baseline.sws,:)];
-                    y = [spiketrains_vHPC.pyr(is.baseline.sws,:)];      
+                    x = [spiketrains_dHPC.pyr(TS.pre,:)];
+                    y = [spiketrains_vHPC.pyr(TS.pre,:)];
                     [S1 , p] = corr(x,y);
-%                     S1 = S1 - diag(diag(S1));
+                    %                     S1 = S1 - diag(diag(S1));
                     clear x y p
                     
                     x = [spiketrains_dHPC.pyr(is.reward.run,:)];
                     y = [spiketrains_vHPC.pyr(is.reward.run,:)];
                     [S2 , p] = corr(x,y);
-%                     S2 = S2 - diag(diag(S2));
+                    %                     S2 = S2 - diag(diag(S2));
                     clear x y p
                     
-                    x = [spiketrains_dHPC.pyr(is.reward.sws,:)];
-                    y = [spiketrains_vHPC.pyr(is.reward.sws,:)];
+                    x = [spiketrains_dHPC.pyr(TS.post,:)];
+                    y = [spiketrains_vHPC.pyr(TS.post,:)];
                     [S3 , p] = corr(x,y);
-%                     S3 = S3 - diag(diag(S3));
+                    %                     S3 = S3 - diag(diag(S3));
                     clear x y p
                     
                     % EV and REV
@@ -309,25 +208,30 @@ for tt = 1:length(path)
                     
                     EV.reward.dvHPC = [EV.reward.dvHPC ; rev*100 , ev*100 tt t config];
                     clear Sx Sy Sz ev rev
-                                        
+                    
                     %% Aversive
-                    x = [spiketrains_dHPC.pyr(is.reward.sws,:)];
-                    y = [spiketrains_vHPC.pyr(is.reward.sws,:)];
+                    TS.pre = Restrict(NREM.reward,[NREM.reward(end,2)-3600 NREM.reward(end,2)]);
+                    TS.post = Restrict(NREM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+3600]);
+                    TS.pre = InIntervals(bins, TS.pre);
+                    TS.post = InIntervals(bins, TS.post);
+                    
+                    x = [spiketrains_dHPC.pyr(TS.pre,:)];
+                    y = [spiketrains_vHPC.pyr(TS.pre,:)];
                     [S3 , p] = corr(x,y);
-%                     S3 = S3 - diag(diag(S3));
+                    %                     S3 = S3 - diag(diag(S3));
                     clear x y p
                     
                     % Correlation Matrix Calculation
                     x = [spiketrains_dHPC.pyr(is.aversive.run,:)];
                     y = [spiketrains_vHPC.pyr(is.aversive.run,:)];
                     [S4 , p] = corr(x,y);
-%                     S4 = S4 - diag(diag(S4));
+                    %                     S4 = S4 - diag(diag(S4));
                     clear x y p
                     
-                    x = [spiketrains_dHPC.pyr(is.aversive.sws,:)];
-                    y = [spiketrains_vHPC.pyr(is.aversive.sws,:)];
+                    x = [spiketrains_dHPC.pyr(TS.post,:)];
+                    y = [spiketrains_vHPC.pyr(TS.post,:)];
                     [S5 , p] = corr(x,y);
-%                     S5 = S5 - diag(diag(S5));
+                    %                     S5 = S5 - diag(diag(S5));
                     clear x y p
                     
                     % EV and REV
@@ -344,41 +248,33 @@ for tt = 1:length(path)
                     EV.aversive.dvHPC = [EV.aversive.dvHPC ; rev*100 , ev*100 tt t config];
                     clear Sx Sy Sz ev rev
                     
-%                     EV.reward.aversive.dvHPC = [EV.reward.aversive.dvHPC ; rev1 ev1 rev2 ev2];
+                    %                     EV.reward.aversive.dvHPC = [EV.reward.aversive.dvHPC ; rev1 ev1 rev2 ev2];
                     clear rev1 ev1 rev2 ev2
-                    %% Reward in Aversive
-                    Sx = corrcoef(S2,S5,'rows','complete');     Sx = Sx(1,2);
-                    Sy = corrcoef(S2,S1,'rows','complete');     Sy = Sy(1,2);
-                    Sz = corrcoef(S5,S1,'rows','complete');     Sz = Sz(1,2);
-                    
-                    ev = (Sx-Sy*Sz);
-                    ev = (ev/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
-                    
-                    rev = (Sy-Sx*Sz);
-                    rev = (rev/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
-                    
-                    EV.reward.dvHPCi = [EV.reward.dvHPCi ; rev*100 , ev*100 tt t config];
-                    clear Sx Sy Sz ev rev S1 S2 S3 S4 S5                     
                     
                 else
                     %% Aversive
+                    TS.pre = Restrict(NREM.baseline,[NREM.baseline(end,2)-3600 NREM.baseline(end,2)]);
+                    TS.post = Restrict(NREM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+3600]);
+                    TS.pre = InIntervals(bins, TS.pre);
+                    TS.post = InIntervals(bins, TS.post);
+                    
                     % Correlation Matrix Calculation
-                    x = [spiketrains_dHPC.pyr(is.baseline.sws,:)];
-                    y = [spiketrains_vHPC.pyr(is.baseline.sws,:)];
+                    x = [spiketrains_dHPC.pyr(TS.pre,:)];
+                    y = [spiketrains_vHPC.pyr(TS.pre,:)];
                     [S1 , p] = corr(x,y);
-%                     S1 = S1 - diag(diag(S1));
+                    %                     S1 = S1 - diag(diag(S1));
                     clear x y p
                     
                     x = [spiketrains_dHPC.pyr(is.aversive.run,:)];
                     y = [spiketrains_vHPC.pyr(is.aversive.run,:)];
                     [S2 , p] = corr(x,y);
-%                     S2 = S2 - diag(diag(S2));
+                    %                     S2 = S2 - diag(diag(S2));
                     clear x y p
                     
-                    x = [spiketrains_dHPC.pyr(is.aversive.sws,:)];
-                    y = [spiketrains_vHPC.pyr(is.aversive.sws,:)];
+                    x = [spiketrains_dHPC.pyr(TS.post,:)];
+                    y = [spiketrains_vHPC.pyr(TS.post,:)];
                     [S3 , p] = corr(x,y);
-%                     S3 = S3 - diag(diag(S3));
+                    %                     S3 = S3 - diag(diag(S3));
                     clear x y p
                     
                     % EV and REV
@@ -396,23 +292,28 @@ for tt = 1:length(path)
                     clear Sx Sy Sz ev rev
                     
                     %% Reward
-                    x = [spiketrains_dHPC.pyr(is.aversive.sws,:)];
-                    y = [spiketrains_vHPC.pyr(is.aversive.sws,:)];
+                    TS.pre = Restrict(NREM.aversive,[NREM.aversive(end,2)-3600 NREM.aversive(end,2)]);
+                    TS.post = Restrict(NREM.reward,[NREM.reward(1,1) NREM.reward(1,1)+3600]);
+                    TS.pre = InIntervals(bins, TS.pre);
+                    TS.post = InIntervals(bins, TS.post);
+                    
+                    x = [spiketrains_dHPC.pyr(TS.pre,:)];
+                    y = [spiketrains_vHPC.pyr(TS.pre,:)];
                     [S3 , p] = corr(x,y);
-%                     S3 = S3 - diag(diag(S3));
+                    %                     S3 = S3 - diag(diag(S3));
                     clear x y p
                     
-                    % Correlation Matrix Calculation      
+                    % Correlation Matrix Calculation
                     x = [spiketrains_dHPC.pyr(is.reward.run,:)];
                     y = [spiketrains_vHPC.pyr(is.reward.run,:)];
                     [S4 , p] = corr(x,y);
-%                     S4 = S4 - diag(diag(S4));
+                    %                     S4 = S4 - diag(diag(S4));
                     clear x y p
                     
-                    x = [spiketrains_dHPC.pyr(is.reward.sws,:)];
-                    y = [spiketrains_vHPC.pyr(is.reward.sws,:)];
+                    x = [spiketrains_dHPC.pyr(TS.post,:)];
+                    y = [spiketrains_vHPC.pyr(TS.post,:)];
                     [S5 , p] = corr(x,y);
-%                     S5 = S5 - diag(diag(S5));
+                    %                     S5 = S5 - diag(diag(S5));
                     clear x y p
                     
                     % EV and REV
@@ -429,8 +330,8 @@ for tt = 1:length(path)
                     EV.reward.dvHPC = [EV.reward.dvHPC ; rev*100 , ev*100 tt t config];
                     clear Sx Sy Sz ev rev
                     
-%                     EV.aversive.reward.dvHPC = [EV.aversive.reward.dvHPC ; rev1 ev1 rev2 ev2];
-%                     clear rev1 ev1 rev2 ev2
+                    %                     EV.aversive.reward.dvHPC = [EV.aversive.reward.dvHPC ; rev1 ev1 rev2 ev2];
+                    %                     clear rev1 ev1 rev2 ev2
                     
                     %% Aversive in Reward
                     Sx = corrcoef(S2,S5,'rows','complete');     Sx = Sx(1,2);
@@ -444,8 +345,8 @@ for tt = 1:length(path)
                     rev = (rev/sqrt((1-(Sy^2))*(1-(Sz^2))))^2;
                     
                     EV.aversive.dvHPCi = [EV.aversive.dvHPCi ; rev*100 , ev*100 tt t config];
-                    clear Sx Sy Sz ev rev S1 S2 S3 S4 S5                     
-
+                    clear Sx Sy Sz ev rev S1 S2 S3 S4 S5
+                    
                 end
             end
             
