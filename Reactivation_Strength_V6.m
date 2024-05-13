@@ -335,8 +335,6 @@ for tt = 1:length(path)
                         
             num_assembliesR = [num_assembliesR ; sum(cond.both.reward) sum(cond.dHPC.reward) sum(cond.vHPC.reward)];
             
-            
-            
             %% SpikeTrains construction
             limits = [0 segments.Var1(end)/1000];
             events = [];
@@ -385,7 +383,7 @@ for tt = 1:length(path)
                     templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
                     templates(1:size(clusters.dHPC),2) = 0;
                     
-                    p = patterns.all.aversive;% .* Thresholded.aversive.all;
+                    p = patterns.all.aversive .* Thresholded.aversive.all;
 %                     [R] = reactivation_strength(p , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
 %                     reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
                     
@@ -397,7 +395,7 @@ for tt = 1:length(path)
                 
                 % dHPC Aversive Assemblies
                 if sum(cond.dHPC.aversive)>=1
-                    p = patterns.all.aversive;% .* Thresholded.aversive.all;
+                    p = patterns.all.aversive .* Thresholded.aversive.all;
 %                     [R] = reactivation_strength(p , cond.dHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
 %                     reactivation.aversive.dHPC = [reactivation.aversive.dHPC ; R];
 %                     
@@ -409,7 +407,7 @@ for tt = 1:length(path)
                 
                 % vHPC Aversive Assemblies
                 if sum(cond.vHPC.aversive)>=1
-                    p = patterns.all.aversive;% .* Thresholded.aversive.all;
+                    p = patterns.all.aversive .* Thresholded.aversive.all;
 %                     [R] = reactivation_strength(p , cond.vHPC.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
 %                     reactivation.aversive.vHPC = [reactivation.aversive.vHPC ; R];
                     
@@ -427,7 +425,7 @@ for tt = 1:length(path)
                     templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
                     templates(1:size(clusters.dHPC),2) = 0;
                     
-                    p = patterns.all.reward;% .* Thresholded.reward.all;
+                    p = patterns.all.reward .* Thresholded.reward.all;
 %                     [R] = reactivation_strength(p , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
 %                     reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
                     
@@ -439,7 +437,7 @@ for tt = 1:length(path)
                 
                 % dHPC Reward Assemblies
                 if sum(cond.dHPC.reward)>=1
-                    p = patterns.all.reward;% .* Thresholded.reward.all;
+                    p = patterns.all.reward .* Thresholded.reward.all;
 %                     [R] = reactivation_strength(p , cond.dHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
 %                     reactivation.reward.dHPC = [reactivation.reward.dHPC ; R];
                     
@@ -451,7 +449,7 @@ for tt = 1:length(path)
                 
                 % vHPC reward Assemblies
                 if sum(cond.vHPC.reward)>=1
-                    p = patterns.all.reward;% .* Thresholded.reward.all;
+                    p = patterns.all.reward .* Thresholded.reward.all;
 %                     [R] = reactivation_strength(p , cond.vHPC.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
 %                     reactivation.reward.vHPC = [reactivation.reward.vHPC ; R];
                     

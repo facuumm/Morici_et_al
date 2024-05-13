@@ -1,4 +1,4 @@
-function [Pre Post] = Reactivation_ripples(path,Mode)
+function [Pre Post Iterator] = Reactivation_ripples(path,Mode)
 % This function calculates the Pre and Post sleep assemblies rate.
 %
 % INPUTS
@@ -25,22 +25,25 @@ function [Pre Post] = Reactivation_ripples(path,Mode)
 
 %variables to use in the script
 criteria_fr = 0;
-th = 2; % threshold for detecting peak assemblies
+th = 3; % threshold for detecting peak assemblies
 % 3 SD funciona
 
 % Variables to construct the PHIT
 d = 2;         % total time window
 b = 0.01;      % time bin
 sm = 2;        % smooth factor
-mode = 'Gain'; % type of normalization
+mode = 'Probability'; % type of normalization
 
 
 
 % storage variables
-Pre.dHPC.aversive = []; Pre.vHPC.aversive = [];
-Post.dHPC.aversive = []; Post.vHPC.aversive = [];
-Pre.dHPC.reward = []; Pre.vHPC.reward = [];
-Post.dHPC.reward = []; Post.vHPC.reward = [];
+Pre.dHPC.aversive = [];       Pre.vHPC.aversive = [];
+Post.dHPC.aversive = [];       Post.vHPC.aversive = [];
+Pre.dHPC.reward = [];          Pre.vHPC.reward = [];
+Post.dHPC.reward = [];         Post.vHPC.reward = [];
+Iterator.dHPC.aversive = [];   Iterator.dHPC.reward = [];
+Iterator.vHPC.aversive = [];   Iterator.vHPC.reward = [];
+
 
 %% Main loop, to iterate across sessions
 for tt = 1:length(path)
@@ -241,22 +244,28 @@ for tt = 1:length(path)
                         for i = 1 : size(pks.vHPC.aversive,1)
                             r = [ripples.dHPC.all ; ripples.vHPC.all];
                             baseline = SubtractIntervals(NREM.all , [r(:,1)-0.05 r(:,3)+0.05]);
-                            [p , t] = PHIST(TS.pre.dRipples(:,2),pks.vHPC.aversive{i}(:,1),baseline,d,b,sm,mode);
+                            [p , t] = PHIST(TS.pre.vRipples(:,2),pks.vHPC.aversive{i}(:,1),baseline,d,b,sm,mode);
                             Pre.vHPC.aversive = [Pre.vHPC.aversive , p]; clear p t
                             
-                            [p , t] = PHIST(TS.post.dRipples(:,2),pks.vHPC.aversive{i}(:,1),baseline,d,b,sm,mode);
+                            [p , t] = PHIST(TS.post.vRipples(:,2),pks.vHPC.aversive{i}(:,1),baseline,d,b,sm,mode);
                             Post.vHPC.aversive = [Post.vHPC.aversive , p]; clear p
+                            
+                            [pInc pDec surp] = RippleModulation_assemblies(ripples.vHPC.coordinated,pks.vHPC.aversive{i}(:,1),NREM.all);
+                            Iterator.vHPC.aversive = [ Iterator.vHPC.aversive ; pInc pDec surp];
                         end
                         
                         
                         for i = 1 : size(pks.dHPC.aversive,1)
                             r = [ripples.dHPC.all ; ripples.vHPC.all];
                             baseline = SubtractIntervals(NREM.all , [r(:,1)-0.05 r(:,3)+0.05]);
-                            [p , t] = PHIST(TS.pre.vRipples(:,2),pks.dHPC.aversive{i}(:,1),baseline,d,b,sm,mode);
+                            [p , t] = PHIST(TS.pre.dRipples(:,2),pks.dHPC.aversive{i}(:,1),baseline,d,b,sm,mode);
                             Pre.dHPC.aversive = [Pre.dHPC.aversive , p]; clear p t
                             
-                            [p , t] = PHIST(TS.post.vRipples(:,2),pks.dHPC.aversive{i}(:,1),baseline,d,b,sm,mode);
+                            [p , t] = PHIST(TS.post.dRipples(:,2),pks.dHPC.aversive{i}(:,1),baseline,d,b,sm,mode);
                             Post.dHPC.aversive = [Post.dHPC.aversive , p]; clear p
+                            
+                            [pInc pDec surp] = RippleModulation_assemblies(ripples.dHPC.coordinated,pks.dHPC.aversive{i}(:,1),NREM.all);
+                            Iterator.dHPC.aversive = [ Iterator.dHPC.aversive ; pInc pDec surp];                            
                         end
                     end
                     
@@ -285,22 +294,28 @@ for tt = 1:length(path)
                         for i = 1 : size(pks.vHPC.reward,1)
                             r = [ripples.dHPC.all ; ripples.vHPC.all];
                             baseline = SubtractIntervals(NREM.all , [r(:,1)-0.05 r(:,3)+0.05]);
-                            [p , t] = PHIST(TS.pre.dRipples(:,2),pks.vHPC.reward{i}(:,1),baseline,d,b,sm,mode);
+                            [p , t] = PHIST(TS.pre.vRipples(:,2),pks.vHPC.reward{i}(:,1),baseline,d,b,sm,mode);
                             Pre.vHPC.reward = [Pre.vHPC.reward , p]; clear p t
                             
-                            [p , t] = PHIST(TS.post.dRipples(:,2),pks.vHPC.reward{i}(:,1),baseline,d,b,sm,mode);
+                            [p , t] = PHIST(TS.post.vRipples(:,2),pks.vHPC.reward{i}(:,1),baseline,d,b,sm,mode);
                             Post.vHPC.reward = [Post.vHPC.reward , p]; clear p
+                            
+                            [pInc pDec surp] = RippleModulation_assemblies(ripples.vHPC.coordinated,pks.vHPC.reward{i}(:,1),NREM.all);
+                            Iterator.vHPC.reward = [ Iterator.vHPC.reward ; pInc pDec surp];                            
                         end
                         
                         
                         for i = 1 : size(pks.dHPC.reward,1)
                             r = [ripples.dHPC.all ; ripples.vHPC.all];
                             baseline = SubtractIntervals(NREM.all , [r(:,1)-0.05 r(:,3)+0.05]);
-                            [p , t] = PHIST(TS.pre.vRipples(:,2),pks.dHPC.reward{i}(:,1),baseline,d,b,sm,mode);
+                            [p , t] = PHIST(TS.pre.dRipples(:,2),pks.dHPC.reward{i}(:,1),baseline,d,b,sm,mode);
                             Pre.dHPC.reward = [Pre.dHPC.reward , p]; clear p t
                             
-                            [p , t] = PHIST(TS.post.vRipples(:,2),pks.dHPC.reward{i}(:,1),baseline,d,b,sm,mode);
+                            [p , t] = PHIST(TS.post.dRipples(:,2),pks.dHPC.reward{i}(:,1),baseline,d,b,sm,mode);
                             Post.dHPC.reward = [Post.dHPC.reward , p]; clear p
+                            
+                            [pInc pDec surp] = RippleModulation_assemblies(ripples.dHPC.coordinated,pks.dHPC.reward{i}(:,1),NREM.all);
+                            Iterator.dHPC.reward = [ Iterator.dHPC.reward ; pInc pDec surp];                                 
                         end
                     end
                 end
@@ -308,20 +323,21 @@ for tt = 1:length(path)
                 if strcmp(Mode,'Average')                
                     if isfield(patterns,'aversive') %checking if there are aversive assemblies
                         if aversiveTS_run(1)<rewardTS_run(1)
-                            TS.pre.sleep = Restrict(NREM.baseline,[NREM.baseline(end,2) NREM.baseline(end,2)]);
-                            TS.post.sleep = Restrict(NREM.aversive,[NREM.aversive(end,2) NREM.aversive(end,2)]);
-                            TS.pre.dRipples = Restrict(ripples.dHPC.coordinated,[NREM.baseline(end,2) NREM.baseline(end,2)]);
-                            TS.post.dRipples = Restrict(ripples.dHPC.coordinated,[NREM.aversive(1,1) NREM.aversive(1,1)]);
-                            TS.pre.vRipples = Restrict(ripples.vHPC.coordinated,[NREM.baseline(end,2) NREM.baseline(end,2)]);
-                            TS.post.vRipples = Restrict(ripples.vHPC.coordinated,[NREM.aversive(1,1) NREM.aversive(1,1)]);
+                            TS.pre.sleep = NREM.baseline;
+                            TS.post.sleep = NREM.aversive;
+                            TS.pre.dRipples = Restrict(ripples.dHPC.coordinated(:,2),[NREM.baseline]);
+                            TS.post.dRipples = Restrict(ripples.dHPC.coordinated(:,2),[NREM.aversive]);
+                            TS.pre.vRipples = Restrict(ripples.vHPC.coordinated(:,2),[NREM.baseline]);
+                            TS.post.vRipples = Restrict(ripples.vHPC.coordinated(:,2),[NREM.aversive]);
                         else
-                            TS.pre.sleep = Restrict(NREM.reward,[NREM.reward(end,2) NREM.reward(end,2)]);
-                            TS.post.sleep = Restrict(NREM.aversive,[NREM.aversive(end,2) NREM.aversive(end,2)]);
-                            TS.pre.dRipples = Restrict(ripples.dHPC.coordinated,[NREM.reward(end,2) NREM.reward(end,2)]);
-                            TS.post.dRipples = Restrict(ripples.dHPC.coordinated,[NREM.aversive(1,1) NREM.aversive(1,1)]);
-                            TS.pre.vRipples = Restrict(ripples.vHPC.coordinated,[NREM.reward(end,2) NREM.reward(end,2)]);
-                            TS.post.vRipples = Restrict(ripples.vHPC.coordinated,[NREM.aversive(1,1) NREM.aversive(1,1)]);
+                            TS.pre.sleep = NREM.reward;
+                            TS.post.sleep = NREM.aversive;
+                            TS.pre.dRipples = Restrict(ripples.dHPC.coordinated(:,2),[NREM.reward]);
+                            TS.post.dRipples = Restrict(ripples.dHPC.coordinated(:,2),[NREM.aversive]);
+                            TS.pre.vRipples = Restrict(ripples.vHPC.coordinated(:,2),[NREM.reward]);
+                            TS.post.vRipples = Restrict(ripples.vHPC.coordinated(:,2),[NREM.aversive]);
                         end
+                        
                             cond = logical(ones(1,size(patterns.aversive.vHPC,2)));
                             [p , time] = triggered_average_Ripples(TS.pre.dRipples,patterns.aversive.vHPC,cond,[Bins' SpksTrains.vHPC],[-1 1]);
                             Pre.vHPC.aversive = [Pre.vHPC.aversive , p]; clear p t
@@ -342,19 +358,19 @@ for tt = 1:length(path)
                     
                     if isfield(patterns,'reward') %checking if there are reward assemblies
                         if aversiveTS_run(1)<rewardTS_run(1)
-                            TS.pre.sleep = Restrict(NREM.aversive,[NREM.aversive(end,2) NREM.aversive(end,2)]);
-                            TS.post.sleep = Restrict(NREM.reward,[NREM.reward(end,2) NREM.reward(end,2)]);
-                            TS.pre.dRipples = Restrict(ripples.dHPC.coordinated,[NREM.aversive(end,2) NREM.aversive(end,2)]);
-                            TS.post.dRipples = Restrict(ripples.dHPC.coordinated,[NREM.reward(1,1) NREM.reward(1,1)]);
-                            TS.pre.vRipples = Restrict(ripples.vHPC.coordinated,[NREM.aversive(end,2) NREM.aversive(end,2)]);
-                            TS.post.vRipples = Restrict(ripples.vHPC.coordinated,[NREM.reward(1,1) NREM.reward(1,1)]);
+                            TS.pre.sleep = NREM.aversive;
+                            TS.post.sleep = NREM.reward;
+                            TS.pre.dRipples = Restrict(ripples.dHPC.coordinated(:,2),[NREM.aversive]);
+                            TS.post.dRipples = Restrict(ripples.dHPC.coordinated(:,2),[NREM.reward]);
+                            TS.pre.vRipples = Restrict(ripples.vHPC.coordinated(:,2),[NREM.aversive]);
+                            TS.post.vRipples = Restrict(ripples.vHPC.coordinated(:,2),[NREM.reward]);
                         else
-                            TS.pre.sleep = Restrict(NREM.baseline,[NREM.baseline(end,2) NREM.baseline(end,2)]);
-                            TS.post.sleep = Restrict(NREM.reward,[NREM.reward(end,2) NREM.reward(end,2)]);
-                            TS.pre.dRipples = Restrict(ripples.dHPC.coordinated,[NREM.baseline(end,2) NREM.baseline(end,2)]);
-                            TS.post.dRipples = Restrict(ripples.dHPC.coordinated,[NREM.reward(1,1) NREM.reward(1,1)]);
-                            TS.pre.vRipples = Restrict(ripples.vHPC.coordinated,[NREM.baseline(end,2) NREM.baseline(end,2)]);
-                            TS.post.vRipples = Restrict(ripples.vHPC.coordinated,[NREM.reward(1,1) NREM.reward(1,1)]);
+                            TS.pre.sleep = NREM.baseline;
+                            TS.post.sleep = NREM.reward;
+                            TS.pre.dRipples = Restrict(ripples.dHPC.coordinated(:,2),[NREM.baseline]);
+                            TS.post.dRipples = Restrict(ripples.dHPC.coordinated(:,2),[NREM.reward]);
+                            TS.pre.vRipples = Restrict(ripples.vHPC.coordinated(:,2),[NREM.baseline]);
+                            TS.post.vRipples = Restrict(ripples.vHPC.coordinated(:,2),[NREM.reward]);
                         end
                         
                         
@@ -395,8 +411,10 @@ for tt = 1:length(path)
     clear num_assembliesA num_assembliesR
     
 end
-% 
+
 % bins = [-1:0.01:1]
+% 
+% i = Iterator.dHPC.aversive(:,1)<0.01;
 % figure,
 % subplot(121),
 % plot(bins,nanmean(Pre.dHPC.aversive'),'k'),hold on
@@ -404,6 +422,7 @@ end
 % plot(bins,nanmean(Post.dHPC.aversive'),'r')
 % ciplot(nanmean(Post.dHPC.aversive')-nansem(Post.dHPC.aversive') , nanmean(Post.dHPC.aversive')+nansem(Post.dHPC.aversive'),bins,'r'), alpha 0.5
 % 
+% i = Iterator.vHPC.aversive(:,1)<0.01;
 % subplot(122),
 % plot(bins,nanmean(Pre.vHPC.aversive'),'k'),hold on
 % ciplot(nanmean(Pre.vHPC.aversive')-nansem(Pre.vHPC.aversive') , nanmean(Pre.vHPC.aversive')+nansem(Pre.vHPC.aversive'),bins,'k'), alpha 0.5
@@ -424,7 +443,7 @@ end
 % plot(bins,nanmean(Post.vHPC.reward'),'b')
 % ciplot(nanmean(Post.vHPC.reward')-nansem(Post.vHPC.reward') , nanmean(Post.vHPC.reward')+nansem(Post.vHPC.reward'),bins,'b'), alpha 0.5
 % 
-
+% 
 end
 
 

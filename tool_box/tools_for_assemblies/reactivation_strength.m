@@ -82,6 +82,7 @@ if not(isempty(templates))
 else
     a = assembly_activity(patterns(:,cond) , spks');
 end
+
 A = a;
 a = zscore(a,1,2);
 R = [];

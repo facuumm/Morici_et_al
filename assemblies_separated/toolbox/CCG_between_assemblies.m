@@ -29,10 +29,10 @@ criteria_fr = 0;
 
 %variables for CCG construction
 th = 5;           % threshold for peak detection
-sm = 1;           % smooth
-dur = 0.5;        % window duration
-b = 0.005;        % binsize
-iterations = 500; % number of iterations for Run surrogate
+sm = 2;           % smooth
+dur = 1;        % window duration
+b = 0.01;        % binsize
+iterations = 50; % number of iterations for Run surrogate
 
 % storage variables
 Pre.aversive = [];       Post.aversive = [];
@@ -167,15 +167,15 @@ for tt = 1:length(path)
             
             if isfield(patterns,'aversive') %checking if there are aversive assemblies
                 if aversiveTS_run(1)<rewardTS_run(1)
-                    TS.pre = Restrict(NREM.baseline,[NREM.baseline(end,2)-1800 NREM.baseline(end,2)]);
-                    TS.post = Restrict(NREM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+1800]);
-%                     TS.pre = NREM.baseline;
-%                     TS.post = NREM.aversive;
+%                     TS.pre = Restrict(NREM.baseline,[NREM.baseline(end,2)-1800 NREM.baseline(end,2)]);
+%                     TS.post = Restrict(NREM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+1800]);
+                    TS.pre = NREM.baseline;
+                    TS.post = NREM.aversive;
                 else
-                    TS.pre = Restrict(NREM.reward,[NREM.reward(end,2)-1800 NREM.reward(end,2)]);
-                    TS.post = Restrict(NREM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+1800]);
-%                     TS.pre = NREM.reward;
-%                     TS.post = NREM.aversive;
+%                     TS.pre = Restrict(NREM.reward,[NREM.reward(end,2)-1800 NREM.reward(end,2)]);
+%                     TS.post = Restrict(NREM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+1800]);
+                    TS.pre = NREM.reward;
+                    TS.post = NREM.aversive;
                 end
                 
                 % Peaks detection
@@ -257,16 +257,15 @@ for tt = 1:length(path)
             
             if isfield(patterns,'reward') %checking if there are reward assemblies
                 if aversiveTS_run(1)<rewardTS_run(1)
-                    TS.pre = Restrict(NREM.aversive,[NREM.aversive(end,2)-1800 NREM.aversive(end,2)]);
-                    TS.post = Restrict(NREM.reward,[NREM.reward(1,1) NREM.reward(1,1)+1800]);
-%                     TS.pre = NREM.aversive;
-%                     TS.post = NREM.reward;
+%                     TS.pre = Restrict(NREM.aversive,[NREM.aversive(end,2)-1800 NREM.aversive(end,2)]);
+%                     TS.post = Restrict(NREM.reward,[NREM.reward(1,1) NREM.reward(1,1)+1800]);
+                    TS.pre = NREM.aversive;
+                    TS.post = NREM.reward;
                 else
-                    TS.pre = Restrict(NREM.baseline,[NREM.baseline(end,2)-1800 NREM.baseline(end,2)]);
-                    TS.post = Restrict(NREM.reward,[NREM.reward(1,1) NREM.reward(1,1)+1800]);
-%                     TS.pre = NREM.baseline;
-%                     TS.post = NREM.reward;
-                    
+%                     TS.pre = Restrict(NREM.baseline,[NREM.baseline(end,2)-1800 NREM.baseline(end,2)]);
+%                     TS.post = Restrict(NREM.reward,[NREM.reward(1,1) NREM.reward(1,1)+1800]);
+                    TS.pre = NREM.baseline;
+                    TS.post = NREM.reward;
                 end
                 
                 % Peaks detection
@@ -363,40 +362,40 @@ for tt = 1:length(path)
 end
 
 
-%  IA = Iterator.aversive;
-%  IA(isnan(IA)) = 0;
-%  IA = logical(IA);
-%  
-%  IR = Iterator.reward;
-%  IR(isnan(IR)) = 0;
-%  IR = logical(IR);
-%  
-% figure,
-% subplot(221)
-% x1 = zscore(Pre.aversive(:,IA))';
-% [i ii] = max(x1');
-% [i ii] = sort(ii);
-% imagesc(T , [1:1:size(x1,2)] , x1(ii,:)),caxis([-3 3]),colormap 'jet'
-% 
-% subplot(222)
-% x2 = zscore(Post.aversive(:,IA))';
-% [i ii] = max(x2');
-% [i ii] = sort(ii);
-% imagesc(T , [1:1:size(x2,2)] , x2(ii,:)),caxis([-3 3]),colormap 'jet'
-% 
-% subplot(223)
-% x3 = zscore(Pre.reward(:,IR))';
-% [i ii] = max(x3');
-% [i ii] = sort(ii);
-% imagesc(T , [1:1:size(x3,2)] , x3(ii,:)),caxis([-3 3]),colormap 'jet'
-% 
-% 
-% subplot(224)
-% x4 = zscore(Post.reward(:,IR))';
-% [i ii] = max(x4');
-% [i ii] = sort(ii);
-% imagesc(T , [1:1:size(x4,2)] , x4(ii,:)),caxis([-3 3]),colormap 'jet'
-% 
+ IA = Iterator.aversive;
+ IA(isnan(IA)) = 0;
+ IA = logical(IA);
+ 
+ IR = Iterator.reward;
+ IR(isnan(IR)) = 0;
+ IR = logical(IR);
+ 
+figure,
+subplot(221)
+x1 = zscore(Pre.aversive(:,IA))';
+[i ii] = max(x1');
+[i ii] = sort(ii);
+imagesc(T , [1:1:size(x1,2)] , x1(ii,:)),caxis([-3 3]),colormap 'jet'
+
+subplot(222)
+x2 = zscore(Post.aversive(:,IA))';
+[i ii] = max(x2');
+[i ii] = sort(ii);
+imagesc(T , [1:1:size(x2,2)] , x2(ii,:)),caxis([-3 3]),colormap 'jet'
+
+subplot(223)
+x3 = zscore(Pre.reward(:,IR))';
+[i ii] = max(x3');
+[i ii] = sort(ii);
+imagesc(T , [1:1:size(x3,2)] , x3(ii,:)),caxis([-3 3]),colormap 'jet'
+
+
+subplot(224)
+x4 = zscore(Post.reward(:,IR))';
+[i ii] = max(x4');
+[i ii] = sort(ii);
+imagesc(T , [1:1:size(x4,2)] , x4(ii,:)),caxis([-3 3]),colormap 'jet'
+
 % 
 % figure
 % plot(T,nanmean(x1),'k'),hold on

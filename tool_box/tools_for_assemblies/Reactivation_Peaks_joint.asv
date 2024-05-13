@@ -1,4 +1,4 @@
-function [Pre Post Run] = Reactivation_Peaks_joint(path)
+function [Pre Post Run Peaks] = Reactivation_Peaks_joint(path)
 % This function calculates the Pre and Post sleep assemblies rate.
 %
 % INPUTS
@@ -22,17 +22,18 @@ function [Pre Post Run] = Reactivation_Peaks_joint(path)
 % variables to use in the script
 criteria_fr = 0;
 criteria_type = 0; % criteria for celltype (0:pyr, 1:int, 2:all)
-th = 0.5; % threshold for detecting peak assemblies
+th = 3; % threshold for detecting peak assemblies
 % 3 SD funciona
 % 5 SD funciona
 
 % storage variables
 Pre.aversive.thirty = [];   Post.aversive.thirty = [];
 Pre.reward.thirty = [];     Post.reward.thirty = [];
-Run.aversive = [];   Run.reward = [];
+Run.aversive = [];          Run.reward = [];
+
+Peaks.aversive.Post = {};   Peaks.reward.Post = {};
 
 Pre.aversive.sixty = [];   Post.aversive.sixty = [];
-Pre.reward.sixty = [];     Post.reward.sixty = [];
 
 %% Main loop, to iterate across sessions
 for tt = 1:length(path)
@@ -73,6 +74,76 @@ for tt = 1:length(path)
         REM.aversive = Restrict(REM.all,aversiveTS);
         REM.reward = Restrict(REM.all,rewardTS);
         
+        %% Load ripples
+        if exist('ripplesD_customized2.csv')
+            ripplesD = table2array(readtable('ripplesD_customized2.csv'));
+            RD = true;
+        else
+            RD = false;
+        end
+        
+        if exist('ripplesV_customized2.csv')
+            ripplesV = table2array(readtable('ripplesV_customized2.csv'));
+            RV = true;
+        else
+            RV = false;
+        end
+        
+        if and(RD,RV)
+            % coordination
+            coordinated = [];
+            coordinatedV = [];
+            cooridnated_event = [];
+            for i = 1:length(ripplesD)
+                r = ripplesD(i,:);
+                tmp = sum(and(ripplesV(:,2)>= r(1,2)-0.1, ripplesV(:,2)<= r(1,2)+0.1));
+                if tmp>0
+                    z = ripplesV(and(ripplesV(:,2)>= r(1,2)-0.1, ripplesV(:,2)<= r(1,2)+0.1),:);
+                    coordinatedV = [coordinatedV ; z];
+                    [p,indice] = min(abs(r(2)-z(:,2)));
+                    coordinated = [coordinated ; r];
+                    
+                    cooridnated_event = [cooridnated_event ; min([r(1) , z(indice,1)]) , min(min(z(indice,2),r(2)))+abs(z(indice,2)-r(2))/2 , max([r(3) , z(indice,3)])];
+                    
+                    clear tmp2 tmp1 p indice z
+                end
+                clear r
+            end
+            clear x tmp i
+            
+            [C,IA,IC] = unique(coordinatedV(:,1));
+            coordinatedV  = coordinatedV(IA,:); clear C IA IC
+            
+            % Store events time stamps
+            % dRipples
+            ripples.dHPC.baseline = Restrict(ripplesD , NREM.baseline);
+            ripples.dHPC.reward = Restrict(ripplesD , NREM.reward);
+            ripples.dHPC.aversive = Restrict(ripplesD , NREM.aversive);
+            % vRipples
+            ripples.vHPC.baseline = Restrict(ripplesV , NREM.baseline);
+            ripples.vHPC.reward = Restrict(ripplesV , NREM.reward);
+            ripples.vHPC.aversive = Restrict(ripplesV , NREM.aversive);
+            % coordinated dRipples
+            ripples.dHPC.coordinated.all = coordinated;
+            ripples.dHPC.uncoordinated.all = ripplesD(not(ismember(ripplesD(:,2) , coordinated(:,2))),:);
+            ripples.dHPC.coordinated.baseline = Restrict(coordinated , NREM.baseline);
+            ripples.dHPC.coordinated.reward = Restrict(coordinated , NREM.reward);
+            ripples.dHPC.coordinated.aversive = Restrict(coordinated , NREM.aversive);
+            % coordinated vRipples
+            ripples.vHPC.coordinated.all = coordinatedV;
+            ripples.vHPC.uncoordinated.all = ripplesV(not(ismember(ripplesV(:,2) , coordinatedV(:,2))),:);
+            ripples.vHPC.coordinated.baseline = Restrict(coordinatedV , NREM.baseline);
+            ripples.vHPC.coordinated.reward = Restrict(coordinatedV , NREM.reward);
+            ripples.vHPC.coordinated.aversive = Restrict(coordinatedV , NREM.aversive);
+            %coordinated event
+            cooridnated_event((cooridnated_event(:,3)-cooridnated_event(:,1)<0.04),:) = [];
+            ripple_event.baseline = Restrict(cooridnated_event,baselineTS);
+            ripple_event.reward = Restrict(cooridnated_event,rewardTS);
+            ripple_event.aversive = Restrict(cooridnated_event,aversiveTS);
+            ripple_event.all = cooridnated_event;
+            
+            load([cd , '\coordinated_ripple_bursts.mat'])
+        end
         
         %% Spikes
         % Load Units
@@ -111,7 +182,6 @@ for tt = 1:length(path)
         elseif criteria_type == 2 % all
             cellulartype = [K(:,1) , ones(length(K),1)];
         end
-        
         
         %% Counting the Number f SU
         numberD = 0;
@@ -170,6 +240,8 @@ for tt = 1:length(path)
                 patterns.aversive = pat;
                 clear cond Th pat
                 
+%                 patterns.aversive = patterns.aversive .* Thresholded.aversive;
+                
                 % Detection of members
                 if not(isempty(patterns.aversive))
                     if numberD>0
@@ -195,26 +267,39 @@ for tt = 1:length(path)
                 
                 if sum(cond.both)>0
 %                     patterns.aversive = patterns.aversive(:,cond.both);
-                    
                     if aversiveTS_run(1)<rewardTS_run(1)
-%                         TS.pre = NREM.baseline;
-%                         TS.post = NREM.aversive;
-                        TS.pre = Restrict(NREM.baseline,[aversiveTS_run(1)-3600 aversiveTS_run(1)]);
-                        TS.post = Restrict(NREM.aversive,[aversiveTS_run(2) aversiveTS_run(2)+3600]);
+                        TS.pre = NREM.baseline;
+                        TS.post = NREM.aversive;
+%                         TS.pre = Restrict(NREM.baseline,[aversiveTS_run(1)-3600 aversiveTS_run(1)]);
+%                         TS.post = Restrict(NREM.aversive,[aversiveTS_run(2) aversiveTS_run(2)+3600]);
+%                         TS.pre = REM.baseline;
+%                         TS.post = REM.aversive;
+%                         TS.pre = Restrict([ripple_event.baseline(:,1) , ripple_event.baseline(:,3)],[aversiveTS_run(1)-3600 aversiveTS_run(1)]);
+%                         TS.post = Restrict([ripple_event.aversive(:,1) , ripple_event.aversive(:,3)],[aversiveTS_run(2) aversiveTS_run(2)+3600]);
+%                         TS.pre = Restrict(bursts.coordinated,NREM.baseline);
+%                         TS.post = Restrict(bursts.coordinated,NREM.aversive);
                         TS.run.run1 = movement.aversive;
                         TS.run.run2 = movement.reward;
                     else
-%                         TS.pre = NREM.reward;
-%                         TS.post = NREM.aversive;
-                        TS.pre = Restrict(NREM.reward,[aversiveTS_run(1)-3600 aversiveTS_run(1)]);
-                        TS.post = Restrict(NREM.aversive,[aversiveTS_run(2) aversiveTS_run(2)+3600]);
+                        TS.pre = NREM.reward;
+                        TS.post = NREM.aversive;
+%                         TS.pre = Restrict(NREM.reward,[aversiveTS_run(1)-3600 aversiveTS_run(1)]);
+%                         TS.post = Restrict(NREM.aversive,[aversiveTS_run(2) aversiveTS_run(2)+3600]);
+%                         TS.pre = REM.reward;
+%                         TS.post = REM.aversive;
+%                         TS.pre = Restrict([ripple_event.reward(:,1) , ripple_event.reward(:,3)],[aversiveTS_run(1)-3600 aversiveTS_run(1)]);
+%                         TS.post = Restrict([ripple_event.aversive(:,1) , ripple_event.aversive(:,3)],[aversiveTS_run(2) aversiveTS_run(2)+3600]);
+%                         TS.pre = Restrict(bursts.coordinated,NREM.reward);
+%                         TS.post = Restrict(bursts.coordinated,NREM.aversive);
                         TS.run.run1 = movement.aversive;
                         TS.run.run2 = movement.reward;
                     end
                     pks.aversive = assemblies_peaks_joint(patterns.aversive , cond.both , [bins' Spikes], Thresholded.aversive, [numberD numberV]);
-%                     pks.aversive = assemblies_peaks( , patterns.aversive , th);
+%                     pks.aversive = assemblies_peaks([bins' Spikes] , patterns.aversive(:,cond.both) , th);
                     [pre1 , post1] = Reactivation_Rate(pks.aversive,TS);
-                    [pre2 , post2] = Reactivation_Mean([bins' Spikes] , patterns.aversive(:,cond.both) , TS);
+%                     [pre2 , post2] = Reactivation_Mean([bins' Spikes] , patterns.aversive(:,cond.both) , TS);
+                    [pre2 , post2] = Reactivation_Mean_peaks(pks.aversive(:,1),TS);
+                    
                     [run1 run2] = Activation_Run_Rate(pks.aversive,TS.run);
                     [run3 run4] = Activation_Run_Mean([bins' Spikes] , patterns.aversive(:,cond.both) , TS.run);
                     
@@ -222,34 +307,26 @@ for tt = 1:length(path)
                     Post.aversive.thirty = [Post.aversive.thirty ; post1 post2]; clear post1 post2
                     Run.aversive = [Run.aversive ; run1 run2 run3 run4]; clear run1 run2 run3 run4
                     
-%                     if aversiveTS_run(1)<rewardTS_run(1)
-%                         TS.pre = Restrict(NREM.baseline,[aversiveTS_run(1,1)-3600 aversiveTS_run(1,1)-1800]);
-%                         TS.post = Restrict(NREM.aversive,[aversiveTS_run(1,2)+1800 aversiveTS_run(1,2)+3600]);
-%                         TS.run.run1 = movement.aversive;
-%                         TS.run.run2 = movement.reward;
-%                     else
-%                         TS.pre = Restrict(NREM.reward,[aversiveTS_run(1,1)-3600 aversiveTS_run(1,1)-1800]);
-%                         TS.post = Restrict(NREM.aversive,[aversiveTS_run(1,2)+1800 aversiveTS_run(1,2)+3600]);
-%                         TS.run.run1 = movement.aversive;
-%                         TS.run.run2 = movement.reward;
-%                     end
-%                     
-%                     [pre1 , post1] = Reactivation_Rate(pks.aversive,TS);
-%                     [pre2 , post2] = Reactivation_Mean([bins' Spikes] , patterns.aversive(:,cond.both) , TS);
-%                     
-%                     Pre.aversive.sixty = [Pre.aversive.sixty ; pre1  pre2]; clear pre1 pre2
-%                     Post.aversive.sixty = [Post.aversive.sixty ; post1 post2]; clear post1 post2
+                    for i = 1 : size(pks.aversive,1)
+                        if isempty(Peaks.aversive.Post)
+                            Peaks.aversive.Post{1} =  Restrict(pks.aversive{i}(:,1),TS.post) - TS.post(1,1);
+                        else
+                            Peaks.aversive.Post{end+1} =  Restrict(pks.aversive{i}(:,1),TS.post) - TS.post(1,1);
+                        end
+                    end
                 end
             end
             
             
             if isfile('dorsalventral_assemblies_rewardVF.mat')
-                disp('Loading Aversive template')
+                disp('Loading Reward template')
                 load('dorsalventral_assemblies_rewardVF.mat')
                 
                 Thresholded.reward = Th;
                 patterns.reward = pat;
                 clear cond Th pat
+                
+%                 patterns.reward = patterns.reward .* Thresholded.reward;
                 
                 % Detection of members
                 if not(isempty(patterns.reward))
@@ -277,27 +354,39 @@ for tt = 1:length(path)
                 
                 if sum(cond.both)>0
 %                     patterns.reward = patterns.reward(:,cond.both);
-                    
                     if aversiveTS_run(1)<rewardTS_run(1)
-%                         TS.pre = NREM.aversive;
-%                         TS.post = NREM.reward;                        
-                        TS.pre = Restrict(NREM.aversive,[rewardTS_run(1)-3600 rewardTS_run(1)]);
-                        TS.post = Restrict(NREM.reward,[rewardTS_run(2) rewardTS_run(2)+3600]);
+                        TS.pre = NREM.aversive;
+                        TS.post = NREM.reward;                        
+%                         TS.pre = Restrict(NREM.aversive,[rewardTS_run(1)-3600 rewardTS_run(1)]);
+%                         TS.post = Restrict(NREM.reward,[rewardTS_run(2) rewardTS_run(2)+3600]);
+%                         TS.pre = REM.aversive;
+%                         TS.post = REM.reward;
+%                         TS.pre = Restrict([ripple_event.aversive(:,1) , ripple_event.aversive(:,3)],[rewardTS_run(1)-3600 rewardTS_run(1)]);
+%                         TS.post = Restrict([ripple_event.reward(:,1) , ripple_event.reward(:,3)],[rewardTS_run(2) rewardTS_run(2)+3600]);
+%                         TS.pre = Restrict(bursts.coordinated,NREM.aversive);
+%                         TS.post = Restrict(bursts.coordinated,NREM.reward);
                         TS.run.run1 = movement.reward;
                         TS.run.run2 = movement.aversive;
                     else
-%                         TS.pre = NREM.baseline;
-%                         TS.post = NREM.reward;                        
-                        TS.pre = Restrict(NREM.baseline,[rewardTS_run(1)-3600 rewardTS_run(1)]);
-                        TS.post = Restrict(NREM.reward,[rewardTS_run(2) rewardTS_run(2)+3600]);
+                        TS.pre = NREM.baseline;
+                        TS.post = NREM.reward;                        
+%                         TS.pre = Restrict(NREM.baseline,[rewardTS_run(1)-3600 rewardTS_run(1)]);
+%                         TS.post = Restrict(NREM.reward,[rewardTS_run(2) rewardTS_run(2)+3600]);
+%                         TS.pre = REM.baseline;
+%                         TS.post = REM.reward;
+%                         TS.pre = Restrict([ripple_event.baseline(:,1) , ripple_event.baseline(:,3)],[rewardTS_run(1)-3600 rewardTS_run(1)]);
+%                         TS.post = Restrict([ripple_event.reward(:,1) , ripple_event.reward(:,3)],[rewardTS_run(2) rewardTS_run(2)+3600]);
+%                         TS.pre = Restrict(bursts.coordinated,NREM.baseline);
+%                         TS.post = Restrict(bursts.coordinated,NREM.reward);
                         TS.run.run1 = movement.reward;
                         TS.run.run2 = movement.aversive;
                     end
                     
                     pks.reward = assemblies_peaks_joint(patterns.reward , cond.both , [bins' Spikes], Thresholded.reward, [numberD numberV]);
-%                     pks.reward = assemblies_peaks([bins' Spikes] , patterns.reward , th);
+%                     pks.reward = assemblies_peaks([bins' Spikes] , patterns.reward(:,cond.both) , th);
                     [pre1 , post1] = Reactivation_Rate(pks.reward,TS);
-                    [pre2 , post2] = Reactivation_Mean([bins' Spikes] , patterns.reward(:,cond.both) , TS);
+%                     [pre2 , post2] = Reactivation_Mean([bins' Spikes] , patterns.reward(:,cond.both) , TS);
+                    [pre2 , post2] = Reactivation_Mean_peaks(pks.reward,TS);
                     [run1 run2] = Activation_Run_Rate(pks.reward,TS.run);
                     [run3 run4] = Activation_Run_Mean([bins' Spikes] , patterns.reward(:,cond.both) , TS.run);                    
                     
@@ -305,19 +394,14 @@ for tt = 1:length(path)
                     Post.reward.thirty = [Post.reward.thirty ; post1 post2]; clear post1 post2
                     Run.reward = [Run.reward ; run1 run2 run3 run4]; clear run1 run2 run3 run4
                     
-%                     if aversiveTS_run(1)<rewardTS_run(1)
-%                         TS.pre = Restrict(NREM.aversive,[rewardTS_run(1,1)-3600 rewardTS_run(1,1)-1800]);
-%                         TS.post = Restrict(NREM.reward,[rewardTS_run(1,2)+1800 rewardTS_run(1,2)+3600]);
-%                     else
-%                         TS.pre = Restrict(NREM.baseline,[rewardTS_run(1,1)-3600 rewardTS_run(1,1)-1800]);
-%                         TS.post = Restrict(NREM.reward,[rewardTS_run(1,2)-1800 rewardTS_run(1,2)+3600]);
-%                     end
-%                     
-%                     [pre1 , post1] = Reactivation_Rate(pks.reward,TS);
-%                     [pre2 , post2] = Reactivation_Mean([bins' Spikes] , patterns.reward(:,cond.both) , TS);
-%                     
-%                     Pre.reward.sixty = [Pre.reward.sixty ; pre1  pre2]; clear pre1 pre2
-%                     Post.reward.sixty = [Post.reward.sixty ; post1 post2]; clear post1 post2
+                    for i = 1 : size(pks.reward,1)
+                        if isempty(Peaks.reward.Post)
+                            Peaks.reward.Post{1} =  Restrict(pks.reward{i}(:,1),TS.post) - TS.post(1,1);
+                        else
+                            Peaks.reward.Post{end+1} =  Restrict(pks.reward{i}(:,1),TS.post) - TS.post(1,1);
+                        end
+                    end
+                    
                 end
             end
             
@@ -350,17 +434,26 @@ end
 % 
 figure,
 subplot(121)
-x = [ones(size(Post.aversive.thirty(:,1))) ; ones(size(Pre.reward.thirty(:,1)))*2];
-DIA = (Post.aversive.thirty(:,1) ./ Pre.aversive.thirty(:,1)) ./ (Post.aversive.thirty(:,1) + Pre.aversive.thirty(:,1));
-DIR = (Post.reward.thirty(:,1) ./ Pre.reward.thirty(:,1)) ./ (Post.reward.thirty(:,1) + Pre.reward.thirty(:,1));
-y = [DIA ; DIR];
+x = [ones(size(Post.reward.thirty(:,1))) ; ones(size(Pre.aversive.thirty(:,1)))*2];
+DIA = (Post.aversive.thirty(:,1) - Pre.aversive.thirty(:,1)) ./ (Post.aversive.thirty(:,1) + Pre.aversive.thirty(:,1));
+DIR = (Post.reward.thirty(:,1) - Pre.reward.thirty(:,1)) ./ (Post.reward.thirty(:,1) + Pre.reward.thirty(:,1));
+y = [DIR ; DIA];
 scatter(x,y,"filled",'jitter','on', 'jitterAmount',0.1'),hold on,xlim([0 3])
-scatter([1 2] , [nanmedian(DIA) nanmedian(DIR)],'filled')%,set(gca, 'YScale', 'log')
-yline(1,'--')
-signrank(DIA,1)
-signrank(DIR,1)
+scatter([1 2] , [nanmedian(DIR) nanmedian(DIA)],'filled'),%set(gca, 'YScale', 'log')
+yline(0,'--')
+signrank(DIA,0)
+signrank(DIR,0)
 ranksum(DIA,DIR)
-ylim([0 10])
+ylim([-1 1])
+
+subplot(222)
+fitlm(Post.reward.thirty(:,1),Run.reward(:,1))
+plot(ans), xlim([0 1]) , ylim([0 2.5])
+
+subplot(224)
+fitlm(Post.aversive.thirty(:,1),Run.aversive(:,1))
+plot(ans), xlim([0 1]) , ylim([0 2.5])
+
 % 
 % subplot(122)
 % x = [ones(size(Post.aversive.sixty(:,1))) ; ones(size(Pre.reward.sixty(:,1)))*2];
@@ -428,6 +521,49 @@ ylim([0 10])
 % scatter([1 2] , [nanmedian(DIA) nanmedian(DIR)],'filled')%,set(gca, 'YScale', 'log')
 % ranksum(DIA,DIR)
 
+% figure
+result = {};
+result1 = nan(200,50);
+for i = 1 : size(Peaks.aversive.Post,2)
+    tmp = Peaks.aversive.Post{i};
+    [tmp,bins]=binspikes(tmp,1/60,[0 round(tmp(end))]);
+    result1(1:size(tmp,1),i) = Smooth(tmp./60,2);
+    if isempty(result)
+%         plot(tmp./60,'k'),hold on
+        result{1} = [bins' tmp./60]; clear tmp bins
+    else
+%         plot(tmp./60,'k'),hold on
+        result{end+1} = [bins' tmp./60]; clear tmp bins
+    end
+end
+
+figure
+plot(nanmean(result1'))
+
+
+
+
+% figure
+result = {};
+result2 = nan(200,50);
+for i = 1 : size(Peaks.reward.Post,2)
+    tmp = Peaks.reward.Post{i};
+    [tmp,bins]=binspikes(tmp,1/60,[0 round(tmp(end))]);
+    result2(1:size(tmp,1),i) = Smooth(tmp./60,2);
+    if isempty(result)
+%         plot(tmp./60,'k'),hold on
+        result{1} = [bins' tmp./60]; clear tmp bins
+    else
+%         plot(tmp./60,'k'),hold on
+        result{end+1} = [bins' tmp./60]; clear tmp bins
+    end
+end
+
+figure
+plot([1:200],nanmean(result2'),'b'),hold on
+ciplot(nanmean(result2')-nansem(result2') , nanmean(result2')+nansem(result2') , [1:200] , 'b') , alpha 0.5
+plot(nanmean(result1'),'r'),hold on
+ciplot(nanmean(result1')-nansem(result1') , nanmean(result1')+nansem(result1') , [1:200] , 'r') , alpha 0.5
 
 
 end

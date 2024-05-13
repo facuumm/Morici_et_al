@@ -826,7 +826,7 @@ for tt = 1:length(path)
 %                     clear tmp1 tmp2
 %                 end
 %             end   
-
+            save([cd,'\coordinated_ripple_bursts.mat'],'bursts')
             %% Detection of bursts across session
             iri = diff(ripplesD(:,2))<=0.1;
             iri = ToIntervals([2:length(ripplesD)] , iri);

@@ -54,8 +54,8 @@ for i = 1:size(a,1)
     template2 = and(sum(template2(:,1:numberSU(1)),2)>0 , sum(template2(:,numberSU(1)+1:end),2)>0);
     [pks.all,loc.all] = findpeaks(a(i,:),bins,'MinPeakHeight',1);
     pull = bins(template2);
-    result = loc.all(ismember(loc.all,pull));
-    peaks{i} = result; clear template2 template3 result
+    result = [loc.all(ismember(loc.all,pull)) pks.all(ismember(loc.all,pull))'];
+    peaks{i} =   result; clear template2 template3 result
 end
 
 end

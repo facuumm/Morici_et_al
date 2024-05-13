@@ -16,10 +16,6 @@ binSize = 0.025;
 n_SU_V = 0;
 n_SU_D = 0;
 
-% Behavior
-minimal_speed = 7; % minimal speed to detect quite periods
-minimal_speed_time = 2; % minimal time to detect quite periods
-
 EV.aversive.dvHPCi = [];   EV.reward.dvHPCi = [];
 EV.aversive.dvHPC = [];   EV.reward.dvHPC = [];
 
@@ -55,15 +51,22 @@ for tt = 1:length(path)
         REM.all = ToIntervals(states==5);    NREM.all = ToIntervals(states==3);    WAKE.all = ToIntervals(states==1);
         clear x states
         
-        %         NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
-        NREM.baseline = Restrict(NREM.all,baselineTS./1000);
-        NREM.aversive = Restrict(NREM.all,aversiveTS./1000);
-        NREM.reward = Restrict(NREM.all,rewardTS./1000);
+        rewardTS = rewardTS./1000;
+        baselineTS = baselineTS./1000;
+        aversiveTS = aversiveTS./1000;
+        rewardTS_run = rewardTS_run./1000;
+        aversiveTS_run = aversiveTS_run./1000;
         
-        REM.baseline = Restrict(REM.all,baselineTS./1000);
-        REM.aversive = Restrict(REM.all,aversiveTS./1000);
-        REM.reward = Restrict(REM.all,rewardTS./1000);
+%         NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
+        NREM.baseline = Restrict(NREM.all,baselineTS);
+        NREM.aversive = Restrict(NREM.all,aversiveTS);
+        NREM.reward = Restrict(NREM.all,rewardTS);
         
+        REM.baseline = Restrict(REM.all,baselineTS);
+        REM.aversive = Restrict(REM.all,aversiveTS);
+        REM.reward = Restrict(REM.all,rewardTS);
+        
+
         %% Spikes
         %Load Units
         disp('Uploading Spiking activity')
@@ -171,8 +174,8 @@ for tt = 1:length(path)
             if and(and(~isempty(NREM.aversive),~isempty(NREM.reward)),~isempty(NREM.baseline))
                 if aversiveTS_run(1) > rewardTS_run(1)
                     %% Reward
-                    TS.pre = Restrict(NREM.baseline,[NREM.baseline(end,2)-3600 NREM.baseline(end,2)]);
-                    TS.post = Restrict(NREM.reward,[NREM.reward(1,1) NREM.reward(1,1)+3600]);
+                    TS.pre = Restrict(NREM.baseline,[NREM.baseline(end,2)-1800 NREM.baseline(end,2)]);
+                    TS.post = Restrict(NREM.reward,[NREM.reward(1,1) NREM.reward(1,1)+1800]);
                     TS.pre = InIntervals(bins, TS.pre);
                     TS.post = InIntervals(bins, TS.post);
                     
@@ -210,8 +213,8 @@ for tt = 1:length(path)
                     clear Sx Sy Sz ev rev
                     
                     %% Aversive
-                    TS.pre = Restrict(NREM.reward,[NREM.reward(end,2)-3600 NREM.reward(end,2)]);
-                    TS.post = Restrict(NREM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+3600]);
+                    TS.pre = Restrict(NREM.reward,[NREM.reward(end,2)-1800 NREM.reward(end,2)]);
+                    TS.post = Restrict(NREM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+1800]);
                     TS.pre = InIntervals(bins, TS.pre);
                     TS.post = InIntervals(bins, TS.post);
                     
@@ -253,8 +256,8 @@ for tt = 1:length(path)
                     
                 else
                     %% Aversive
-                    TS.pre = Restrict(NREM.baseline,[NREM.baseline(end,2)-3600 NREM.baseline(end,2)]);
-                    TS.post = Restrict(NREM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+3600]);
+                    TS.pre = Restrict(NREM.baseline,[NREM.baseline(end,2)-1800 NREM.baseline(end,2)]);
+                    TS.post = Restrict(NREM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+1800]);
                     TS.pre = InIntervals(bins, TS.pre);
                     TS.post = InIntervals(bins, TS.post);
                     
@@ -292,8 +295,8 @@ for tt = 1:length(path)
                     clear Sx Sy Sz ev rev
                     
                     %% Reward
-                    TS.pre = Restrict(NREM.aversive,[NREM.aversive(end,2)-3600 NREM.aversive(end,2)]);
-                    TS.post = Restrict(NREM.reward,[NREM.reward(1,1) NREM.reward(1,1)+3600]);
+                    TS.pre = Restrict(NREM.aversive,[NREM.aversive(end,2)-1800 NREM.aversive(end,2)]);
+                    TS.post = Restrict(NREM.reward,[NREM.reward(1,1) NREM.reward(1,1)+1800]);
                     TS.pre = InIntervals(bins, TS.pre);
                     TS.post = InIntervals(bins, TS.post);
                     

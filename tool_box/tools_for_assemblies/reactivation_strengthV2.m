@@ -79,6 +79,7 @@ dt = bins(2)-bins(1); % delta time
 spks = SpikeTrain(:,2:end);
 iterations = 1;
 prc = 75;
+
 if not(isempty(templates))
     a = assembly_activity_only_joint(patterns(:,cond) , spks',templates(:,1),templates(:,2));
 else

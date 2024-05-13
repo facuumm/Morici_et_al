@@ -21,7 +21,7 @@ criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
 criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
 binSize = 0.025; %for qssemblie detection qnd qxctivity strength
 normalization = true; % to define if normalization over Reactivation Strength is applied or not
-th = 3; % threshold for peak detection
+th = 1; % threshold for peak detection
 iterations = 100; % number of iterations for downsampling
 
 % Behavior

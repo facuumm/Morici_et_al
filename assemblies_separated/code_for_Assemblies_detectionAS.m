@@ -194,7 +194,7 @@ for tt = 1:length(path)
                 
                 if not(isempty(clusters.dHPC))
                     [SpksTrains.dHPC.reward , Bins.reward , Cluster.reward.dHPC] = spike_train_construction(spks_dHPC, clusters.dHPC, cellulartype, binSize(i), limits, events, false,false);
-                    [Th , pat , eig] = assembly_patternsJFM([SpksTrains.dHPC.aversive'],opts);
+                    [Th , pat , eig] = assembly_patternsJFM([SpksTrains.dHPC.reward'],opts);
                     % save
                     Thresholded.reward.dHPC = Th;
                     patterns.reward.dHPC = pat;
@@ -264,6 +264,28 @@ for tt = 1:length(path)
     end
         clear num_assembliesA num_assembliesR
 end
+
+
+%% Ven Graphs for similarity Index
+% dHPC Assemblies
+p1 = (sum(percentages(:,2))./sum(sum(percentages(:,2:3))))*100;
+p2 = (sum(percentages(:,3))./sum(sum(percentages(:,2:3))))*100;
+
+A = [ p1 p2 ];
+I = (sum(percentages(:,1))./sum(sum(percentages(:,2:3))))*100;
+
+subplot(121),venn(A,I), xlim([-7 11]), ylim([-6 6])
+
+% vHPC Assemblies
+p1 = (sum(percentages(:,5))./sum(sum(percentages(:,5:6))))*100;
+p2 = (sum(percentages(:,6))./sum(sum(percentages(:,5:6))))*100;
+
+A = [ p1 p2 ];
+I = (sum(percentages(:,4))./sum(sum(percentages(:,5:6))))*100;
+
+subplot(122),venn(A,I), xlim([-7 11]), ylim([-6 6])
+
+%%
 
 figure
 subplot(221),bar([1 2 3 4] , [sum(Number_of_assemblies.aversive(:,1)) sum(Number_of_assemblies.aversive(:,3)) sum(Number_of_assemblies.aversive(:,5)) sum(Number_of_assemblies.aversive(:,7))]),ylim([0 100])

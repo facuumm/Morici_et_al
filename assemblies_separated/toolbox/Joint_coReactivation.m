@@ -22,8 +22,8 @@ function [C] = Joint_coReactivation(path)
 criteria_fr = 0;
 
 %variables for CCG construction
-th = 3;           % threshold for peak detection
-b = 0.1;        % binsize
+th = 5;           % threshold for peak detection
+b = 0.1;          % binsize
 
 % storage variables
 C.aversive = [];  C.reward = [];
@@ -187,13 +187,13 @@ for tt = 1:length(path)
                         tmp2 = and(tmp , tmp1);
                         tmp2 = tmp2(p);
                         
-                        time = [1:1:size(tmp2,1)]';
+                        time = [b:b:size(tmp2,1)*b]';
                         
-                        e = time(end)/20;
+                        e = time(end);
                         
                         tmp2 = time(tmp2);
                         tmp2 = histcounts(tmp2,50,'BinLimits',[0 time(end)]);
-                        C.aversive = [C.aversive ; tmp2./e'];
+                        C.aversive = [C.aversive ; tmp2./(e/50)'];
                         clear tmp2 time e
                     end
                     clear tmp1
@@ -238,13 +238,13 @@ for tt = 1:length(path)
                         tmp2 = and(tmp , tmp1);
                         tmp2 = tmp2(p);
                         
-                        time = [1:1:size(tmp2,1)]';
+                        time = [b:b:size(tmp2,1)*b]';
                         
-                        e = time(end)/20;
+                        e = time(end);
                         
                         tmp2 = time(tmp2);
                         tmp2 = histcounts(tmp2,50,'BinLimits',[0 time(end)]);
-                        C.reward = [C.reward ; tmp2./e'];
+                        C.reward = [C.reward ; tmp2./(e/50)'];
                         clear tmp2 time e
                     end
                     clear tmp1

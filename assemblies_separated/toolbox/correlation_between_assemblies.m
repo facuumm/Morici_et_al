@@ -29,8 +29,7 @@ criteria_fr = 0;
 
 %variables for CCG construction
 th = 5;           % threshold for peak detection
-dur = 0.1;       % window for train of assemblies
-win = 60*5;       % window for correlation calculations
+dur = 1;       % window for train of assemblies
 b = 0.005;        % binsize
 
 % storage variables
@@ -178,13 +177,13 @@ for tt = 1:length(path)
                 Trains.vHPC = [];
                 for i = 1:size(pks.vHPC.aversive,1)
                     [tmp,bins]=binspikes(pks.vHPC.aversive{i}(:,1),1/dur,limits);
-                    Trains.vHPC = [Trains.vHPC , tmp]; clear tmp bins
+                    Trains.vHPC = [Trains.vHPC , zscore(tmp)]; clear tmp bins
                 end
                 
                 Trains.dHPC = [];
                 for i = 1:size(pks.dHPC.aversive,1)
                     [tmp,bins]=binspikes(pks.dHPC.aversive{i}(:,1),1/dur,limits);
-                    Trains.dHPC = [Trains.dHPC , tmp]; clear tmp
+                    Trains.dHPC = [Trains.dHPC , zscore(tmp)]; clear tmp
                 end
                 
                 
@@ -308,13 +307,13 @@ for tt = 1:length(path)
                 Trains.vHPC = [];
                 for i = 1:size(pks.vHPC.reward,1)
                     [tmp,bins]=binspikes(pks.vHPC.reward{i}(:,1),1/dur,limits);
-                    Trains.vHPC = [Trains.vHPC , tmp]; clear tmp bins
+                    Trains.vHPC = [Trains.vHPC , zscore(tmp)]; clear tmp bins
                 end
                 
                 Trains.dHPC = [];
                 for i = 1:size(pks.dHPC.reward,1)
                     [tmp,bins]=binspikes(pks.dHPC.reward{i}(:,1),1/dur,limits);
-                    Trains.dHPC = [Trains.dHPC , tmp]; clear tmp
+                    Trains.dHPC = [Trains.dHPC , zscore(tmp)]; clear tmp
                 end
                 
                 % Correlation RUN
@@ -428,39 +427,39 @@ end
 end
 
 
-% 
-% %% for plotting
-% x = Run.aversive(:,2)<0.05;
-% y = Run.reward(:,2)<0.05;
-% 
-% figure
-% % subplot(121),boxplot([Pre.aversive(x,1) , Post.aversive(x,1)])
-% [h p] = ranksum(Pre.aversive(x,1) , Post.aversive(x,1))
-% % subplot(122),boxplot([Pre.reward(y,1) , Post.reward(y,1)])
-% [h p] = ranksum(Pre.reward(y,1) , Post.reward(y,1))
-% 
-% 
-% figure
-% subplot(121)
-% for i = 1:length(Pre.aversive(:,1))
-%     x = 1+rand*0.1;
-%     scatter(x,Pre.aversive(i,1),'filled','k'),hold on
-%     y = 2+rand*0.1;
-%     scatter(y,Post.aversive(i,1),'filled','r'),hold on
-%     plot([x,y],[Pre.aversive(i,1) , Post.aversive(i,1)],'k-')
-% end
-% xlim([0 3])
-% ylim([-0.02 0.07])
-% scatter([1 2],[nanmedian(Pre.aversive(:,1)) nanmedian(Post.aversive(:,1))],'filled')
-% 
-% subplot(122)
-% for i = 1:length(Pre.reward(:,1))
-%     x = 1+rand*0.1;
-%     scatter(x,Pre.reward(i,1),'filled','k'),hold on
-%     y = 2+rand*0.1;
-%     scatter(y,Post.reward(i,1),'filled','b'),hold on
-%     plot([x,y],[Pre.reward(i,1) , Post.reward(i,1)],'k-')
-% end
-% xlim([0 3])
-% ylim([-0.02 0.07])
-% scatter([1 2],[nanmedian(Pre.reward(:,1)) nanmedian(Post.reward(:,1))],'filled')
+
+%% for plotting
+x = Run.aversive(:,2)<0.05;
+y = Run.reward(:,2)<0.05;
+
+figure
+% subplot(121),boxplot([Pre.aversive(x,1) , Post.aversive(x,1)])
+[h p] = signrank(Pre.aversive(:,1) , Post.aversive(:,1))
+% subplot(122),boxplot([Pre.reward(y,1) , Post.reward(y,1)])
+[h p] = signrank(Pre.reward(:,1) , Post.reward(:,1))
+
+
+figure
+subplot(121)
+for i = 1:length(Pre.aversive(:,1))
+    x = 1+rand*0.1;
+    scatter(x,Pre.aversive(i,1),'filled','k'),hold on
+    y = 2+rand*0.1;
+    scatter(y,Post.aversive(i,1),'filled','r'),hold on
+    plot([x,y],[Pre.aversive(i,1) , Post.aversive(i,1)],'k-')
+end
+xlim([0 3])
+ylim([-0.02 0.07])
+scatter([1 2],[nanmedian(Pre.aversive(:,1)) nanmedian(Post.aversive(:,1))],'filled')
+
+subplot(122)
+for i = 1:length(Pre.reward(:,1))
+    x = 1+rand*0.1;
+    scatter(x,Pre.reward(i,1),'filled','k'),hold on
+    y = 2+rand*0.1;
+    scatter(y,Post.reward(i,1),'filled','b'),hold on
+    plot([x,y],[Pre.reward(i,1) , Post.reward(i,1)],'k-')
+end
+xlim([0 3])
+ylim([-0.02 0.07])
+scatter([1 2],[nanmedian(Pre.reward(:,1)) nanmedian(Post.reward(:,1))],'filled')

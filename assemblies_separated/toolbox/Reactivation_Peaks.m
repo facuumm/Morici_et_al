@@ -162,15 +162,15 @@ for tt = 1:length(path)
                 if aversiveTS_run(1)<rewardTS_run(1)
 %                     TS.pre = REM.baseline;
 %                     TS.post = REM.aversive;
-                    TS.pre = Restrict(REM.baseline,[NREM.baseline(end,2)-1800 NREM.baseline(end,2)]);
-                    TS.post = Restrict(REM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+1800]);
+                    TS.pre = Restrict(NREM.baseline,[NREM.baseline(end,2)-1800 NREM.baseline(end,2)]);
+                    TS.post = Restrict(NREM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+1800]);
                     TS.run.run1 = movement.aversive;
                     TS.run.run2 = movement.reward;
                 else
 %                     TS.pre = REM.reward;
 %                     TS.post = REM.aversive;
-                    TS.pre = Restrict(REM.reward,[NREM.reward(end,2)-1800 NREM.reward(end,2)]);
-                    TS.post = Restrict(REM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+1800]);   
+                    TS.pre = Restrict(NREM.reward,[NREM.reward(end,2)-1800 NREM.reward(end,2)]);
+                    TS.post = Restrict(NREM.aversive,[NREM.aversive(1,1) NREM.aversive(1,1)+1800]);   
                     TS.run.run1 = movement.aversive;
                     TS.run.run2 = movement.reward;
                 end
@@ -207,15 +207,15 @@ for tt = 1:length(path)
                 if aversiveTS_run(1)<rewardTS_run(1)
 %                     TS.pre = REM.aversive;
 %                     TS.post =REM.reward;
-                    TS.pre = Restrict(REM.aversive,[NREM.aversive(end,2)-1800 NREM.aversive(end,2)]);
-                    TS.post = Restrict(REM.reward,[NREM.reward(1,1) NREM.reward(1,1)+1800]);
+                    TS.pre = Restrict(NREM.aversive,[NREM.aversive(end,2)-1800 NREM.aversive(end,2)]);
+                    TS.post = Restrict(NREM.reward,[NREM.reward(1,1) NREM.reward(1,1)+1800]);
                     TS.run.run1 = movement.reward;
                     TS.run.run2 = movement.aversive;
                 else
 %                     TS.pre = REM.baseline;
 %                     TS.post = REM.reward;   
-                    TS.pre = Restrict(REM.baseline,[NREM.baseline(end,2)-1800 NREM.baseline(end,2)]);
-                    TS.post = Restrict(REM.reward,[NREM.reward(1,1) NREM.reward(1,1)+1800]);   
+                    TS.pre = Restrict(NREM.baseline,[NREM.baseline(end,2)-1800 NREM.baseline(end,2)]);
+                    TS.post = Restrict(NREM.reward,[NREM.reward(1,1) NREM.reward(1,1)+1800]);   
                     TS.run.run1 = movement.reward;
                     TS.run.run2 = movement.aversive;                  
                 end
@@ -269,100 +269,55 @@ end
 figure,
 subplot(121)
 x = [ones(size(Pre.dHPC.aversive(:,1))) ; ones(size(Post.dHPC.reward(:,1)))*2];
-DIA = (Post.dHPC.aversive(:,1) ./ Pre.dHPC.aversive(:,1));% ./ (Post.dHPC.aversive(:,1) + Pre.dHPC.aversive(:,1));
-DIR = (Post.dHPC.reward(:,1) ./ Pre.dHPC.reward(:,1));% ./ (Post.dHPC.reward(:,1) + Pre.dHPC.reward(:,1));
+DIA = (Post.dHPC.aversive(:,1) ./ Pre.dHPC.aversive(:,1));% ./ (Post.dHPC.aversive(:,2) + Pre.dHPC.aversive(:,2));
+DIR = (Post.dHPC.reward(:,1) ./ Pre.dHPC.reward(:,1));% ./ (Post.dHPC.reward(:,2) + Pre.dHPC.reward(:,2));
 y = [DIA ; DIR];
 scatter(x,y,"filled",'jitter','on', 'jitterAmount',0.1'),hold on,xlim([0 3])
 scatter([1 2] , [nanmedian(DIA) nanmedian(DIR)],'filled'),set(gca, 'YScale', 'log')
 % boxplot(y,x)
 yline(1,'--')
-signrank(DIA,1)
-signrank(DIR,1)
+signrank(DIA,0)
+signrank(DIR,0)
 ranksum(DIA,DIR)
-ylim([0.1 10])
+%  ylim([-1 1])
 
 subplot(122)
 x = [ones(size(Pre.vHPC.aversive(:,1))) ; ones(size(Post.vHPC.reward(:,1)))*2];
-DIA = (Post.vHPC.aversive(:,1) ./ Pre.vHPC.aversive(:,1));% ./ (Post.vHPC.aversive(:,1) + Pre.vHPC.aversive(:,1));
-DIR = (Post.vHPC.reward(:,1) ./ Pre.vHPC.reward(:,1));% ./ (Post.vHPC.reward(:,1) + Pre.vHPC.reward(:,1));
-y = [DIA ; DIR];
+DIA1 = (Post.vHPC.aversive(:,1) ./ Pre.vHPC.aversive(:,1));% ./ (Post.vHPC.aversive(:,2) + Pre.vHPC.aversive(:,2));
+DIR1 = (Post.vHPC.reward(:,1) ./ Pre.vHPC.reward(:,1));% ./ (Post.vHPC.reward(:,2) + Pre.vHPC.reward(:,2));
+y = [DIA1 ; DIR1];
 scatter(x,y,"filled",'jitter','on', 'jitterAmount',0.1'),hold on,xlim([0 3])
 scatter([1 2] , [nanmedian(DIA) nanmedian(DIR)],'filled'),set(gca, 'YScale', 'log')
 % boxplot(y,x)
 yline(1,'--')
-signrank(DIA,1)
-signrank(DIR,1)
-ranksum(DIA,DIR)
-ylim([0.1 10])
+signrank(DIA1,0)
+signrank(DIR1,0)
+ranksum(DIA1,DIR1)
+% ylim([-1 1])
 
-% 
-% figure,
-% subplot(121)
-% x = [ones(size(Pre.dHPC.aversive(:,2))) ; ones(size(Post.dHPC.reward(:,2)))*2];
-% DIA = (Post.dHPC.aversive(:,2) ./ Pre.dHPC.aversive(:,2));% ./ (Post.dHPC.aversive(:,2) + Pre.dHPC.aversive(:,2));
-% DIR = (Post.dHPC.reward(:,2) ./ Pre.dHPC.reward(:,2));% ./ (Post.dHPC.reward(:,2) + Pre.dHPC.reward(:,2));
-% y = [DIA ; DIR];
-% scatter(x,y,"filled",'jitter','on', 'jitterAmount',0.1'),hold on,xlim([0 3])
-% scatter([1 2] , [nanmedian(DIA) nanmedian(DIR)],'filled'),set(gca, 'YScale', 'log')
-% yline(1,'--')
-% signrank(DIA,1)
-% signrank(DIR,1)
-% % ylim([0 10])
-% 
-% subplot(122)
-% x = [ones(size(Pre.vHPC.aversive(:,2))) ; ones(size(Post.vHPC.reward(:,2)))*2];
-% DIA = (Post.vHPC.aversive(:,2) ./ Pre.vHPC.aversive(:,2));% ./ (Post.vHPC.aversive(:,2) + Pre.vHPC.aversive(:,2));
-% DIR = (Post.vHPC.reward(:,2) ./ Pre.vHPC.reward(:,2));% ./ (Post.vHPC.reward(:,2) + Pre.vHPC.reward(:,2));
-% y = [DIA ; DIR];
-% scatter(x,y,"filled",'jitter','on', 'jitterAmount',0.1'),hold on,xlim([0 3])
-% scatter([1 2] , [nanmedian(DIA) nanmedian(DIR)],'filled'),set(gca, 'YScale', 'log')
-% yline(1,'--')
-% signrank(DIA,1)
-% signrank(DIR,1)
-% % ylim([0 10])
-% 
-% 
-% 
-% 
-% 
-% 
-% figure,
-% subplot(121)
-% x = [ones(size(Pre.dHPC.aversive(:,2))) ; ones(size(Post.dHPC.aversive(:,2)))*2];
-% DIA = (Pre.dHPC.aversive(:,1));% ./ (Post.dHPC.aversive(:,2) + Pre.dHPC.aversive(:,2));
-% DIR = (Post.dHPC.aversive(:,1));% ./ (Post.dHPC.reward(:,2) + Pre.dHPC.reward(:,2));
-% y = [DIA ; DIR];
-% scatter(x,y,"filled",'jitter','on', 'jitterAmount',0.1'),hold on,xlim([0 3])
-% scatter([1 2] , [nanmedian(DIA) nanmedian(DIR)],'filled')%,set(gca, 'YScale', 'log')
-% ranksum(DIA,DIR)
-% 
-% subplot(122)
-% x = [ones(size(Pre.vHPC.aversive(:,2))) ; ones(size(Post.vHPC.aversive(:,2)))*2];
-% DIA = (Pre.vHPC.aversive(:,1));% ./ (Post.vHPC.aversive(:,2) + Pre.vHPC.aversive(:,2));
-% DIR = (Post.vHPC.aversive(:,1));% ./ (Post.vHPC.reward(:,2) + Pre.vHPC.reward(:,2));
-% y = [DIA ; DIR];
-% scatter(x,y,"filled",'jitter','on', 'jitterAmount',0.1'),hold on,xlim([0 3])
-% scatter([1 2] , [nanmedian(DIA) nanmedian(DIR)],'filled')%,set(gca, 'YScale', 'log')
-% ranksum(DIA,DIR)
-% 
-% figure,
-% subplot(121)
-% x = [ones(size(Pre.dHPC.reward(:,2))) ; ones(size(Post.dHPC.reward(:,2)))*2];
-% DIA = (Pre.dHPC.reward(:,1));% ./ (Post.dHPC.aversive(:,2) + Pre.dHPC.aversive(:,2));
-% DIR = (Post.dHPC.reward(:,1));% ./ (Post.dHPC.reward(:,2) + Pre.dHPC.reward(:,2));
-% y = [DIA ; DIR];
-% scatter(x,y,"filled",'jitter','on', 'jitterAmount',0.1'),hold on,xlim([0 3])
-% scatter([1 2] , [nanmedian(DIA) nanmedian(DIR)],'filled'),set(gca, 'YScale', 'log')
-% ranksum(DIA,DIR)
-% 
-% subplot(122)
-% x = [ones(size(Pre.vHPC.reward(:,2))) ; ones(size(Post.vHPC.reward(:,2)))*2];
-% DIA = (Pre.vHPC.reward(:,1));% ./ (Post.vHPC.aversive(:,2) + Pre.vHPC.aversive(:,2));
-% DIR = (Post.vHPC.reward(:,1));% ./ (Post.vHPC.reward(:,2) + Pre.vHPC.reward(:,2));
-% y = [DIA ; DIR];
-% scatter(x,y,"filled",'jitter','on', 'jitterAmount',0.1'),hold on,xlim([0 3])
-% scatter([1 2] , [nanmedian(DIA) nanmedian(DIR)],'filled'),set(gca, 'YScale', 'log')
-% ranksum(DIA,DIR)
+
+
+figure
+subplot(221)
+fitlm(Run.dHPC.aversive(:,1),Post.dHPC.aversive(:,1))
+plot(ans),ylim([0 2]),xlim([0 3])
+
+subplot(222)
+fitlm(Run.dHPC.reward(:,1),Post.dHPC.reward(:,1))
+plot(ans),ylim([0 2]),xlim([0 3])
+
+[p,t,df,slope1,slope2,sem1,sem2] = CompareSlopes(Post.dHPC.aversive(:,1),Run.dHPC.aversive(:,1),Post.dHPC.reward(:,1),Run.dHPC.reward(:,1))
+
+subplot(223)
+fitlm(Run.vHPC.aversive(:,1),Post.vHPC.aversive(:,1))
+plot(ans),ylim([0 2]),xlim([0 3])
+
+subplot(224)
+fitlm(Run.vHPC.reward(:,1),Post.vHPC.reward(:,1))
+plot(ans),ylim([0 2]),xlim([0 3])
+
+[p,t,df,slope1,slope2,sem1,sem2] = CompareSlopes(Post.vHPC.aversive(:,1),Run.vHPC.aversive(:,1),Post.vHPC.reward(:,1),Run.vHPC.reward(:,1))
+
 
 end
 
