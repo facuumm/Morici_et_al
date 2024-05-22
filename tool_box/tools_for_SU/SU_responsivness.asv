@@ -110,30 +110,30 @@ for i = 1 : size(clusters,1)
         [h start] = min(abs(bins-period(1)));
         [h stop] = min(abs(bins-period(2)));
         
-        threshold = [];
-        for ii = 1 : 200
-            x = events;
-            yy = ShuffleSpks(y);
-            
-            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-            [ccg,tttt] = CCG(s,ids,'binSize',bin,'duration',window,'smooth',0,'mode','ccg'); %ccg calculation
-            if strcmp(normalization,'none')
-                threshold = [threshold ; (ccg(start:stop,1,2)./bin)./size(events,1)];
-            elseif strcmp(normalization,'gain')
-                threshold = [threshold ; ((ccg(start:stop,1,2)./bin)./size(events,1))./m];
-            end
-        end
-        
-        if mean(final(start:stop)) >= std(threshold)*th
-            responsive = [responsive , 1];
-            
-        elseif mean(final(start:stop)) <= std(threshold)*th*-1
-            responsive = [responsive , -1];
-            
-        else
-            responsive = [responsive , 0];
-        end
-       end
+%         threshold = [];
+%         for ii = 1 : 200
+%             x = events;
+%             yy = ShuffleSpks(y);
+%             
+%             [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
+%             [ccg,tttt] = CCG(s,ids,'binSize',bin,'duration',window,'smooth',0,'mode','ccg'); %ccg calculation
+%             if strcmp(normalization,'none')
+%                 threshold = [threshold ; (ccg(start:stop,1,2)./bin)./size(events,1)];
+%             elseif strcmp(normalization,'gain')
+%                 threshold = [threshold ; ((ccg(start:stop,1,2)./bin)./size(events,1))./m];
+%             end
+%         end
+%         
+%         if mean(final(start:stop)) >= std(threshold)*th
+%             responsive = [responsive , 1];
+%             
+%         elseif mean(final(start:stop)) <= std(threshold)*th*-1
+%             responsive = [responsive , -1];
+%             
+%         else
+%             responsive = [responsive , 0];
+%         end
+    end
     
     if smooth > 0
         curve = [curve , Smooth(final,smooth)];

@@ -21,7 +21,7 @@ criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
 criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
 binSize = 0.025; %for qssemblie detection qnd qxctivity strength
 normalization = true; % to define if normalization over Reactivation Strength is applied or not
-th = 3; % threshold for peak detection
+th = 5; % threshold for peak detection
 iterations = 100; % number of iterations for downsampling
 
 % Behavior
@@ -576,7 +576,7 @@ for tt = 1:length(path)
                             templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
                             templates(1:size(clusters.dHPC),2) = 0;
                             
-                            [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
+                            [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , templates); clear templates
                             reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
                             RBA = R; clear R
                             
@@ -793,7 +793,7 @@ for tt = 1:length(path)
                             templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
                             templates(1:size(clusters.dHPC),2) = 0;
                             
-                            [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
+                            [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , templates); clear templates
                             reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
                             RBR = R; clear R
                         elseif strcmp(W,'D')
@@ -1135,8 +1135,7 @@ for tt = 1:length(path)
     Number_of_assemblies.reward = [Number_of_assemblies.reward ; sum(num_assembliesR)];
     clear num_assembliesA num_assembliesR
 end
-save([cd,'\Reactivation_Strength_Data_Normalized_NREM.mat_3SD'],'reactivation')
-% save([cd,'\Reactivation_Strength_Data_Normalized_NREM.mat'] , 'reactivation')
+% save([cd,'\Reactivation_Strength_Data_Normalized_eliminating_withingD_5SD.mat'],'reactivation')
 
 %% Peaks mean for joint assemblies
 figure
@@ -1153,7 +1152,7 @@ subplot(131),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.6 0.6])
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.8 0.8])
 
 %  for dHPC assemblies
 x = reactivation.reward.dHPC(:,1);
@@ -1168,7 +1167,7 @@ subplot(132),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.6 0.6])
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.8 0.8])
 
 %  for vHPC assemblies
 x = reactivation.reward.vHPC(:,1);
@@ -1183,7 +1182,7 @@ subplot(133),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
 Y = [x;y];
 scatter(grps,Y,"filled",'jitter','on', 'jitterAmount',0.1),hold on
-scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.6 0.6])
+scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-0.8 0.8])
 
 %% Plot Peaks of activation
 %  for joint assemblies
@@ -1332,34 +1331,34 @@ boxplot([x;y] , [ones(length(x),1) ; ones(length(x),1)*2]),ylim([0 1])
 %% Plot Correlations
 figure
 subplot(131)
-scatter(reactivation.reward.dvHPC(:,4) , reactivation.reward.dvHPC(:,1),'filled','b'),hold on,ylim([-0.5 0.5]),xlim([0 60]),ylim([-1 1])
-% scatter(reactivation.aversive.dvHPC(:,4) , reactivation.aversive.dvHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-1 1])
+scatter(reactivation.reward.dvHPC(:,4) , reactivation.reward.dvHPC(:,1),'filled','b'),hold on,ylim([-0.5 0.5]),xlim([0 50]),ylim([-1 1])
+% scatter(reactivation.aversive.dvHPC(:,4) , reactivation.aversive.dvHPC(:,1),'filled','r'),hold on,xlim([0 50]),ylim([-1 1])
 
 subplot(132)
-scatter(reactivation.reward.dHPC(:,4) , reactivation.reward.dHPC(:,1),'filled','b'),hold on,xlim([0 60]),ylim([-1 1])
-% scatter(reactivation.aversive.dHPC(:,4) , reactivation.aversive.dHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-1 1])
+scatter(reactivation.reward.dHPC(:,4) , reactivation.reward.dHPC(:,1),'filled','b'),hold on,xlim([0 50]),ylim([-1 1])
+% scatter(reactivation.aversive.dHPC(:,4) , reactivation.aversive.dHPC(:,1),'filled','r'),hold on,xlim([0 50]),ylim([-1 1])
 
 subplot(133)
-scatter(reactivation.reward.vHPC(:,4) , reactivation.reward.vHPC(:,1),'filled','b'),hold on,xlim([0 60]),ylim([-1 1])
-% scatter(reactivation.aversive.vHPC(:,4) , reactivation.aversive.vHPC(:,1),'filled','r'),hold on,xlim([0 60]),ylim([-1 1])
+scatter(reactivation.reward.vHPC(:,4) , reactivation.reward.vHPC(:,1),'filled','b'),hold on,xlim([0 50]),ylim([-1 1])
+% scatter(reactivation.aversive.vHPC(:,4) , reactivation.aversive.vHPC(:,1),'filled','r'),hold on,xlim([0 50]),ylim([-1 1])
 
 figure
 subplot(131)
 % fitlm(reactivation.aversive.dvHPC(:,4) , reactivation.aversive.dvHPC(:,1))
 fitlm(reactivation.reward.dvHPC(:,4) , reactivation.reward.dvHPC(:,1))
-plot(ans),xlim([0 60]),ylim([-1 1])
+plot(ans),xlim([0 50]),ylim([-1 1])
 
 subplot(132)
 % fitlm(reactivation.aversive.dHPC(:,4) , reactivation.aversive.dHPC(:,1))
-% plot(ans),xlim([0 60]),ylim([-10 10]),hold on
+% plot(ans),xlim([0 50]),ylim([-1 1]),hold on
 fitlm(reactivation.reward.dHPC(:,4) , reactivation.reward.dHPC(:,1))
-plot(ans),xlim([0 60]),ylim([-1 1])
+plot(ans),xlim([0 50]),ylim([-1 1])
 
 subplot(133)
 % fitlm(reactivation.aversive.vHPC(:,4) , reactivation.aversive.vHPC(:,1))
-% plot(ans),xlim([0 60]),ylim([-10 10]),hold on
+% plot(ans),xlim([0 50]),ylim([-1 1]),hold on
 fitlm(reactivation.reward.vHPC(:,4) , reactivation.reward.vHPC(:,1))
-plot(ans),xlim([0 60]),ylim([-1 1])
+plot(ans),xlim([0 50]),ylim([-1 1])
 
 
 
@@ -1508,7 +1507,7 @@ figure
 x1 = (reactivation.reward.dvHPC(:,4)-reactivation.reward.dvHPC(:,5))./(reactivation.reward.dvHPC(:,4)+reactivation.reward.dvHPC(:,5));
 y=ones(length(reactivation.reward.dvHPC(:,4)),1);
 kstest(x1)
-[h, p] = ttest(x1)
+[h, p] = signrank(x1,1,'tail','left')
 
 scatter(y,x1,"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
 scatter(1,nanmean(x1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
@@ -1518,7 +1517,7 @@ scatter(1,nanmean(x1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),ho
 x2 = (reactivation.aversive.dvHPC(:,4)-reactivation.aversive.dvHPC(:,5))./(reactivation.aversive.dvHPC(:,4)+reactivation.aversive.dvHPC(:,5));
 y=ones(length(reactivation.aversive.dvHPC(:,4)),1)*2;
 kstest(x2)
-[h, p] = ttest(x2)
+[h, p] = signrank(x2,1,'tail','left')
 
 scatter(y,x2,"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
 scatter(2,nanmean(x2),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
@@ -1527,7 +1526,7 @@ scatter(2,nanmean(x2),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),ho
 x3 = (reactivation.reward.dHPC(:,4)-reactivation.reward.dHPC(:,5))./(reactivation.reward.dHPC(:,4)+reactivation.reward.dHPC(:,5));
 y=ones(length(reactivation.reward.dHPC(:,4)),1)*3;
 kstest(x3)
-[h, p] = ttest(x3)
+[h, p] = signrank(x3,1,'tail','left')
 
 scatter(y,x3,"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
 scatter(3,nanmean(x3),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
@@ -1536,7 +1535,7 @@ scatter(3,nanmean(x3),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),ho
 x4 = (reactivation.aversive.dHPC(:,4)-reactivation.aversive.dHPC(:,5))./(reactivation.aversive.dHPC(:,4)+reactivation.aversive.dHPC(:,5));
 y=ones(length(reactivation.aversive.dHPC(:,4)),1)*4;
 kstest(x4)
-[h, p] = ttest(x4)
+[h, p] = signrank(x4,1,'tail','left')
 
 scatter(y,x4,"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
 scatter(4,nanmean(x4),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
@@ -1546,7 +1545,7 @@ scatter(4,nanmean(x4),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),ho
 x5 = (reactivation.reward.vHPC(:,4)-reactivation.reward.vHPC(:,5))./(reactivation.reward.vHPC(:,4)+reactivation.reward.vHPC(:,5));
 y=ones(length(reactivation.reward.vHPC(:,4)),1)*5;
 kstest(x5)
-[h, p] = ttest(x5)
+[h, p] = signrank(x5,1,'tail','left')
 
 scatter(y,x5,"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
 scatter(5,nanmean(x5),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
@@ -1555,11 +1554,11 @@ scatter(5,nanmean(x5),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),ho
 x6 = (reactivation.aversive.vHPC(:,4)-reactivation.aversive.vHPC(:,5))./(reactivation.aversive.vHPC(:,4)+reactivation.aversive.vHPC(:,5));
 y=ones(length(reactivation.aversive.vHPC(:,4)),1)*6;
 kstest(x6)
-[h, p] = ttest(x6)
+[h, p] = signrank(x6,0,'tail','right')
 
 scatter(y,x6,"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 5]),hold on
 scatter(6,nanmean(x6),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 7]),hold on
-ylim([-0.5 1])
+% ylim([-0.5 1])
 
 
 x = [x1;x2;x3;x4;x5;x6];

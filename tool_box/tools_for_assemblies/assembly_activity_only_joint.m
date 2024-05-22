@@ -21,9 +21,9 @@ function [time_projection] = assembly_activity_only_joint(AssemblyTemplates,Spik
 % Modified to exclude parts of the projector matrix (Morici Juan Facundo 02-2024)
 
 % Modification introduced by Morici Juan Facundo
-template = not((template*template') + (template1*template1')); % to eliminate D and V
-% template = or(or((template*template') , (template*template1')) , (template1*template')); %to eliminate V
-% template = or(or((template1*template1') , (template*template1')) , (template1*template')); %to eliminate D
+template = ((template*template') + (template1*template1')); % to eliminate D and V
+% template = or(or((template*template') , (template*template1')) , (template1*template')); % to eliminate V
+% template = or(or((template1*template1') , (template*template1')) , (template1*template')); % to eliminate D
 
 % template = (template*template');
 
