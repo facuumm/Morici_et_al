@@ -7,7 +7,7 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
-W = 'N'; % to select what kind of ripples I want to check
+W = 'D'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % D= uncoordinated dorsal, V= uncoordinated ventral
 % CB = cooridnated bursts
@@ -48,7 +48,7 @@ Number_of_assemblies.aversive = [];
 Number_of_assemblies.reward = [];
 
 %% Main loop, to iterate across sessions
-for tt = 1:length(path)
+for tt = 2:length(path)
     %List of folders from the path
     files = dir(path{tt});
     % Get a logical vector that tells which is a directory.
@@ -513,6 +513,11 @@ for tt = 1:length(path)
                         ripple_event.filtered.baseline = ripple_event.baseline;
                         ripple_event.filtered.aversive = ripple_event.aversive;
                         ripple_event.filtered.reward = ripple_event.reward;
+                        
+                        is.sws.timestamps.sleep.aversive = NREM.aversive;
+                        is.sws.timestamps.sleep.reward = NREM.reward;
+                        is.sws.timestamps.sleep.baseline = NREM.baseline;
+                        
                     end
                 elseif strcmp(W,'CB')
                     % coordinated event
@@ -535,6 +540,10 @@ for tt = 1:length(path)
                     tmp = [ripples.dHPC.aversive(tmp,1) ripples.dHPC.aversive(tmp,3)];
                     is.sws.aversive = InIntervals(bins,tmp); clear tmp
                     
+                    is.sws.timestamps.sleep.aversive = NREM.aversive;
+                    is.sws.timestamps.sleep.reward = NREM.reward;
+                    is.sws.timestamps.sleep.baseline = NREM.baseline;
+                                        
                 elseif strcmp(W,'V')
                     tmp = not(ismember(ripples.vHPC.baseline(:,2) , ripples.vHPC.coordinated.baseline(:,2)));
                     ripples.vHPC.uncoordinated.baseline = [ripples.vHPC.baseline(tmp,1) ripples.vHPC.baseline(tmp,3)];
@@ -550,6 +559,11 @@ for tt = 1:length(path)
                     ripples.vHPC.uncoordinated.aversive = [ripples.vHPC.aversive(tmp,1) ripples.vHPC.aversive(tmp,3)];
                     tmp = [ripples.vHPC.aversive(tmp,2)-0.2 ripples.vHPC.aversive(tmp,2)+0.2];
                     is.sws.aversive = InIntervals(bins,tmp); clear tmp
+                    
+                    is.sws.timestamps.sleep.aversive = NREM.aversive;
+                    is.sws.timestamps.sleep.reward = NREM.reward;
+                    is.sws.timestamps.sleep.baseline = NREM.baseline;
+                                    
                 end
                 
                 is.sws.runaversive = InIntervals(bins,movement.aversive);
@@ -576,7 +590,7 @@ for tt = 1:length(path)
                             templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
                             templates(1:size(clusters.dHPC),2) = 0;
                             
-                            [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , templates); clear templates
+                            [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
                             reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
                             RBA = R; clear R
                             
@@ -793,7 +807,7 @@ for tt = 1:length(path)
                             templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
                             templates(1:size(clusters.dHPC),2) = 0;
                             
-                            [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , templates); clear templates
+                            [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
                             reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
                             RBR = R; clear R
                         elseif strcmp(W,'D')
@@ -1144,9 +1158,9 @@ y = reactivation.aversive.dvHPC(:,1);
 
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y)  
-[h, p] = signrank(y,0)
-[h, p] = signrank(x,0)
+[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = signrank(y,0,'tail','right')
+[h, p] = signrank(x,0,'tail','right')
 
 subplot(131),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
@@ -1159,9 +1173,9 @@ x = reactivation.reward.dHPC(:,1);
 y = reactivation.aversive.dHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y)  
-[h, p] = signrank(y,0)
-[h, p] = signrank(x,0)
+[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = signrank(y,0,'tail','right')
+[h, p] = signrank(x,0,'tail','right')
 
 subplot(132),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
@@ -1174,9 +1188,9 @@ x = reactivation.reward.vHPC(:,1);
 y = reactivation.aversive.vHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y)  
-[h, p] = signrank(y,0)
-[h, p] = signrank(x,0)
+[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = signrank(y,0,'tail','right')
+[h, p] = signrank(x,0,'tail','right')
 
 subplot(133),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];

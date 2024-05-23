@@ -1,0 +1,161 @@
+function [curve , bins , responsive] = Shock_Responsiveness(path)
+% Fining rate tuning curve calculation.
+% This function construct a firing curve sourrounding an event and then, it
+% evaluates if the Single-Units (SU) increase or decrease their response.
+%
+% [curve , bins , responsive] = Shock_Responsiveness(path)
+%
+% --- INPUTS ---
+% path: cell, inside each cell you should put the path of each session you
+%       want to analyze
+%
+% --- OUTPUTS ---
+% curve: matrix, it contains the tuning curves for each SU.
+%        Example:
+%                   SU1  SU2  SU3  ...  SU10
+%                   Re1  Re1  Re1  ...  Re1
+%                   Re2  Re2  Re2  ...  Re2
+%                   ...  ...  ...  ...  ...
+%                   ReX  ReX  ReX  ...  ReX
+%
+% bins: vector containing the time bins for plotting tuning curves.
+%
+% responsive: vector containing tags for responsive and non-responsive SU
+%             if 1, increased response.
+%             if 0, no changment in the response.
+%             if -1, decreased response.
+%
+% Morici Juan Facundo, 05/2024
+% Other funtions: binspikes, CCG from FMAToolbox
+
+% for SU
+criteria_fr = 0; %criteria to include or not a SU into the analysis
+criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
+
+curve.dHPC = [];        curve.vHPC = [];        
+responsive.dHPC = [];   responsive.vHPC = [];
+
+%% Main loop, to iterate across sessions
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd(session)
+        
+        %Loading TS of the sessions
+        disp('Uploading session time stamps')
+        load('session_organization.mat')
+        % Awake
+        disp('Uploading digital imputs')
+        load('behavioral_data.mat')
+                
+        %% Spikes
+        % Load Units
+        disp('Uploading Spiking activity')
+        cd 'Spikesorting'
+        spks = double([readNPY('spike_clusters.npy') readNPY('spike_times.npy')]);
+        K = tdfread('cluster_group.tsv'); % import clusters ID and groups (MUA,Noise,Good)
+        Kinfo = tdfread('cluster_info.tsv'); % import information of clusters
+        K = [K.cluster_id(K.group(:,1) == 'g') , Kinfo.ch(K.group(:,1) == 'g'),]; % defining good clusters
+        % Load neuronal classification
+        load('Cell_type_classification')
+        K = [K , Cell_type_classification(:,6:8)];
+        group_dHPC = K(K(:,2) > 63,:);
+        group_vHPC = K(K(:,2) <= 63,:);
+        
+        %Loop to select dorsal or ventral LFP and SU
+        % z=1 --> dorsal
+        % z=2 --> ventral
+        for z = 1:2
+            if z == 1
+                spks_dHPC = spks(ismember(spks(:,1),group_dHPC(:,1)),:); %keep spks from good clusters
+            else
+                spks_vHPC = spks(ismember(spks(:,1),group_vHPC(:,1)),:); %keep spks from good clusters
+            end
+        end
+        clear z
+        spks_vHPC(:,2) = double(spks_vHPC(:,2))./20000;
+        spks_dHPC(:,2) = double(spks_dHPC(:,2))./20000;
+        spks(:,2) = double(spks(:,2))./20000;
+        
+        % Selection of celltype to analyze
+        if criteria_type == 0 %pyr
+            cellulartype = [K(:,1) , K(:,4)];
+        elseif criteria_type == 1 % int
+            cellulartype = [K(:,1) , not(K(:,4))];
+        elseif criteria_type == 2 % all
+            cellulartype = [K(:,1) , ones(length(K),1)];
+        end
+        
+        %% Counting the Number f SU
+        numberD = 0;
+        clusters.all = [];
+        clusters.dHPC = [];
+        for ii=1:size(group_dHPC,1)
+            cluster = group_dHPC(ii,1);
+            Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
+            if Cellulartype
+                a = length(Restrict(spks(spks(:,1)==cluster,2),aversiveTS_run./1000)) / ((aversiveTS_run(2)-aversiveTS_run(1))/1000);
+                r = length(Restrict(spks(spks(:,1)==cluster,2),rewardTS_run./1000)) / ((rewardTS_run(2)-rewardTS_run(1))/1000);
+                if or(a > criteria_fr ,  r > criteria_fr)
+                    numberD = numberD+1;
+                    clusters.all = [clusters.all ; cluster];
+                    clusters.dHPC = [clusters.dHPC ; cluster];
+                end
+            end
+            clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
+        end
+        
+        numberV = 0;
+        clusters.vHPC = [];
+        for ii=1:size(group_vHPC,1)
+            cluster = group_vHPC(ii,1);
+            Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
+            if Cellulartype
+                a = length(Restrict(spks(spks(:,1)==cluster,2),aversiveTS_run./1000)) / ((aversiveTS_run(2)-aversiveTS_run(1))/1000);
+                r = length(Restrict(spks(spks(:,1)==cluster,2),rewardTS_run./1000)) / ((rewardTS_run(2)-rewardTS_run(1))/1000);
+                if or(a > criteria_fr ,  r > criteria_fr)
+                    numberV = numberV+1;
+                    clusters.all = [clusters.all ; cluster];
+                    clusters.vHPC = [clusters.vHPC ; cluster];
+                end
+            end
+            clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
+        end
+        clear freq limits
+        clear camara shock rightvalve leftvalve
+        clear ejeX ejeY dX dY dX_int dY_int
+        
+        if numberD>0
+            [c , bins , r] = SU_responsivness(spks_dHPC,clusters.dHPC,Shocks_filt,[Shocks_filt-0.5 Shocks_filt+1.5],[Shocks_filt Shocks_filt+1],4,0.025,1,'none',2);
+            curve.dHPC = [curve.dHPC , c];
+            responsive.dHPC = [responsive.dHPC , r];
+            dHPC_shock.id = clusters.dHPC;
+            dHPC_shock.curve = c;
+            dHPC_shock.responssiveness = r; clear c r
+            save([cd,'\dHPC_shock.mat'],'dHPC_shock'); clear dHPC_shock
+        end
+        
+        if numberV>0
+            [c , bins , r] = SU_responsivness(spks_vHPC,clusters.vHPC,Shocks_filt,[Shocks_filt-0.5 Shocks_filt+1.5],[Shocks_filt Shocks_filt+1],4,0.025,1,'none',2);
+            curve.vHPC = [curve.vHPC , c];
+            responsive.vHPC = [responsive.vHPC , r];
+            vHPC_shock.id = clusters.vHPC;
+            vHPC_shock.curve = c;
+            vHPC_shock.responssiveness = r; clear c r
+            save([cd,'\vHPC_shock.mat'],'vHPC_shock'); clear vHPC_shock
+        end
+        
+    end
+end
+
+
+end
