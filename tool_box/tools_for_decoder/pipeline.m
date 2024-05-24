@@ -248,22 +248,39 @@ for tt = 1:length(path)
             load('dHPC_shock.mat')
             load('vHPC_shock.mat')
             
-            % VER SI HAY ALGUN FILE QUE TENGA TODOS LOS MAPS (INCLUYENDO LAS NO PC)
-            % SINO VA A CRASHEAR CUANDO EL N NO COINCIDA. (EJEMPLO tt=2t=2)
-            
-            % RateMaps
-            pc.aversive = [];            pc.reward = [];
-            for i = 1:numberD
+            % PC ids
+            id.d = [];
+            for i = 1:size(dHPC,2)
                 tmp = dHPC{i};
-                pc.aversive = [pc.aversive , tmp.frMap_ave'];
-                pc.reward = [pc.reward , tmp.frMap_rew'];
+                id.d = [id.d ; tmp.id];
                 clear tmp
             end
-            for i = 1:numberV
+            id.v = [];
+            for i = 1:size(vHPC,2)
                 tmp = vHPC{i};
-                pc.aversive = [pc.aversive , tmp.frMap_ave'];
-                pc.reward = [pc.reward , tmp.frMap_rew'];
+                id.v = [id.v ; tmp.id];
                 clear tmp
+            end
+            
+            % RateMaps
+            pc.aversive = zeros(60,numberD+numberV);            pc.reward = zeros(60,numberD+numberV);
+            for i = 1:size(clusters.dHPC,1)
+                if ismember(clusters.dHPC(i),id.d)
+                    tmp = (id.d == clusters.dHPC(i));
+                    tmp = dHPC{tmp};
+                    pc.aversive(:,i) = tmp.frMap_ave';
+                    pc.reward(:,i) = tmp.frMap_rew';
+                    clear tmp
+                end
+            end
+            for i = 1:size(clusters.vHPC,1)
+                if ismember(clusters.vHPC(i),id.v)
+                    tmp = (id.v == clusters.vHPC(i));
+                    tmp = dHPC{tmp};
+                    pc.aversive(:,i+numberD) = tmp.frMap_ave';
+                    pc.reward(:,i+numberD) = tmp.frMap_rew';
+                    clear tmp
+                end
             end
             
             % Bayesian decoding

@@ -248,15 +248,30 @@ for tt = 1:length(path)
             load('dHPC_shock.mat')
             load('vHPC_shock.mat')
             
+            % PC ids
+            id.d = [];
+            for i = 1:size(dHPC,2)
+                tmp = dHPC{i};
+                id.d = [id.d ; tmp.id];
+                clear tmp
+            end
+            id.v = [];
+            for i = 1:size(vHPC,2)
+                tmp = vHPC{i};
+                id.v = [id.v ; tmp.id];
+                clear tmp
+            end
+            
             % RateMaps
-            pc.aversive = [];            pc.reward = [];
-            for i = 1:numberD
+            pc.aversive = nan(60,numberD);            pc.reward = nan(60,numberD); 
+            for i = 1:size(clusters.dHPC,2)
+                if ismember(clusters.dHPC(i),id.d)
                 tmp = dHPC{i};
                 pc.aversive = [pc.aversive , tmp.frMap_ave'];
                 pc.reward = [pc.reward , tmp.frMap_rew'];
                 clear tmp
             end
-            for i = 1:numberV
+            for i = 1:size(vHPC,2)
                 tmp = vHPC{i};
                 pc.aversive = [pc.aversive , tmp.frMap_ave'];
                 pc.reward = [pc.reward , tmp.frMap_rew'];
@@ -265,7 +280,7 @@ for tt = 1:length(path)
             
             % Bayesian decoding
             % Space
-            [Pr prMax] = placeBayes(Spikes./0.025 , pc.aversive' , 0.025);
+            [Pr prMax] = placeBayes(Spikes./binSize , pc.aversive' , binSize);
             
             r = ripple_event.aversive(:,2);
             tmp = [];
@@ -278,7 +293,7 @@ for tt = 1:length(path)
             
             curvesShocks = [dHPC_shock.curve , vHPC_shock.curve];
             % Shock
-            [Pr prMax] = placeBayes(Spikes./0.025 , curvesShocks(80:120,:)' , 0.025);
+            [Pr prMax] = placeBayes(Spikes./binSize , curvesShocks(80:120,:)' , binSize);
             
             r = ripple_event.aversive(:,2);
             tmp1 = [];
@@ -301,6 +316,8 @@ for tt = 1:length(path)
         clear ripplesD ripplesV segments spks spks_dHPC spks_vHPC Spikes Shocks_filt
         clear tmp tmp1 ripples ripple_event pc NREM K IN Kinfo group_dHPC group_vHPC
         clear config cellulartype clusters Clusters coordinated coordinatedV coordinatedV_refined
-        clear cooridnated_event cooridnated_eventDV cooridnated_eventVD movem
+        clear cooridnated_event cooridnated_eventDV cooridnated_eventVD movement WAKE
     end
 end
+
+

@@ -287,32 +287,32 @@ for tt = 1:length(path)
         if or(numberD > 3 , numberV > 3)
             %% --- Aversive ---
             disp('Lets go for the assemblies')
-            if isfile('dorsalventral_assemblies_aversive.mat')
+            if isfile('dorsalventral_assemblies_aversiveVF.mat')
                 disp('Loading Aversive template')
-                load('dorsalventral_assemblies_aversive.mat')
+                load('dorsalventral_assemblies_aversiveVF.mat')
                 
                 %                         if not(exist('Th','var'))
-            else
-                disp('Detection of assemblies using Aversive template')
-                % --- Options for assemblies detection ---
-                opts.Patterns.method = 'ICA';
-                opts.threshold.method= 'MarcenkoPastur';
-                opts.Patterns.number_of_iterations= 500;
-                opts.threshold.permutations_percentile = 0.9;
-                opts.threshold.number_of_permutations = 500;
-                opts.Patterns.number_of_iterations = 500;
-                opts.Members.method = 'Sqrt';
-                
-                limits = aversiveTS_run./1000;
-                events = [];
-                events = movement.aversive;
-                [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
-                [Th , pat] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
-                save([cd,'\dorsalventral_assemblies_aversive3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
+%             else
+%                 disp('Detection of assemblies using Aversive template')
+%                 % --- Options for assemblies detection ---
+%                 opts.Patterns.method = 'ICA';
+%                 opts.threshold.method= 'MarcenkoPastur';
+%                 opts.Patterns.number_of_iterations= 500;
+%                 opts.threshold.permutations_percentile = 0.9;
+%                 opts.threshold.number_of_permutations = 500;
+%                 opts.Patterns.number_of_iterations = 500;
+%                 opts.Members.method = 'Sqrt';
+%                 
+%                 limits = aversiveTS_run./1000;
+%                 events = [];
+%                 events = movement.aversive;
+%                 [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
+%                 [Th , pat] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
+%                 save([cd,'\dorsalventral_assemblies_aversive3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
             end
             
             Thresholded.aversive.all = Th;
-            patterns.all.aversive = pat;
+            patterns.all.aversive = pat.*Th;
             clear cond Th pat
             
             % Detection of members
@@ -341,31 +341,31 @@ for tt = 1:length(path)
             
             %% --- Reward ---
             disp('Loading Reward template')
-            if isfile('dorsalventral_assemblies_reward.mat')
-                load('dorsalventral_assemblies_reward.mat')
+            if isfile('dorsalventral_assemblies_rewardVF.mat')
+                load('dorsalventral_assemblies_rewardVF.mat')
                 
                 %                         if not(exist('Th','var'))
-            else
-                disp('Detection of assemblies using Rewarded template')
-                % --- Options for assemblies detection ---
-                opts.Patterns.method = 'ICA';
-                opts.threshold.method= 'MarcenkoPastur';
-                opts.Patterns.number_of_iterations= 500;
-                opts.threshold.permutations_percentile = 0.9;
-                opts.threshold.number_of_permutations = 500;
-                opts.Patterns.number_of_iterations = 500;
-                opts.Members.method = 'Sqrt';
-                
-                limits = rewardTS_run./1000;
-                events = [];
-                events = movement.reward;
-                [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
-                [Th , pat] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
-                save([cd,'\dorsalventral_assemblies_reward3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
+%             else
+%                 disp('Detection of assemblies using Rewarded template')
+%                 % --- Options for assemblies detection ---
+%                 opts.Patterns.method = 'ICA';
+%                 opts.threshold.method= 'MarcenkoPastur';
+%                 opts.Patterns.number_of_iterations= 500;
+%                 opts.threshold.permutations_percentile = 0.9;
+%                 opts.threshold.number_of_permutations = 500;
+%                 opts.Patterns.number_of_iterations = 500;
+%                 opts.Members.method = 'Sqrt';
+%                 
+%                 limits = rewardTS_run./1000;
+%                 events = [];
+%                 events = movement.reward;
+%                 [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false,true);
+%                 [Th , pat] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
+%                 save([cd,'\dorsalventral_assemblies_reward3.mat'],'Th' , 'pat' , 'criteria_fr' , 'criteria_n')
             end
             
             Thresholded.reward.all = Th;
-            patterns.all.reward = pat;
+            patterns.all.reward = pat.*Th;
             clear Th pat
             
             % Detection of members using
@@ -395,7 +395,7 @@ for tt = 1:length(path)
             %% SpikeTrains construction
             limits = [0 segments.Var1(end)/1000];
             events = [];
-            [Spikes , bins , Clusters] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, true, true);
+            [Spikes , bins , Clusters] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize, limits, events, false, true);
             clear limits events
             
             %% Assemblies activation in the entier recording

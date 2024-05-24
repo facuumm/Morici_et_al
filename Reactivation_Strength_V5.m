@@ -7,7 +7,7 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
-W = 'V'; % to select what kind of ripples I want to check
+W = 'D'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % D= uncoordinated dorsal, V= uncoordinated ventral
 % CB = cooridnated bursts
