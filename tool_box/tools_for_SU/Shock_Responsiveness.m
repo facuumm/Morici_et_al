@@ -135,7 +135,7 @@ for tt = 1:length(path)
         clear ejeX ejeY dX dY dX_int dY_int
         
         if numberD>0
-            [c , bins , r] = SU_responsivness(spks_dHPC,clusters.dHPC,Shocks_filt,[Shocks_filt-0.5 Shocks_filt+1.5],[Shocks_filt Shocks_filt+1],4,0.025,1,'none',2);
+            [c , bins , r] = SU_responsivness(spks_dHPC,clusters.dHPC,Shocks_filt,[movement.aversive(1,1) movement.aversive(end,1)],[0 1],4,0.025,1,'none',2);
             curve.dHPC = [curve.dHPC , c];
             responsive.dHPC = [responsive.dHPC , r];
             dHPC_shock.id = clusters.dHPC;
@@ -145,7 +145,7 @@ for tt = 1:length(path)
         end
         
         if numberV>0
-            [c , bins , r] = SU_responsivness(spks_vHPC,clusters.vHPC,Shocks_filt,[Shocks_filt-0.5 Shocks_filt+1.5],[Shocks_filt Shocks_filt+1],4,0.025,1,'none',2);
+            [c , bins , r] = SU_responsivness(spks_vHPC,clusters.vHPC,Shocks_filt,[movement.aversive(1,1) movement.aversive(end,1)],[0 1],4,0.025,1,'none',2);
             curve.vHPC = [curve.vHPC , c];
             responsive.vHPC = [responsive.vHPC , r];
             vHPC_shock.id = clusters.vHPC;

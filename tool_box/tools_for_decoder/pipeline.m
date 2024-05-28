@@ -235,80 +235,102 @@ for tt = 1:length(path)
         %% Decoding
         if and(and(RD,RV),and(numberD>3 , numberV>3)) %check if I have a minimun of cells and also ripples
             % SpikeTrain Construction
-            limits = [0 segments.Var1(end)/1000];
+%             limits = [0 segments.Var1(end)/1000];
+            limits = aversiveTS./1000;
             events = [];
             [Spikes , bins , Clusters] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, 0.025, limits, events, false, false);
             clear limits events
             
             % load FiringCurves
             % SpaceMaps
-            load('dHPC_pc.mat')
-            load('vHPC_pc.mat')
+            load('dHPC_all.mat')
+            load('vHPC_all.mat')
             % Shock-responsivness curves
             load('dHPC_shock.mat')
             load('vHPC_shock.mat')
             
-            % PC ids
-            id.d = [];
-            for i = 1:size(dHPC,2)
-                tmp = dHPC{i};
-                id.d = [id.d ; tmp.id];
-                clear tmp
-            end
-            id.v = [];
-            for i = 1:size(vHPC,2)
-                tmp = vHPC{i};
-                id.v = [id.v ; tmp.id];
-                clear tmp
-            end
-            
+%             % PC ids
+%             id.d = [];
+%             for i = 1:size(dHPC,2)
+%                 tmp = dHPC{i};
+%                 id.d = [id.d ; tmp.id];
+%                 clear tmp
+%             end
+%             id.v = [];
+%             for i = 1:size(vHPC,2)
+%                 tmp = vHPC{i};
+%                 id.v = [id.v ; tmp.id];
+%                 clear tmp
+%             end
+%             
             % RateMaps
             pc.aversive = zeros(60,numberD+numberV);            pc.reward = zeros(60,numberD+numberV);
             for i = 1:size(clusters.dHPC,1)
-                if ismember(clusters.dHPC(i),id.d)
-                    tmp = (id.d == clusters.dHPC(i));
-                    tmp = dHPC{tmp};
+%                 if ismember(clusters.dHPC(i),id.d)
+%                     tmp = (id.d == clusters.dHPC(i));
+%                     tmp = dHPC{tmp};
+                    tmp = dHPC{i};
                     pc.aversive(:,i) = tmp.frMap_ave';
                     pc.reward(:,i) = tmp.frMap_rew';
                     clear tmp
-                end
+%                 end
             end
             for i = 1:size(clusters.vHPC,1)
-                if ismember(clusters.vHPC(i),id.v)
-                    tmp = (id.v == clusters.vHPC(i));
-                    tmp = dHPC{tmp};
+%                 if ismember(clusters.vHPC(i),id.v)
+%                     tmp = (id.v == clusters.vHPC(i));
+%                     tmp = vHPC{tmp};
+                    tmp = vHPC{i};
                     pc.aversive(:,i+numberD) = tmp.frMap_ave';
                     pc.reward(:,i+numberD) = tmp.frMap_rew';
                     clear tmp
-                end
+%                 end
             end
             
-            % Bayesian decoding
-            % Space
-            [Pr prMax] = placeBayes(Spikes./binSize , pc.aversive' , binSize);
-            
-            r = ripple_event.aversive(:,2);
-            tmp = [];
-            for i = 1 : size(r,1)
-                IN = InIntervals(bins,[r(i)-2 r(i)+2]);
-                T = max(Pr(IN,:)');
-                tmp = [tmp , T(1:160)'];
-            end
+%             clear aversiveTS aversiveTS_run baselineTS behavior Cell_type_classification
+%             clear cellulartype clusters Clusters coordinated coordinatedV coordinatedV_refined
+%             clear cooridnated_event cooridnated_eventDV cooridnated_eventVD dHPC group_dHPC group_vHPC
+%             clear movement NREM REM Rewards_filt rewardTS rewardTS_run
+%             clear ripples ripplesD ripplesV segments Shocks_filt spks spks_dHPC spks_vHPC vHPC WAKE
+%             
+%             % Bayesian decoding
+%             % Space
+%             [Pr prMax] = placeBayes(Spikes./binSize , pc.aversive' , binSize);
+%             
+%             r = ripple_event.aversive(:,2);
+%             tmp = [];
+%             for i = 1 : size(r,1)
+%                 IN = InIntervals(bins,[r(i)-2 r(i)+2]);
+%                 if not(sum(IN)>=160)
+%                     IN = InIntervals(bins,[r(i)-2 r(i)+2.2]);
+%                 end
+%                 T = max(Pr(IN,:)');
+%                 tmp = [tmp , T(1:160)'];
+%             end
             
             
             curvesShocks = [dHPC_shock.curve , vHPC_shock.curve];
             % Shock
-            [Pr prMax] = placeBayes(Spikes./binSize , curvesShocks(80:120,:)' , binSize);
+            [Pr prMax] = placeBayes(Spikes./binSize , curvesShocks' , binSize);
             
             r = ripple_event.aversive(:,2);
             tmp1 = [];
             for i = 1 : size(r,1)
                 IN = InIntervals(bins,[r(i)-2 r(i)+2]);
-                T = max(Pr(IN,:)');
+                if not(sum(IN)>=160)
+                    IN = InIntervals(bins,[r(i)-2 r(i)+3]);
+                    if sum(IN)<160
+                        continue
+                    end
+                end
+%                 temporal = nanmean([Pr(IN,1:40) , Pr(IN,121:160)]');
+%                 T = max(Pr(IN,:)');
+                T =  max(Pr(IN,80:120)'); clear temporal
+%                 T(isnan(T)) = 0;
+%                 T = Smooth(T,1)
                 tmp1 = [tmp1 , T(1:160)'];
             end
 
-            Probability.aversive.Space = [ Probability.aversive.Space , nanmean(tmp')'];
+%             Probability.aversive.Space = [ Probability.aversive.Space , nanmean(tmp')'];
             Probability.aversive.Shock = [Probability.aversive.Shock , nanmean(tmp1')'];
             
 %             P = nanmean(tmp')-nanmean(nanmean(tmp'));
@@ -326,3 +348,8 @@ for tt = 1:length(path)
 end
 
 
+figure
+tmp = nanmean([Probability.aversive.Space(1:40,:) ; Probability.aversive.Space(120:160,:)]);
+plot(nanmean((Probability.aversive.Space./tmp)')),hold on
+tmp = nanmean([Probability.aversive.Shock(1:40,:) ; Probability.aversive.Shock(120:160,:)]);
+plot(nanmean((Probability.aversive.Shock./tmp)')),hold on
