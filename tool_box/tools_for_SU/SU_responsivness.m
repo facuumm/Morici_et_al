@@ -66,13 +66,13 @@ for i = 1 : size(clusters,1)
     [ccg,tttt] = CCG(s,ids,'binSize',bin,'duration',window,'smooth',0,'mode','ccg'); %ccg calculation
     bins = tttt;
     
-    %Compute fr ans std outside events 
+    %Compute fr and std outside events 
     ist = InvertIntervals([events-4 events+4],limits(1),limits(2)); % keep intervals outside event
     [tmp,b]=binspikes(y,1/bin,limits);
     tmp = tmp./bin; % binned firing rate
     is = InIntervals(b,ist); % binned firing rate outside events
-    m = length(Restrict(y,ist))/sum(ist(:,2)-ist(:,1)); % mean fr outside events
-%     m = mean(tmp(is),'omitnan');
+%     m = length(Restrict(y,ist))/sum(ist(:,2)-ist(:,1)); 
+    m = mean(tmp(is),'omitnan'); % mean fr outside events
     st = std(tmp(is),0,1,'omitnan'); % std outside events
     
     if strcmp(normalization,'zscore')

@@ -4545,7 +4545,7 @@ win_rew = nanmean(tempR(:, 60-w_size:60+w_size), 2);
 p = signrank(win_ave,win_rew)
 
 
-%% SHOCK RESPONSIVE CELLS - 
+%% SHOCK RESPONSIVE CELLS 
 
 for tt = 1:length(path)
     %List of folders from the path
@@ -4784,7 +4784,7 @@ for tt = 1:length(path)
             curve=[]; 
             limits=[behavior.speed.aversive(1,1),behavior.speed.aversive(end,1)];     
             [curve , bins , responsive] = SU_responsivness(spks_dHPC,group_dHPC(:,1),Shocks_filt,...
-                                      limits,[0 1],window,bin,smooth,'gain',th); 
+                                      limits,[0 1],window,bin,smooth,'zscore',th); 
              
             %Save output
             dHPC_shock_norm.id = group_dHPC(:,1); 
@@ -4810,10 +4810,10 @@ for tt = 1:length(path)
             curve=[]; 
             limits=[behavior.speed.aversive(1,1),behavior.speed.aversive(end,1)];           
             [curve , bins , responsive] = SU_responsivness(spks_vHPC,group_vHPC(:,1),Shocks_filt,...
-                                      limits,[0 1],4,bin,smooth,'gain',th);                                  
+                                      limits,[0 1],4,bin,smooth,'zscore',th);                                  
            
             %Save output
-            vHPC_shock_norm.id = group_dHPC(:,1); 
+            vHPC_shock_norm.id = group_vHPC(:,1); 
             vHPC_shock_norm.curve=curve'; 
             vHPC_shock_norm.resp=responsive'; 
             save([cd,'\vHPC_shock_norm.mat'],'vHPC_shock_norm');
@@ -4841,65 +4841,137 @@ for tt = 1:length(path)
     disp(' ')
 end
 
-%%%%%%%%%%%%%%%%%%%% Density heat maps plots per %%%%%%%%%%%%%%%%%%%%%%%%
-% Normalization of density plots
-%%%dHPC%%%%
-tempA=[];
-for i =1:size(dhpc_shock,1)
-    A = dhpc_shock(i,:) - min(dhpc_shock(i,:));
-    A = A ./ max(A);
-    tempA=[tempA ; A];
-    clear A
-end
 
+%%%%%%% Shock resp prop /pc  %%%%%%%
+%Output matrix 
+dHPC_pc = 0;dHPC_shock = 0;
+vHPC_pc = 0;vHPC_shock = 0;
+
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+    
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd([session,'\Spikesorting'])
+        %Loading pc matrix of the sessions
+        disp('Uploading session pc matrix');
+        try
+            load('dHPC_shock_norm.mat');
+            %Save session parameters 
+            dHPC_pc = dHPC_pc +  size(dHPC_shock_norm.resp,1); 
+            dHPC_shock = dHPC_shock +  sum(dHPC_shock_norm.resp); 
+        catch 
+            dHPC = []; disp(['No dHPC_pc_lap.mat file in ',session]);
+        end 
+        
+        try
+            load('vHPC_shock_norm.mat');
+            vHPC_pc = vHPC_pc +  size(vHPC_shock_norm.resp,1); 
+            vHPC_shock = vHPC_shock +  sum(vHPC_shock_norm.resp);
+     
+        catch
+            vHPC= []; disp(['No vHPC_shock_norm.mat file in ',session]);
+        end
+        
+    end 
+
+end 
+
+%Proportion 
+dhpc_prop = (dHPC_shock/dHPC_pc)*100;
+vhpc_prop = (vHPC_shock/vHPC_pc)*100;
+
+%%%%%%%%%%%%%%%%%%%% Density heat maps plots per %%%%%%%%%%%%%%%%%%%%%%%%
+dhpc_shock = []; dhpc_resp = []; 
+vhpc_shock = []; vhpc_resp = [];
+
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+    
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd([session,'\Spikesorting'])
+        
+        disp('Uploading dHPC session shock pc');
+        try
+            load('dHPC_shock_norm.mat');
+            dhpc_shock = [dhpc_shock;dHPC_shock_norm.curve];
+            dhpc_resp = [dhpc_resp; dHPC_shock_norm.resp]; 
+
+        catch 
+            dHPC = []; disp(['No dHPC file in ',session]);
+        end 
+        disp('Uploading vHPC session shock pc');
+        try
+            load('vHPC_shock_norm.mat');
+            vhpc_shock = [vhpc_shock;vHPC_shock_norm.curve];
+            vhpc_resp = [vhpc_resp; vHPC_shock_norm.resp]; 
+     
+        catch
+            vHPC= []; disp(['No vHPC file in ',session]);
+        end
+        
+    end 
+
+end 
+
+
+%%%dHPC%%%%
+tempA=dhpc_shock; 
 [h idx] = max (tempA, [],2);
 [m mm] = sort(idx); 
 
 
 figure(1);clf;hold on; 
 subplot(2,1,1);imagesc([0:1:4], [1:1:size(dhpc_shock,1)],tempA(mm,:)), colormap 'gray'; axis tight
-title('dHPC Aversive');xline(2,'r');xlabel(['Shock',char(10),'Time bins']); 
-ylabel('Sessions');
+title('dHPC Aversive');xline(2,'r'); xline(3,'r'); xlabel(['Shock',char(10),'Time(sec)', char(10),num2str(dhpc_prop),'% resp']); 
+ylabel('Nuerons');
 
-subplot(2,1,2);hold on;plot([1:1:size(dhpc_shock,2)],nanmean(tempA)); 
-ciplot(nanmean(tempA)-nansem(tempA),nanmean(tempA)+nansem(tempA),[1:1:size(dhpc_shock,2)]); alpha 0.1; hold on;
-xline(20,'r');xline(30,'r');ylim([0.2 0.5]);
+subplot(2,1,2);hold on;plot([1:1:size(dhpc_shock,2)],nanmean(tempA(dhpc_resp==1,:))); 
+ciplot(nanmean(tempA(dhpc_resp==1,:))-nansem(tempA(dhpc_resp==1,:)),nanmean(tempA(dhpc_resp==1,:))+nansem(tempA(dhpc_resp==1,:)),[1:1:size(dhpc_shock,2)]); alpha 0.1; hold on;
+xline(20,'r');xline(30,'r');ylabel('Mean z-socre');ylim([0.5 3]);ylim([0.5 3]) title('Shock neurons')
 
 %window for stats
 w_size = 2; % # of bins from the center. Each bin 3cm.
-win_ave = nanmean(tempA(:, 60-w_size:60+w_size), 2); 
-win_rew = nanmean(tempR(:, 60-w_size:60+w_size), 2); 
+win_ave = nanmean(tempA(:, 20-w_size:60+w_size), 2); 
 p = signrank(win_ave,win_rew) 
 
 %%%vHPC%%%%
-tempA=[];
-
-for i =1:size(vhpc_shock,1)
-    A = vhpc_shock(i,:) - min(vhpc_shock(i,:));
-    A = A ./ max(A);
-    tempA=[tempA ; A];
-    clear A
-end
+tempA=vhpc_shock;
 
 [h idx] = max (tempA, [],2);
 [m mm] = sort(idx); 
+
 figure(2);clf;hold on  
 subplot(2,1,1);imagesc([0:1:4], [1:1:size(vhpc_shock,1)],tempA(mm,:)), colormap 'gray'; axis tight
-title('vHPC Aversive');xline(2,'r');xlabel(['Shock',char(10),'time(sec)']); 
-ylabel('Sessions'); 
-subplot(2,1,2);hold on; plot([1:1:size(dhpc_shock,2)],nanmean(tempA));
-ciplot(nanmean(tempA)-nansem(tempA),nanmean(tempA)+nansem(tempA),[1:1:size(dhpc_shock,2)]); alpha 0.1; hold on;
-xline(20,'r');xline(30,'r');ylim([0.2 0.5]);
+title('vHPC Aversive');xline(2,'r');xline(3,'r');xlabel(['Shock',char(10),'Time(sec)', char(10),num2str(vhpc_prop),'% resp']); 
+ylabel('Neurons'); 
+subplot(2,1,2);hold on; plot([1:1:size(vhpc_shock,2)],nanmean(tempA(vhpc_resp==1,:)));
+ciplot(nanmean(tempA(vhpc_resp==1,:))-nansem(tempA(vhpc_resp==1,:)),nanmean(tempA(vhpc_resp==1,:))+nansem(tempA(vhpc_resp==1,:)),[1:1:size(dhpc_shock,2)]); alpha 0.1; hold on;
+xline(20,'r');xline(30,'r');ylim([0.2 0.5]);ylabel('Mean z-socre'); title('Shock neurons')
 
 % Stats 
 %window for stats
 w_size = 3; % # of bins from the center. Each bin 3cm.
 win_ave = nanmean(tempA(:, 60-w_size:60+w_size), 2); 
-win_rew = nanmean(tempR(:, 60-w_size:60+w_size), 2); 
 p = signrank(win_ave,win_rew)
 %%%%%%%%%%%%%%
 
-%%%%%%% Remapping parameters without shock resp %%%%%%%
+%% Remapping parameters WITHOUT SHOCK resp 
 
 for tt = 1:length(path)
     %List of folders from the path
@@ -5305,49 +5377,6 @@ for tt = 1:length(path)
     disp(' ')
 end
 
-%%%%%%% Shock resp prop /pc  %%%%%%%
-
-%Output matrix 
-dhpc_pc = 0;dhpc_shock = 0;
-vhpc_pc = 0;vhpc_shock = 0;
-
-for tt = 1:length(path)
-    %List of folders from the path
-    files = dir(path{tt});
-    % Get a logical vector that tells which is a directory.
-    dirFlags = [files.isdir];
-    % Extract only those that are directories.
-    subFolders = files(dirFlags);
-    clear files dirFlags
-    
-    for t = 1 : length(subFolders)-2
-        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
-        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
-        cd([session,'\Spikesorting'])
-        %Loading pc matrix of the sessions
-        disp('Uploading session pc matrix');
-        try
-            load('dHPC_shock_norm.mat');
-            %Save session parameters 
-            dHPC_pc = dHPC_pc +  size(dHPC_shock_norm.resp,1); 
-            dHPC_shock = dHPC_shock +  sum(dHPC_shock_norm.resp); 
-        catch 
-            dHPC = []; disp(['No dHPC_pc_lap.mat file in ',session]);
-        end 
-        
-        try
-            load('vHPC_shock_norm.mat');
-            vHPC_pc = vHPC_pc +  size(vHPC_shock_norm.resp,1); 
-            vHPC_shock = vHPC_shock +  sum(vHPC_shock_norm.resp);
-     
-        catch
-            vHPC= []; disp(['No vHPC_shock_norm.mat file in ',session]);
-        end
-        
-    end 
-
-end 
-
 %% PLOTS ans STATS: SHOCK PROP and REMAPPING WITHOUT SHOCK
 
 %c1 = spatial c2= fr_change c3=  overlap c4: pf shift c5:  1 = between 2 = within aversive 3= within reward 
@@ -5444,7 +5473,7 @@ tbl = array2table(c,"VariableNames", ...
 
 % Paired non-parametric anova - Friedman test
 %Prepare data to test
-p = 1; % 1=sp corr 2=fr change 3=overlap 4=pf shift
+p = 4; % 1=sp corr 2=fr change 3=overlap 4=pf shift
 data=[dhpc_sub(dhpc_sub(:,6)==1,p), dhpc_sub(dhpc_sub(:,6)==2,p), ...
     dhpc_sub(dhpc_sub(:,6)==3,p), dhpc_sub(dhpc_sub(:,6)==4,p),dhpc_sub(dhpc_sub(:,6)==5,p)];
 data(any(isnan(data), 2), :) = [];
@@ -5485,7 +5514,7 @@ tbl = array2table(c,"VariableNames", ...
 
 % Paired non-parametric anova - Friedman test
 %Prepare data to test
-p = 1; % 1=sp corr 2=fr change 3=overlap 4=pf shift
+p = 4; % 1=sp corr 2=fr change 3=overlap 4=pf shift
 data=[vhpc_sub(vhpc_sub(:,6)==1,p), vhpc_sub(vhpc_sub(:,6)==2,p), ...
     vhpc_sub(vhpc_sub(:,6)==3,p), vhpc_sub(vhpc_sub(:,6)==4,p),vhpc_sub(vhpc_sub(:,6)==5,p)];
 data(any(isnan(data), 2), :) = [];

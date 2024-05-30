@@ -237,7 +237,7 @@ for tt = 1:length(path)
             % SpikeTrain Construction
 %             limits = [0 segments.Var1(end)/1000];
             limits = aversiveTS./1000;
-            events = [];
+            events = NREM.aversive;
             [Spikes , bins , Clusters] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, 0.025, limits, events, false, false);
             clear limits events
             
@@ -352,4 +352,4 @@ figure
 tmp = nanmean([Probability.aversive.Space(1:40,:) ; Probability.aversive.Space(120:160,:)]);
 plot(nanmean((Probability.aversive.Space./tmp)')),hold on
 tmp = nanmean([Probability.aversive.Shock(1:40,:) ; Probability.aversive.Shock(120:160,:)]);
-plot(nanmean((Probability.aversive.Shock./tmp)')),hold on
+plot(nanmean((Probability.aversive.Shock)')),hold on
