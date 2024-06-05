@@ -1090,22 +1090,16 @@ figure
 subplot(121)
 x = [[BurstIndex.D.B ; BurstIndex.D.R ; BurstIndex.D.A] , [ones(length(BurstIndex.D.B),1) ; ones(length(BurstIndex.D.R),1)*2 ; ones(length(BurstIndex.D.R),1)*3]];
 scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 4]),hold on
-scatter([1 2 3] , [nanmean(BurstIndex.D.B) nanmean(BurstIndex.D.R) nanmean(BurstIndex.D.A)],'filled'),ylim([0 0.5])
+scatter([1 2 3] , [nanmedian(BurstIndex.D.B) nanmedian(BurstIndex.D.R) nanmedian(BurstIndex.D.A)],'filled'),ylim([0 0.5])
 kstest(x(:,1))
-
-x = [BurstIndex.D.B , BurstIndex.D.R , BurstIndex.D.A]; 
-figure
 [p t stats] = friedman(x,1)
 c = multcompare(stats)
 
 subplot(122)
 x = [[BurstIndex.V.B ; BurstIndex.V.R ; BurstIndex.V.A] , [ones(length(BurstIndex.V.B),1) ; ones(length(BurstIndex.V.R),1)*2 ; ones(length(BurstIndex.V.R),1)*3]];
 scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 4]),hold on
-scatter([1 2 3] , [nanmean(BurstIndex.V.B) nanmean(BurstIndex.V.R) nanmean(BurstIndex.V.A)],'filled'),ylim([0 0.5])
+scatter([1 2 3] , [nanmedian(BurstIndex.V.B) nanmedian(BurstIndex.V.R) nanmedian(BurstIndex.V.A)],'filled'),ylim([0 0.5])
 kstest(x(:,1))
-
-x = [BurstIndex.V.B , BurstIndex.V.R , BurstIndex.V.A]; 
-figure
 [p t stats] = friedman(x,1)
 c = multcompare(stats)
 

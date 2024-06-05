@@ -2851,53 +2851,17 @@ scatter(x,y, "filled") , xlim([0 3]), hold on
 
 %% FIRING MAP PLOTS 
 
-tempA=[];
-tempR=[];
+clear
+clc
+close all
+% Parameters
+path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\ready';'\\Maryjackson\e\Rat103\usable';'\\Maryjackson\e\Rat132\recordings\in_pyr'; '\\Maryjackson\e\Rat165\in_pyr'; ...
+    '\\Maryjackson\e\Rat126\Ephys\in_Pyr'};%List of folders from the path
 
-for i =1:size(pc_all.dHPC.firingMap.ave,1)
-    A = pc_all.dHPC.firingMap.ave(i,:) - min(pc_all.dHPC.firingMap.ave(i,:));
-    A = A ./ max(A);
-    tempA=[tempA ; A];
-    clear A
-    
-    R = pc_all.dHPC.firingMap.rew(i,:) - min(pc_all.dHPC.firingMap.rew(i,:));
-    R = R ./ max(R);
-    tempR=[tempR ; R];
-    clear R    
-end
+%Output matrix 
+dhpc_ave = [];dhpc_rew = [];
+vhpc_ave = [];vhpc_rew = [];
 
-[h idx] = max (tempA, [],2);
-[m mm] = sort(idx); 
-figure(1);clf;hold on; 
-subplot(1,2,1);imagesc([3:3:180], [1:1:size(pc_all.dHPC.firingMap.ave,1)],tempA(mm,:)), colormap 'jet'
-subplot(1,2,2);imagesc([3:3:180], [1:1:size(pc_all.dHPC.firingMap.rew,1)],tempR(mm,:)), colormap 'jet'
-sgtitle('dHPC');
-
-tempA=[];
-tempR=[];
-
-for i =1:size(pc_all.vHPC.firingMap.ave,1)
-    A = pc_all.vHPC.firingMap.ave(i,:) - min(pc_all.vHPC.firingMap.ave(i,:));
-    A = A ./ max(A);
-    tempA=[tempA ; A];
-    clear A
-    
-    R = pc_all.vHPC.firingMap.rew(i,:) - min(pc_all.vHPC.firingMap.rew(i,:));
-    R = R ./ max(R);
-    tempR=[tempR ; R];
-    clear R    
-end
-
-[h idx] = max (tempA, [],2);
-[m mm] = sort(idx); 
-figure(2);clf;
-subplot(1,2,1); imagesc([3:3:180], [1:1:size(pc_all.vHPC.firingMap.ave,1)],tempA(mm,:)), caxis([0 1]),colormap 'jet'
-subplot(1,2,2); imagesc([3:3:180], [1:1:size(pc_all.vHPC.firingMap.rew,1)],tempR(mm,:)), caxis([0 1]), colormap 'jet'
-
-%% PC properties 
-
-%% PC PARAMETERS:  pf size - in progress
-% Firts run Parameters section
 for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
@@ -2906,32 +2870,200 @@ for tt = 1:length(path)
     % Extract only those that are directories.
     subFolders = files(dirFlags);
     clear files dirFlags
-    %Output: variables of interest for all rats/all session 
-    pf_size=[]; 
     
     for t = 1 : length(subFolders)-2
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
-        session = [subFolders(t+2).folder,'\',subFolders(t+2).name,'\','Spikesorting'];
-        cd(session)
-        disp('Uploading pc parameters')
-        %Load pc parameters 
-        load('dHPC_pc.mat'); 
-        load('vHPC_pc.mat'); 
-
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd([session,'\Spikesorting'])
+        %Loading pc matrix of the sessions
+        disp('Uploading session pc matrix');
+        try
+            load('dHPC_pc.mat');
+            %Save session sub parameters 
         for d=1:size(dHPC,2)
-            n = dHPC{d};
+            pc = dHPC{d}; 
+            A = pc.frMap_ave - min(pc.frMap_ave);A = A ./ max(A);
+            dhpc_ave=[dhpc_ave; A];
+            clear A
+          
+            A = pc.frMap_rew - min(pc.frMap_rew);A = A ./ max(A);
+            dhpc_rew=[dhpc_rew; A];
+            clear A
+        end
+        
+        catch 
+            dHPC = []; disp(['No dHPC file in ',session]);
             
         end 
-       
-        for d=1:size(vHPC,2)
+        
+        
+        try
+            load('vHPC_pc.mat');
+            for d=1:size(vHPC,2)
+                pc = vHPC{d}; 
+                A = pc.frMap_ave - min(pc.frMap_ave);A = A ./ max(A);
+                vhpc_ave=[vhpc_ave; A];
+                clear A
             
+                A = pc.frMap_rew - min(pc.frMap_rew);A = A ./ max(A);
+                vhpc_rew=[vhpc_rew; A];
+                clear A
+            end
+        catch
+            vHPC= []; disp(['No vHPCfile in ',session]);
+        end
+        
+    end 
+     
+end 
+
+%%%%% dHPC Plots %%%%%
+
+[h idx] = max (dhpc_ave, [],2);
+[m mm] = sort(idx); 
+figure(1);clf;hold on; 
+subplot(1,2,1);imagesc([3:3:180], [1:1:size(dhpc_ave,1)],dhpc_ave(mm,:)), colormap 'gray'; title('Aversive');
+subplot(1,2,2);imagesc([3:3:180], [1:1:size(dhpc_rew,1)],dhpc_rew(mm,:)), colormap 'gray'; title('Reward');
+sgtitle('dHPC firing maps');
+
+%%%%% vHPC Plots %%%%%
+
+[h idx] = max (vhpc_ave, [],2);
+[m mm] = sort(idx); 
+
+
+figure(2);clf;
+subplot(1,2,1); imagesc([3:3:180], [1:1:size(vhpc_ave,1)],vhpc_ave(mm,:)), caxis([0 1]),colormap 'gray'; title('Aversive');
+subplot(1,2,2); imagesc([3:3:180], [1:1:size(vhpc_rew,1)],vhpc_rew(mm,:)), caxis([0 1]), colormap 'gray'; title('Reward');
+
+
+%% PC PARAMETERS:  pf size - in progress
+% Firts run Parameters section
+%c1 = spatial c2= fr_change c3=  overlap c4: pf shift c5:  1 = between 2 = within aversive 3= within reward 
+clear
+clc
+close all
+% Parameters
+path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\ready';'\\Maryjackson\e\Rat103\usable';'\\Maryjackson\e\Rat132\recordings\in_pyr'; '\\Maryjackson\e\Rat165\in_pyr'; ...
+    '\\Maryjackson\e\Rat126\Ephys\in_Pyr'};%List of folders from the path
+
+%Output matrix 
+dhpc_size = []; dhpc_skaggs = []; dhpc_n=0; 
+vhpc_size = []; vhpc_skaggs = []; vhpc_n=0;
+
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd([session,'\Spikesorting'])
+        %Loading pc matrix of the sessions
+        disp('Uploading session pc matrix');
+        try
+            load('dHPC_pc.mat');
+             %Save session parameters 
+        for d=1:size(dHPC,2)
+            pc = dHPC{d}; 
+            dhpc_size = [dhpc_size;pc.stats_ave.size(1),1;pc.stats_rew.size(1),2]; 
+            dhpc_skaggs = [dhpc_skaggs;pc.stats_ave.specificity,1;pc.stats_rew.specificity,2];
+            dhpc_n = dhpc_n+1;
+        end
+        catch 
+            dHPC = []; disp(['No dHPC_pc_lap.mat file in ',session]);
         end 
-        disp(['-- Finished folder #' , num2str(t) , ' from rat #' , num2str(tt) , ' ---'])
-        disp('  ')
-    end
-    disp(['-------- Finished rat#' , num2str(tt) , ' --------'])
-    disp(' ')
-end
+        
+        try
+            load('vHPC_shock_remap.mat');
+            for d=1:size(vHPC,2)
+                pc = vHPC{d}; 
+                vhpc_size = [vhpc_size;pc.stats_ave.size(1),1;pc.stats_rew.size(1),2]; 
+                vhpc_skaggs = [vhpc_skaggs;pc.stats_ave.specificity,1;pc.stats_rew.specificity,2];
+                vhpc_n = vhpc_n+1;
+            end 
+     
+        catch
+            vHPC= []; disp(['No vHPC_pc_lap.mat file in ',session]);
+        end
+        
+    end 
+
+     
+end 
+
+
+% Plots pf size
+ylabels ={'Pf size(bins)'}; 
+xlabels = {'Ave', 'Rew'}; 
+figure(1);clf;hold on, 
+sgtitle('Place field size')
+
+    subplot(1,2,1); hold on; 
+    x = dhpc_size(:,2);
+    y= dhpc_size(:,1);
+    c = [.3,.3,.3];
+    scatter(x,y,[],c,"filled",'jitter','on', 'jitterAmount',0.1); xlim([0 3]);
+    ylabel(ylabels);
+    xticks([1 2])
+    xticklabels({'Ave','Rew'});
+    hold on
+    s1=scatter(1,nanmedian(dhpc_size(dhpc_size(:,2)==1,1)), "filled");s1.MarkerFaceColor = [1 0.1 0.2];
+    s3=scatter(2,nanmedian(dhpc_size(dhpc_size(:,2)==2,1)), "filled");s3.MarkerFaceColor = [0.1 0.3 1];
+    title('dhpc'); 
+    
+    subplot(1,2,2); hold on; 
+    x = vhpc_size(:,2);
+    y= vhpc_size(:,1);
+    c = [.3,.3,.3];
+    scatter(x,y,[],c,"filled",'jitter','on', 'jitterAmount',0.1); xlim([0 3]);
+    ylabel(ylabels);
+    xticks([1 2])
+    xticklabels({'Ave','Rew'});
+    hold on
+    s1=scatter(1,nanmedian(vhpc_size(vhpc_size(:,2)==1,1)), "filled");s1.MarkerFaceColor = [1 0.1 0.2];
+    s3=scatter(2,nanmedian(vhpc_size(vhpc_size(:,2)==2,1)), "filled");s3.MarkerFaceColor = [0.1 0.3 1];
+    title('vhpc'); 
+ 
+% Plots skaggs
+ 
+ylabels ={'Skaggs'}; 
+xlabels = {'Ave', 'Rew'}; 
+figure(1);clf;hold on, 
+sgtitle('Skaggs')
+
+    subplot(1,2,1); hold on; 
+    x = dhpc_skaggs(:,2);
+    y= dhpc_skaggs(:,1);
+    c = [.3,.3,.3];
+    scatter(x,y,[],c,"filled",'jitter','on', 'jitterAmount',0.1); xlim([0 3]);
+    ylabel(ylabels);
+    xticks([1 2])
+    xticklabels({'Ave','Rew'});
+    hold on
+    s1=scatter(1,nanmedian(dhpc_skaggs(dhpc_skaggs(:,2)==1,1)), "filled");s1.MarkerFaceColor = [1 0.1 0.2];
+    s3=scatter(2,nanmedian(dhpc_skaggs(dhpc_skaggs(:,2)==2,1)), "filled");s3.MarkerFaceColor = [0.1 0.3 1];
+    title('dhpc'); 
+    
+    subplot(1,2,2); hold on; 
+    x = vhpc_skaggs(:,2);
+    y= vhpc_skaggs(:,1);
+    c = [.3,.3,.3];
+    scatter(x,y,[],c,"filled",'jitter','on', 'jitterAmount',0.1); xlim([0 3]);
+    ylabel(ylabels);
+    xticks([1 2])
+    xticklabels({'Ave','Rew'});
+    hold on
+    s1=scatter(1,nanmedian(vhpc_skaggs(vhpc_skaggs(:,2)==1,1)), "filled");s1.MarkerFaceColor = [1 0.1 0.2];
+    s3=scatter(2,nanmedian(vhpc_skaggs(vhpc_skaggs(:,2)==2,1)), "filled");s3.MarkerFaceColor = [0.1 0.3 1];
+    title('vhpc'); 
+
+
 
 %% SUBSAMPLED PLOTS
 % Load subsampled parameters and creates matrix to plot and stats.

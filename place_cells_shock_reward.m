@@ -1105,7 +1105,7 @@ for tt = 1:length(path)
             curve=[]; 
             limits=[behavior.speed.aversive(1,1),behavior.speed.aversive(end,1)];     
             [curve , bins , responsive] = SU_responsivness(spks_dHPC,group_dHPC(:,1),Shocks_filt,...
-                                      limits,[0 1],window,bin,smooth,'zscore',th); 
+                                      limits,[0 1],window,bin,smooth,'gain',th); 
              
             %Save output
             dHPC_shock_norm.id = group_dHPC(:,1); 
@@ -1131,7 +1131,7 @@ for tt = 1:length(path)
             curve=[]; 
             limits=[behavior.speed.aversive(1,1),behavior.speed.aversive(end,1)];           
             [curve , bins , responsive] = SU_responsivness(spks_vHPC,group_vHPC(:,1),Shocks_filt,...
-                                      limits,[0 1],4,bin,smooth,'zscore',th);                                  
+                                      limits,[0 1],4,bin,smooth,'gain',th);                                  
            
             %Save output
             vHPC_shock_norm.id = group_vHPC(:,1); 
@@ -1264,9 +1264,9 @@ subplot(2,1,1);imagesc([0:1:4], [1:1:size(dhpc_shock,1)],tempA(mm,:)), colormap 
 title('dHPC Aversive');xline(2,'r'); xline(3,'r'); xlabel(['Shock',char(10),'Time(sec)', char(10),num2str(dhpc_prop),'% resp']); 
 ylabel('Nuerons');
 
-subplot(2,1,2);hold on;plot([1:1:size(dhpc_shock,2)],nanmean(tempA)); 
+subplot(2,1,2);hold on;plot([1:1:size(dhpc_shock,2)],nanmean(tempA(dhpc_resp==1,:))); 
 ciplot(nanmean(tempA(dhpc_resp==1,:))-nansem(tempA(dhpc_resp==1,:)),nanmean(tempA(dhpc_resp==1,:))+nansem(tempA(dhpc_resp==1,:)),[1:1:size(dhpc_shock,2)]); alpha 0.1; hold on;
-xline(20,'r');xline(30,'r');ylabel('Mean z-socre');title('Shock neurons')%;ylim([0.5 3]); xlim([0 40]); 
+xline(20,'r');xline(30,'r');ylabel('Mean gain');title('Shock neurons');ylim([0.5 5.5]); xlim([0 40]); 
 
 %window for stats
 w_size = 2; % # of bins from the center. Each bin 3cm.
@@ -1283,9 +1283,9 @@ figure(2);clf;hold on
 subplot(2,1,1);imagesc([0:1:4], [1:1:size(vhpc_shock,1)],tempA(mm,:)), colormap 'gray'; axis tight
 title('vHPC Aversive');xline(2,'r');xline(3,'r');xlabel(['Shock',char(10),'Time(sec)', char(10),num2str(vhpc_prop),'% resp']); 
 ylabel('Neurons'); 
-subplot(2,1,2);hold on; plot([1:1:size(vhpc_shock,2)],nanmean(tempA(vhpc_resp==1,:)));
-ciplot(nanmean(tempA(vhpc_resp==1,:))-nansem(tempA(vhpc_resp==1,:)),nanmean(tempA(vhpc_resp==1,:))+nansem(tempA(vhpc_resp==1,:)),[1:1:size(dhpc_shock,2)]); alpha 0.1; hold on;
-xline(20,'r');xline(30,'r');ylim([0.2 0.5]);ylabel('Mean z-socre'); title('Shock neurons')
+subplot(2,1,2);hold on; plot([1:1:size(vhpc_shock,2)],nanmean(tempA));
+ciplot(nanmean(tempA)-nansem(tempA),nanmean(tempA)+nansem(tempA),[1:1:size(dhpc_shock,2)]); alpha 0.1; hold on;
+xline(20,'r');xline(30,'r');ylim([0.5 5.5]);ylabel('Mean gain'); title('Shock neurons'); xlim([0 40]); 
 
 % Stats 
 %window for stats
@@ -1711,8 +1711,8 @@ path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\
     '\\Maryjackson\e\Rat126\Ephys\in_Pyr'};%List of folders from the path
 
 %Output matrix 
-dhpc_sub = [];
-vhpc_sub = [];
+dhpc_sub = [];dhpc_n=0; 
+vhpc_sub = [];vhpc_n=0;
 
 for tt = 1:length(path)
     %List of folders from the path
@@ -1739,7 +1739,7 @@ for tt = 1:length(path)
             wa = [pc.within_ave,2];
             wr = [pc.within_rew,3];
             dhpc_temp = [dhpc_temp;bet;wa;wr]; 
-            
+            dhpc_n = dhpc_n+1;
         end
         catch 
             dHPC = []; disp(['No dHPC_pc_lap.mat file in ',session]);
@@ -1752,7 +1752,8 @@ for tt = 1:length(path)
                 bet = [pc.between,1]; 
                 wa = [pc.within_ave,2];
                 wr = [pc.within_rew,3];
-                vhpc_temp = [vhpc_temp;bet;wa;wr]; 
+                vhpc_temp = [vhpc_temp;bet;wa;wr];
+                vhpc_n = vhpc_n+1;
             end 
      
         catch
@@ -1771,7 +1772,7 @@ end
 ylabels ={'Spatial correlation', 'Fr change', 'Overlap', 'Pf shift', 'Mean fr ratio'}; 
 xlabels = {'Between', 'Within Ave', 'Within Rew'}; 
 figure(1);clf;hold on, 
-sgtitle('dHPC')
+sgtitle('dHPC without shock neurons')
 for p=1:size(ylabels,2)
     subplot(1,5,p); hold on; 
     x = dhpc_sub(:,6);
@@ -1811,7 +1812,7 @@ tbl = array2table(c,"VariableNames", ...
 ylabels ={'Spatial correlation', 'Fr change', 'Overlap', 'Pf shift', 'Mean fr ratio'}; 
 xlabels = {'Between', 'Within Ave', 'Within Rew'}; 
 figure(2);clf;hold on, 
-sgtitle('vHPC')
+sgtitle('vHPC without shock neurons')
 for p=1:size(ylabels,2)
     subplot(1,5,p); hold on; 
     x = vhpc_sub(:,6);
@@ -2068,16 +2069,16 @@ for tt = 1:length(path)
                 com = sum(idx .* field) / sum(field);
                 com = com + pf_lim(1,1); % back in spatial bin scale
                 
-                th= 2;%# of bins to dicard 
+                th= 4;%# of bins to dicard 
                 if or(com >1+th, com<60-th)   
                     valid = [valid;pc.id]; 
                 end
             end 
-            clear d p 
+            clear d pc pf_lim  pc_frmap field com idx
             
             group_dHPC = group_dHPC(ismember(group_dHPC(:,1),valid),:); % keep only non responsive pc 
             
-            disp('dHPC Remapping parameters computation')
+            disp('dHPC Remapping parameters computation without reward neurons')
              
             for ii=1:size(group_dHPC,1)
 
@@ -2162,9 +2163,28 @@ for tt = 1:length(path)
         
         %%%%%% vHPC %%%%%%%
         try
-           load('vHPC_shock_norm.mat');
-            
-            valid = vHPC_shock_norm.id(vHPC_shock_norm.resp==0);
+           load('vHPC_pc.mat');
+      
+            valid = []; 
+            for d=1:size(vHPC,2)
+                pc=vHPC{d};
+                % Reward
+                pf_lim = pc.stats_rew.fieldX; 
+                pc_frmap = pc.frMap_rew; 
+                field = pc_frmap(pf_lim(1,1):pf_lim(1,2));
+                
+                %Center of mass of the field 
+                idx = 1:size(field,2);                             
+                com = sum(idx .* field) / sum(field);
+                com = com + pf_lim(1,1); % back in spatial bin scale
+                
+                th= 4;%# of bins to dicard 
+                if or(com >1+th, com<60-th)   
+                    valid = [valid;pc.id]; 
+                end
+            end 
+            clear d pc pf_lim  pc_frmap field com idx 
+
             group_vHPC = group_vHPC(ismember(group_vHPC(:,1),valid),:); % keep only non responsive pc 
             
             disp('vHPC Remapping parameters computation')
@@ -2253,11 +2273,11 @@ for tt = 1:length(path)
         %% Saveing PC INFO 
         if ~isempty(dHPC)
             dHPC = dHPC(~cellfun('isempty',dHPC));
-            save([cd,'\dHPC_shock_remap.mat'],'dHPC'); 
+            save([cd,'\dHPC_rew_remap.mat'],'dHPC'); 
         end
         if ~isempty(vHPC)
             vHPC = vHPC(~cellfun('isempty',vHPC));
-            save([cd,'\vHPC_shock_remap.mat'],'vHPC'); 
+            save([cd,'\vHPC_rew_remap.mat'],'vHPC'); 
         end
   
 
@@ -2278,3 +2298,245 @@ for tt = 1:length(path)
     disp(['-------- Finished rat#' , num2str(tt) , ' --------'])
     disp(' ')
 end
+
+%% Plots REMAPPING PARAMETERS without REWARD 
+%c1 = spatial c2= fr_change c3=  overlap c4: pf shift c5:  1 = between 2 = within aversive 3= within reward 
+clear
+clc
+close all
+% Parameters
+path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\ready';'\\Maryjackson\e\Rat103\usable';'\\Maryjackson\e\Rat132\recordings\in_pyr'; '\\Maryjackson\e\Rat165\in_pyr'; ...
+    '\\Maryjackson\e\Rat126\Ephys\in_Pyr'};%List of folders from the path
+
+%Output matrix 
+dhpc_sub = [];
+vhpc_sub = [];
+n_dhpc= 0; n_vhpc=0; 
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+    dhpc_temp = [];
+    vhpc_temp = [];
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd([session,'\Spikesorting'])
+        %Loading pc matrix of the sessions
+        disp('Uploading session pc matrix');
+        try
+            load('dHPC_rew_remap.mat');
+             %Save session parameters 
+        for d=1:size(dHPC,2)
+            pc = dHPC{d}; 
+            bet = [pc.between,1]; 
+            wa = [pc.within_ave,2];
+            wr = [pc.within_rew,3];
+            dhpc_temp = [dhpc_temp;bet;wa;wr]; 
+            n_dhpc= n_dhpc + 1;
+            
+        end
+        catch 
+            dHPC = []; disp(['No dHPC_pc_lap.mat file in ',session]);
+        end 
+        
+        try
+            load('vHPC_rew_remap.mat');
+            for d=1:size(vHPC,2)
+                pc = vHPC{d}; 
+                bet = [pc.between,1]; 
+                wa = [pc.within_ave,2];
+                wr = [pc.within_rew,3];
+                vhpc_temp = [vhpc_temp;bet;wa;wr];
+                n_vhpc= n_dhpc + 1;
+            end 
+     
+        catch
+            vHPC= []; disp(['No vHPC_pc_lap.mat file in ',session]);
+        end
+        
+    end 
+    %Save sub parameters 
+    dhpc_sub = [dhpc_sub;dhpc_temp];
+    vhpc_sub = [vhpc_sub;vhpc_temp];
+     
+end 
+
+% Plots + stats 
+%dHP
+ylabels ={'Spatial correlation', 'Fr change', 'Overlap', 'Pf shift', 'Mean fr ratio'}; 
+xlabels = {'Between', 'Within Ave', 'Within Rew'}; 
+figure(1);clf;hold on, 
+sgtitle('dHPC')
+for p=1:size(ylabels,2)
+    subplot(1,5,p); hold on; 
+    x = dhpc_sub(:,6);
+    y= dhpc_sub(:,p);%Change the column number (1-4) to choose which variable to plot 
+    c = [.3,.3,.3];
+    scatter(x,y,[],c,"filled",'jitter','on', 'jitterAmount',0.1); xlim([0 4]);
+    ylabel(ylabels{p});
+    xticks([1 2 3])
+    xticklabels({'Bet', 'WA', 'WR'});
+    hold on
+    s1=scatter(1,nanmedian(dhpc_sub(dhpc_sub(:,6)==1,p)), "filled");s1.MarkerFaceColor = [0 0 0];
+    s2=scatter(2,nanmedian(dhpc_sub(dhpc_sub(:,6)==2,p)), "filled");s2.MarkerFaceColor = [1 0.1 0.2];
+    s3=scatter(3,nanmedian(dhpc_sub(dhpc_sub(:,6)==3,p)), "filled");s3.MarkerFaceColor = [0.1 0.3 1];
+end 
+
+%Stats
+[P,ANOVATAB,STATS] = kruskalwallis(dhpc_sub(:,5),dhpc_sub(:,6));
+c = multcompare(STATS)
+
+tbl = array2table(c,"VariableNames", ...
+    ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
+
+% Paired non-parametric anova - Friedman test
+%Prepare data to test
+p = 4; % 1=sp corr 2=fr change 3=overlap 4=pf shift
+data=[dhpc_sub(dhpc_sub(:,6)==1,p), dhpc_sub(dhpc_sub(:,6)==2,p), ...
+    dhpc_sub(dhpc_sub(:,6)==3,p), dhpc_sub(dhpc_sub(:,6)==4,p),dhpc_sub(dhpc_sub(:,6)==5,p)];
+data(any(isnan(data), 2), :) = [];
+
+[p,~,stats] =  friedman(data,1); 
+c = multcompare(stats);
+tbl = array2table(c,"VariableNames", ...
+    ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
+
+
+%vHP
+ylabels ={'Spatial correlation', 'Fr change', 'Overlap', 'Pf shift', 'Mean fr ratio'}; 
+xlabels = {'Between', 'Within Ave', 'Within Rew'}; 
+figure(2);clf;hold on, 
+sgtitle('vHPC without reward')
+for p=1:size(ylabels,2)
+    subplot(1,5,p); hold on; 
+    x = vhpc_sub(:,6);
+    y=  vhpc_sub(:,p);%Change the column number (1-4) to choose which variable to plot 
+    c = [.3,.3,.3];
+    scatter(x,y,[],c,"filled",'jitter','on', 'jitterAmount',0.1); xlim([0 4]);
+    ylabel(ylabels{p});
+    xticks([1 2 3])
+    xticklabels({'Bet', 'WA', 'WR'});
+    hold on
+    s1=scatter(1,nanmedian(vhpc_sub(vhpc_sub(:,6)==1,p)), "filled");s1.MarkerFaceColor = [0 0 0];
+    s2=scatter(2,nanmedian(vhpc_sub(vhpc_sub(:,6)==2,p)), "filled");s2.MarkerFaceColor = [1 0.1 0.2];
+    s3=scatter(3,nanmedian(vhpc_sub(vhpc_sub(:,6)==3,p)), "filled");s3.MarkerFaceColor = [0.1 0.3 1];
+end 
+
+
+%Stats
+[P,ANOVATAB,STATS] = kruskalwallis(vhpc_sub(:,5),vhpc_sub(:,6));
+c = multcompare(STATS)
+
+tbl = array2table(c,"VariableNames", ...
+    ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
+
+% Paired non-parametric anova - Friedman test
+%Prepare data to test
+p = 4; % 1=sp corr 2=fr change 3=overlap 4=pf shift
+data=[vhpc_sub(vhpc_sub(:,6)==1,p), vhpc_sub(vhpc_sub(:,6)==2,p), ...
+    vhpc_sub(vhpc_sub(:,6)==3,p), vhpc_sub(vhpc_sub(:,6)==4,p),vhpc_sub(vhpc_sub(:,6)==5,p)];
+data(any(isnan(data), 2), :) = [];
+
+[p,~,stats] =  friedman(data,1); 
+c = multcompare(stats)
+tbl = array2table(c,"VariableNames", ...
+    ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
+
+
+%Stats
+[P,ANOVATAB,STATS] = kruskalwallis(vhpc_sub(:,1),vhpc_sub(:,6));
+c = multcompare(STATS)
+
+tbl = array2table(c,"VariableNames", ...
+    ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
+
+%%%%%%% Firing curves %%%%%%
+%Output matrix 
+dhpc_frmap_ave = [];dhpc_frmap_rew = [];
+vhpc_frmap_ave = [];vhpc_frmap_rew = [];
+
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+
+    for t = 1 : length(subFolders)-2
+        disp('');
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd([session,'\Spikesorting'])
+        %Loading pc matrix of the sessions
+        disp('Uploading session pc matrix');
+        try
+            load('dHPC_rew_remap.mat');
+             %Save session parameters 
+        for d=1:size(dHPC,2)
+            pc = dHPC{d}; 
+ 
+            A = pc.frMap_ave - min(pc.frMap_ave);
+            A = A ./ max(A);
+           
+    
+            R = pc.frMap_rew - min(pc.frMap_rew);
+            R = R ./ max(R);
+         
+            dhpc_frmap_ave = [dhpc_frmap_ave;A];
+            dhpc_frmap_rew = [dhpc_frmap_rew;R];
+            
+        end
+        catch 
+            dHPC = []; disp(['No dHPC file in ',session]);
+        end 
+        
+        try
+            load('vHPC_rew_remap.mat');
+            for d=1:size(vHPC,2)
+                pc = vHPC{d}; 
+                A = pc.frMap_ave - min(pc.frMap_ave);
+                A = A ./ max(A);
+ 
+                R = pc.frMap_rew - min(pc.frMap_rew);
+                R = R ./ max(R);
+         
+                vhpc_frmap_ave = [vhpc_frmap_ave;A];
+                vhpc_frmap_rew = [vhpc_frmap_rew;R];
+            end 
+     
+        catch
+            vHPC= []; disp(['No vHPC_pc_lap.mat file in ',session]);
+        end
+        
+    end 
+     
+end 
+
+
+% DHPC
+
+[h idx] = max (dhpc_frmap_rew, [],2);
+[m mm] = sort(idx); 
+figure(1);clf;hold on; 
+
+subplot(1,2,1);imagesc([3:3:180], [1:1:size(dhpc_frmap_rew,1)],dhpc_frmap_rew(mm,:)), colormap 'jet'; title('Rewarded')
+subplot(1,2,2);imagesc([3:3:180], [1:1:size(dhpc_frmap_ave,1)],dhpc_frmap_ave(mm,:)), colormap 'jet'; title('Aversive')
+sgtitle('dHPC without "reward" cells');
+
+%VHPC
+
+[h idx] = max (vhpc_frmap_rew, [],2);
+[m mm] = sort(idx); 
+figure(2);clf;hold on; 
+
+subplot(1,2,1);imagesc([3:3:180], [1:1:size(vhpc_frmap_rew,1)],vhpc_frmap_rew(mm,:)), colormap 'jet'; title('Rewarded')
+subplot(1,2,2);imagesc([3:3:180], [1:1:size(vhpc_frmap_ave,1)],vhpc_frmap_ave(mm,:)), colormap 'jet'; title('Aversive')
+sgtitle('vHPC without "reward" cells');
+
