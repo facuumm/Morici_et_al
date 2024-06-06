@@ -2885,8 +2885,7 @@ for tt = 1:length(path)
             A = pc.frMap_ave - min(pc.frMap_ave);A = A ./ max(A);
             dhpc_ave=[dhpc_ave; A];
             clear A
-            
-            pc = dHPC{d}; 
+          
             A = pc.frMap_rew - min(pc.frMap_rew);A = A ./ max(A);
             dhpc_rew=[dhpc_rew; A];
             clear A
@@ -2900,16 +2899,15 @@ for tt = 1:length(path)
         
         try
             load('vHPC_pc.mat');
-            for d=1:size(dHPC,2)
-                pc = dHPC{d}; 
+            for d=1:size(vHPC,2)
+                pc = vHPC{d}; 
                 A = pc.frMap_ave - min(pc.frMap_ave);A = A ./ max(A);
-                dhpc_ave=[dhpc_ave; A];
+                vhpc_ave=[vhpc_ave; A];
                 clear A
             
-                pc = dHPC{d}; 
-            A = pc.frMap_rew - min(pc.frMap_rew);A = A ./ max(A);
-            dhpc_rew=[dhpc_rew; A];
-            clear A
+                A = pc.frMap_rew - min(pc.frMap_rew);A = A ./ max(A);
+                vhpc_rew=[vhpc_rew; A];
+                clear A
             end
         catch
             vHPC= []; disp(['No vHPCfile in ',session]);
@@ -2919,57 +2917,27 @@ for tt = 1:length(path)
      
 end 
 
+%%%%% dHPC Plots %%%%%
 
-
-
-
-
-
-
-
-
-tempA=[];
-tempR=[];
-
-for i =1:size(pc_all.dHPC.firingMap.ave,1)
-    A = pc_all.dHPC.firingMap.ave(i,:) - min(pc_all.dHPC.firingMap.ave(i,:));
-    A = A ./ max(A);
-    tempA=[tempA ; A];
-    clear A
-    
-    R = pc_all.dHPC.firingMap.rew(i,:) - min(pc_all.dHPC.firingMap.rew(i,:));
-    R = R ./ max(R);
-    tempR=[tempR ; R];
-    clear R    
-end
-
-[h idx] = max (tempA, [],2);
+[h idx] = max (dhpc_ave, [],2);
 [m mm] = sort(idx); 
-figure(1);clf;hold on; 
-subplot(1,2,1);imagesc([3:3:180], [1:1:size(pc_all.dHPC.firingMap.ave,1)],tempA(mm,:)), colormap 'jet'
-subplot(1,2,2);imagesc([3:3:180], [1:1:size(pc_all.dHPC.firingMap.rew,1)],tempR(mm,:)), colormap 'jet'
-sgtitle('dHPC');
 
-tempA=[];
-tempR=[];
+figure(1);clf;hold on;
+fr = dhpc_ave(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
+subplot(1,2,1);imagesc([3:3:180], [1:1:size(dhpc_ave,1)],fr), colormap 'gray'; title('Aversive');
+fr = dhpc_rew(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
+subplot(1,2,2);imagesc([3:3:180], [1:1:size(dhpc_rew,1)],fr), colormap 'gray'; title('Reward');
+sgtitle('dHPC firing maps');
 
-for i =1:size(pc_all.vHPC.firingMap.ave,1)
-    A = pc_all.vHPC.firingMap.ave(i,:) - min(pc_all.vHPC.firingMap.ave(i,:));
-    A = A ./ max(A);
-    tempA=[tempA ; A];
-    clear A
-    
-    R = pc_all.vHPC.firingMap.rew(i,:) - min(pc_all.vHPC.firingMap.rew(i,:));
-    R = R ./ max(R);
-    tempR=[tempR ; R];
-    clear R    
-end
+%%%%% vHPC Plots %%%%%
 
-[h idx] = max (tempA, [],2);
+[h idx] = max (vhpc_ave, [],2);
 [m mm] = sort(idx); 
+
+
 figure(2);clf;
-subplot(1,2,1); imagesc([3:3:180], [1:1:size(pc_all.vHPC.firingMap.ave,1)],tempA(mm,:)), caxis([0 1]),colormap 'jet'
-subplot(1,2,2); imagesc([3:3:180], [1:1:size(pc_all.vHPC.firingMap.rew,1)],tempR(mm,:)), caxis([0 1]), colormap 'jet'
+subplot(1,2,1); imagesc([3:3:180], [1:1:size(vhpc_ave,1)],vhpc_ave(mm,:)), caxis([0 1]),colormap 'gray'; title('Aversive');
+subplot(1,2,2); imagesc([3:3:180], [1:1:size(vhpc_rew,1)],vhpc_rew(mm,:)), caxis([0 1]), colormap 'gray'; title('Reward');
 
 
 %% PC PARAMETERS:  pf size - in progress

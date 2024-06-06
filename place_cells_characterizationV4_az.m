@@ -1688,13 +1688,13 @@ for tt = 1:length(path)
         %Loading pc matrix of the sessions
         disp('Uploading session pc matrix');
         try
-            load('dHPC_pc_lap.mat');
+            load('dHPC_pc.mat');
              %Save session parameters 
-        for d=1:size(dHPC_lap,2)
-            pc = dHPC_lap{d}; 
-            bet = [pc.between,1]; 
-            wa = [pc.within.ave,2];
-            wr = [pc.within.rew,3];
+        for d=1:size(dHPC,2)
+            pc = dHPC{d}; 
+            bet = [pc.subsampled.between,1]; 
+            wa = [pc.subsampled.within_ave,2];
+            wr = [pc.subsampled.within_rew,3];
             dhpc_temp = [dhpc_temp;bet;wa;wr]; 
             
         end
@@ -1703,12 +1703,12 @@ for tt = 1:length(path)
         end 
         
         try
-            load('vHPC_pc_lap.mat');
-            for d=1:size(vHPC_lap,2)
-                pc = vHPC_lap{d}; 
-                bet = [pc.between,1]; 
-                wa = [pc.within.ave,2];
-                wr = [pc.within.rew,3];
+            load('vHPC_pc.mat');
+            for d=1:size(vHPC,2)
+                pc = vHPC{d}; 
+                bet = [pc.subsampled.between,1]; 
+                wa = [pc.subsampled.within_ave,2];
+                wr = [pc.subsampled.within_rew,3];
                 vhpc_temp = [vhpc_temp;bet;wa;wr]; 
             end 
      
@@ -1753,7 +1753,7 @@ tbl = array2table(c,"VariableNames", ...
 
 % Paired non-parametric anova - Friedman test
 %Prepare data to test
-p = 1; % 1=sp corr 2=fr change 3=overlap 4=pf shift
+p = 4; % 1=sp corr 2=fr change 3=overlap 4=pf shift
 data=[dhpc_sub(dhpc_sub(:,6)==1,p), dhpc_sub(dhpc_sub(:,6)==2,p), ...
     dhpc_sub(dhpc_sub(:,6)==3,p), dhpc_sub(dhpc_sub(:,6)==4,p),dhpc_sub(dhpc_sub(:,6)==5,p)];
 data(any(isnan(data), 2), :) = [];
@@ -1786,7 +1786,7 @@ end
 
 
 %Stats
-[P,ANOVATAB,STATS] = kruskalwallis(vhpc_sub(:,5),vhpc_sub(:,6));
+[P,ANOVATAB,STATS] = kruskalwallis(vhpc_sub(:,1),vhpc_sub(:,6));
 c = multcompare(STATS)
 
 tbl = array2table(c,"VariableNames", ...
@@ -1794,7 +1794,7 @@ tbl = array2table(c,"VariableNames", ...
 
 % Paired non-parametric anova - Friedman test
 %Prepare data to test
-p = 1; % 1=sp corr 2=fr change 3=overlap 4=pf shift
+p = 4; % 1=sp corr 2=fr change 3=overlap 4=pf shift
 data=[vhpc_sub(vhpc_sub(:,6)==1,p), vhpc_sub(vhpc_sub(:,6)==2,p), ...
     vhpc_sub(vhpc_sub(:,6)==3,p), vhpc_sub(vhpc_sub(:,6)==4,p),vhpc_sub(vhpc_sub(:,6)==5,p)];
 data(any(isnan(data), 2), :) = [];
@@ -2921,9 +2921,12 @@ end
 
 [h idx] = max (dhpc_ave, [],2);
 [m mm] = sort(idx); 
-figure(1);clf;hold on; 
-subplot(1,2,1);imagesc([3:3:180], [1:1:size(dhpc_ave,1)],dhpc_ave(mm,:)), colormap 'gray'; title('Aversive');
-subplot(1,2,2);imagesc([3:3:180], [1:1:size(dhpc_rew,1)],dhpc_rew(mm,:)), colormap 'gray'; title('Reward');
+
+figure(1);clf;hold on;
+fr = dhpc_ave(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
+subplot(1,2,1);imagesc([3:3:180], [1:1:size(dhpc_ave,1)],fr), colormap 'gray'; title('Aversive');
+fr = dhpc_rew(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
+subplot(1,2,2);imagesc([3:3:180], [1:1:size(dhpc_rew,1)],fr), colormap 'gray'; title('Reward');
 sgtitle('dHPC firing maps');
 
 %%%%% vHPC Plots %%%%%
@@ -2933,8 +2936,10 @@ sgtitle('dHPC firing maps');
 
 
 figure(2);clf;
-subplot(1,2,1); imagesc([3:3:180], [1:1:size(vhpc_ave,1)],vhpc_ave(mm,:)), caxis([0 1]),colormap 'gray'; title('Aversive');
-subplot(1,2,2); imagesc([3:3:180], [1:1:size(vhpc_rew,1)],vhpc_rew(mm,:)), caxis([0 1]), colormap 'gray'; title('Reward');
+fr = vhpc_ave(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
+subplot(1,2,1); imagesc([3:3:180], [1:1:size(vhpc_ave,1)],fr), caxis([0 1]),colormap 'gray'; axis tight; title('Aversive');
+fr = vhpc_rew(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
+subplot(1,2,2); imagesc([3:3:180], [1:1:size(vhpc_rew,1)],fr), caxis([0 1]), colormap 'gray'; title('Reward');axis tight; 
 
 
 %% PC PARAMETERS:  pf size - in progress
