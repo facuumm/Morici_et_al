@@ -11,7 +11,7 @@ criteria_n = 6; % minimal number of neurons from each structure
 criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
 n_SU_V = [];
 n_SU_D = [];
-Xedges = 60; %number of bins for RateMap construction - 3cm bin
+Xedges = 60; %number of bins for RateMap construction - 2.5cm bin (because of the extremes cutting)
 sigma = 2;%round(15/(180/Xedges)); %defined for gauss kernel of 15cm
 binSize = 0.001; % bin size for replay events detection
 bin_size = 1; % to bin pos ans spks in between/within  
@@ -1744,6 +1744,29 @@ for p=1:size(ylabels,2)
     s3=scatter(3,nanmedian(dhpc_sub(dhpc_sub(:,6)==3,p)), "filled");s3.MarkerFaceColor = [0.1 0.3 1];
 end 
 
+
+%Only 3 plots
+ylabels ={'Spatial correlation', 'Overlap', 'Pf shift'};
+idx = [1,3,4]; 
+xlabels = {'Between', 'Within Ave', 'Within Rew'}; 
+figure(1);clf;hold on, 
+sgtitle('dHPC')
+for a=1:size(ylabels,2)
+    p = idx(a);
+    subplot(1,3,a); hold on; 
+    x = dhpc_sub(:,6);
+    y= dhpc_sub(:,p);%Change the column number (1-4) to choose which variable to plot 
+    c = [.3,.3,.3];
+    scatter(x,y,30,c,"filled",'jitter','on', 'jitterAmount',0.3); xlim([0 4]);
+    ylabel(ylabels{a});
+    xticks([1 2 3])
+    xticklabels({'Bet', 'WA', 'WR'});
+    hold on
+    s1=scatter(1,nanmedian(dhpc_sub(dhpc_sub(:,6)==1,p)), "filled");s1.MarkerFaceColor = [0 0 0];
+    s2=scatter(2,nanmedian(dhpc_sub(dhpc_sub(:,6)==2,p)), "filled");s2.MarkerFaceColor = [1 0.1 0.2];
+    s3=scatter(3,nanmedian(dhpc_sub(dhpc_sub(:,6)==3,p)), "filled");s3.MarkerFaceColor = [0.1 0.3 1];
+end
+
 %Stats
 [P,ANOVATAB,STATS] = kruskalwallis(dhpc_sub(:,5),dhpc_sub(:,6));
 c = multcompare(STATS)
@@ -1783,6 +1806,30 @@ for p=1:size(ylabels,2)
     s2=scatter(2,nanmedian(vhpc_sub(vhpc_sub(:,6)==2,p)), "filled");s2.MarkerFaceColor = [1 0.1 0.2];
     s3=scatter(3,nanmedian(vhpc_sub(vhpc_sub(:,6)==3,p)), "filled");s3.MarkerFaceColor = [0.1 0.3 1];
 end 
+
+
+%Only 3 plots
+ylabels ={'Spatial correlation', 'Overlap', 'Pf shift'};
+idx = [1,3,4]; 
+xlabels = {'Between', 'Within Ave', 'Within Rew'}; 
+figure(1);clf;hold on, 
+sgtitle('vHPC')
+for a=1:size(ylabels,2)
+    p = idx(a);
+    subplot(1,3,a); hold on; 
+    x = vhpc_sub(:,6);
+    y= vhpc_sub(:,p);%Change the column number (1-4) to choose which variable to plot 
+    c = [.3,.3,.3];
+    scatter(x,y,30,c,"filled",'jitter','on', 'jitterAmount',0.3); xlim([0 4]);
+    ylabel(ylabels{a});
+    xticks([1 2 3])
+    xticklabels({'Bet', 'WA', 'WR'});
+    hold on
+    s1=scatter(1,nanmedian(vhpc_sub(vhpc_sub(:,6)==1,p)), "filled");s1.MarkerFaceColor = [0 0 0];
+    s2=scatter(2,nanmedian(vhpc_sub(vhpc_sub(:,6)==2,p)), "filled");s2.MarkerFaceColor = [1 0.1 0.2];
+    s3=scatter(3,nanmedian(vhpc_sub(vhpc_sub(:,6)==3,p)), "filled");s3.MarkerFaceColor = [0.1 0.3 1];
+end
+
 
 
 %Stats
@@ -2924,9 +2971,9 @@ end
 
 figure(1);clf;hold on;
 fr = dhpc_ave(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
-subplot(1,2,1);imagesc([3:3:180], [1:1:size(dhpc_ave,1)],fr), colormap 'gray'; title('Aversive');
+subplot(1,2,1);imagesc([0:50:150], [1:1:size(dhpc_ave,1)],fr), colormap 'gray'; title('Aversive');
 fr = dhpc_rew(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
-subplot(1,2,2);imagesc([3:3:180], [1:1:size(dhpc_rew,1)],fr), colormap 'gray'; title('Reward');
+subplot(1,2,2);imagesc([0:50:150], [1:1:size(dhpc_rew,1)],fr), colormap 'gray'; title('Reward');
 sgtitle('dHPC firing maps');
 
 %%%%% vHPC Plots %%%%%
@@ -2937,9 +2984,9 @@ sgtitle('dHPC firing maps');
 
 figure(2);clf;
 fr = vhpc_ave(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
-subplot(1,2,1); imagesc([3:3:180], [1:1:size(vhpc_ave,1)],fr), caxis([0 1]),colormap 'gray'; axis tight; title('Aversive');
+subplot(1,2,1); imagesc([0:50:150], [1:1:size(vhpc_ave,1)],fr), caxis([0 1]),colormap 'gray'; axis tight; title('Aversive');
 fr = vhpc_rew(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
-subplot(1,2,2); imagesc([3:3:180], [1:1:size(vhpc_rew,1)],fr), caxis([0 1]), colormap 'gray'; title('Reward');axis tight; 
+subplot(1,2,2); imagesc([0:50:150], [1:1:size(vhpc_rew,1)],fr), caxis([0 1]), colormap 'gray'; title('Reward');axis tight; 
 
 
 %% PC PARAMETERS:  pf size - in progress

@@ -716,7 +716,7 @@ imagesc([1:40],[1:size(ReactR.post,2)],ReactR.post(:,ii)'),caxis([0 0.5]),xlim([
 
 
 
-
+% 
 % figure,
 % subplot(121)
 % pd = fitdist(cumA,'Kernel','Kernel','epanechnikov')

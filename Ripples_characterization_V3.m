@@ -9,7 +9,7 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 time_criteria = 600; %time criteria to define the maximal time of sleep to include
 
 % Ripples
-shuf = true; % to shuffle ripples to see if the coordination level change
+shuf = false; % to shuffle ripples to see if the coordination level change
 downSamp = false; % to downsample dRipples
 q = 0.25; %quantile to restrict above it ripples according to their peak amplitude
 ripples_coordinated_numbers = []; %for storing the number of cooridnated events all conditions pooled
@@ -498,43 +498,43 @@ for tt = 1:length(path)
             ccg = ccg(:,1,2);
             Cross.CoorVentral_allDorsal = [Cross.CoorVentral_allDorsal , ccg]; clear ccg time s ids groups x y
 
-%             % Coordinated dRipples vs all dRipples
-%             x = coordinated(:,2);
-%             y = uncoordinated(:,2);
-%             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-%             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
-%             ccg = ccg(:,1,2);
-%             Cross.CoorDorsal_allDorsal = [Cross.CoorDorsal_allDorsal , ccg]; clear ccg time s ids groups x y
-%             
-%             % Coordinated vRipples vs all dRipples
-%             x = unique(coordinatedV(:,2));
-%             y = unique(uncoordinatedV(:,2));
-%             [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
-%             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
-%             ccg = ccg(:,1,2);
-%             Cross.CoorVentral_allVentral = [Cross.CoorVentral_allVentral , ccg]; clear ccg time s ids groups x y            
-
-            %% Including all ripples bu eliminating the bin 0
             % Coordinated dRipples vs all dRipples
             x = coordinated(:,2);
-            y = ripplesD(:,2);
-            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-            [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',0,'mode','ccg');
-            [i ii] = min(abs(time-0));
+            y = uncoordinated(:,2);
+            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
             ccg = ccg(:,1,2);
-            ccg(ii) = 0; clear i ii
             Cross.CoorDorsal_allDorsal = [Cross.CoorDorsal_allDorsal , ccg]; clear ccg time s ids groups x y
             
             % Coordinated vRipples vs all dRipples
             x = unique(coordinatedV(:,2));
-            y =ripplesV(:,2);
-            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-            [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',0,'mode','ccg');
-            [~, ii] = min(abs(time-0));
+            y = unique(uncoordinatedV(:,2));
+            [s,ids,groups] = CCGParameters(y,ones(length(y),1),x,ones(length(x),1)*2);
+            [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',1,'mode','ccg');
             ccg = ccg(:,1,2);
-            ccg(ii) = 0; clear i ii
             Cross.CoorVentral_allVentral = [Cross.CoorVentral_allVentral , ccg]; clear ccg time s ids groups x y            
-            
+
+%             %% Including all ripples bu eliminating the bin 0
+%             % Coordinated dRipples vs all dRipples
+%             x = coordinated(:,2);
+%             y = ripplesD(:,2);
+%             [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
+%             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',0,'mode','ccg');
+%             [i ii] = min(abs(time-0));
+%             ccg = ccg(:,1,2);
+%             ccg(ii) = 0; clear i ii
+%             Cross.CoorDorsal_allDorsal = [Cross.CoorDorsal_allDorsal , ccg]; clear ccg time s ids groups x y
+%             
+%             % Coordinated vRipples vs all dRipples
+%             x = unique(coordinatedV(:,2));
+%             y =ripplesV(:,2);
+%             [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
+%             [ccg,time] = CCG(s,ids,'binSize',0.01,'duration',2,'smooth',0,'mode','ccg');
+%             [~, ii] = min(abs(time-0));
+%             ccg = ccg(:,1,2);
+%             ccg(ii) = 0; clear i ii
+%             Cross.CoorVentral_allVentral = [Cross.CoorVentral_allVentral , ccg]; clear ccg time s ids groups x y            
+%             
             %% For storing number of coordinated events
             ripples_coordinated_numbers = [ripples_coordinated_numbers ; length(coordinated) , length(ripplesD) , length(coordinatedV) , length(ripplesV) , length(Restrict(coordinated,NREM.B)) , length(Restrict(ripplesD,NREM.B)) , length(Restrict(coordinated,NREM.R)) , length(Restrict(ripplesD,NREM.R)) , length(Restrict(coordinated,NREM.A)) , length(Restrict(ripplesD,NREM.A)) , length(Restrict(unique(coordinatedV(:,1)),NREM.B)) , length(Restrict(ripplesV,NREM.B)) , length(Restrict(unique(coordinatedV(:,1)),NREM.R)) , length(Restrict(ripplesV,NREM.R)) , length(Restrict(unique(coordinatedV(:,1)),NREM.A)) , length(Restrict(ripplesV,NREM.A))];
             
@@ -1002,14 +1002,16 @@ subplot(121)
 x = [[rate.D.B ; rate.D.R ; rate.D.A] , [ones(length(rate.D.B),1) ; ones(length(rate.D.R),1)*2 ; ones(length(rate.D.A),1)*3]];
 scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 4]),hold on
 scatter([1 2 3] , [nanmean(rate.D.B) nanmean(rate.D.R) nanmean(rate.D.A)],'filled'),ylim([0 2])
-[p t stats] = kruskalwallis(x(:,1) , x(:,2))
+
+
+[p t stats] = friedman([rate.D.B , rate.D.R , rate.D.A])
 c = multcompare(stats)
 
 subplot(122)
 x = [[rate.V.B ; rate.V.R ; rate.V.A] , [ones(length(rate.V.B),1) ; ones(length(rate.V.R),1)*2 ; ones(length(rate.V.A),1)*3]];
 scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 4]),hold on
 scatter([1 2 3] , [nanmean(rate.V.B) nanmean(rate.V.R) nanmean(rate.V.A)],'filled'),ylim([0 2])
-[p t stats] = kruskalwallis(x(:,1) , x(:,2))
+[p t stats] = friedman([rate.V.B , rate.V.R , rate.V.A])
 c = multcompare(stats)
 
 
@@ -1250,8 +1252,8 @@ cdfplot(x),hold on
 
 %% Plot Cross CoorDorsal_allDorsal and CoorVentral_allVentral
 figure
-subplot(221),plot(time , mean(Cross.CoorDorsal_allDorsal./sum(Cross.CoorDorsal_allDorsal),2)),xlim([-1 1]),ylim([0 0.012])
-subplot(222),plot(time , mean(Cross.CoorVentral_allVentral./sum(Cross.CoorVentral_allVentral),2)),xlim([-1 1]),ylim([0 0.012])
+subplot(221),plot(time , mean(Cross.CoorDorsal_allDorsal./sum(Cross.CoorDorsal_allDorsal),2)),xlim([-1 1]),ylim([0 0.008])
+subplot(222),plot(time , mean(Cross.CoorVentral_allVentral./sum(Cross.CoorVentral_allVentral),2)),xlim([-1 1]),ylim([0 0.008])
 subplot(223),plot(time , mean(Cross.CoorDorsal_allVentral./sum(Cross.CoorDorsal_allVentral),2)),xlim([-0.2 0.2]),ylim([0 0.025])
 subplot(224),plot(time , mean(Cross.CoorVentral_allDorsal./sum(Cross.CoorVentral_allDorsal),2)),xlim([-0.2 0.2]),ylim([0 0.025])
 

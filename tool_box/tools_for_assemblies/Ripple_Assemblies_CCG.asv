@@ -317,7 +317,7 @@ for tt = 1:length(path)
                         if and(cond1,cond2)
                             Pre.aversive.ccg = [Pre.aversive.ccg , zscore(ccg1(:,1,2)./0.025)./length(x1)] ;
                             Pre.aversive.iterator = [Pre.aversive.iterator ; pInc1 pDec1] ;
-                            Post.aversive.ccg = [Post.aversive.ccg , zscore(ccg2(:,1,2)./0.025)./length(x2)] ;
+                            Post.aversive.ccg = [Post.aversive.ccg , (ccg2(:,1,2)./0.025)./length(x2)] ;
                             Post.aversive.iterator = [Post.aversive.iterator ; pInc2 pDec2] ;
                             conditional = [conditional or(and(pInc1<0.05 , pInc2<0.05) , or(pInc1<0.05 , pInc2<0.05))];
                         end
@@ -352,7 +352,7 @@ for tt = 1:length(path)
                                         yy = Restrict(y,TS.pre);
                                         if and(length(xx)>5 , length(yy)>5)
                                             [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
-                                            [ccg1,T] = CCG(s,ids,'binSize',0.003,'duration',0.05,'smooth',1,'mode','ccg');
+                                            [ccg1,T] = CCG(s,ids,'binSize',0.003,'duration',0.2,'smooth',1,'mode','ccg');
                                             cond1 = true;
                                         else
                                             cond1 = false;
@@ -363,7 +363,7 @@ for tt = 1:length(path)
                                         yy = Restrict(y,TS.post);
                                         if and(length(xx)>5 , length(yy)>5)
                                             [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
-                                            [ccg2,T] = CCG(s,ids,'binSize',0.003,'duration',0.05,'smooth',1,'mode','ccg');
+                                            [ccg2,T] = CCG(s,ids,'binSize',0.003,'duration',0.2,'smooth',1,'mode','ccg');
                                             cond2 = true;
                                         else
                                             cond2 = false;
@@ -512,7 +512,7 @@ for tt = 1:length(path)
                                         yy = Restrict(y,TS.pre);
                                         if and(length(xx)>5 , length(yy)>5)
                                             [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
-                                            [ccg1,T] = CCG(s,ids,'binSize',0.003,'duration',0.05,'smooth',1,'mode','ccg');
+                                            [ccg1,T] = CCG(s,ids,'binSize',0.003,'duration',0.2,'smooth',1,'mode','ccg');
                                             cond1 = true;
                                         else
                                             cond1 = false;
@@ -523,15 +523,15 @@ for tt = 1:length(path)
                                         yy = Restrict(y,TS.post);
                                         if and(length(xx)>5 , length(yy)>5)
                                             [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
-                                            [ccg2,T] = CCG(s,ids,'binSize',0.003,'duration',0.05,'smooth',1,'mode','ccg');
+                                            [ccg2,T] = CCG(s,ids,'binSize',0.003,'duration',0.2,'smooth',1,'mode','ccg');
                                             cond2 = true;
                                         else
                                             cond2 = false;
                                         end
                                         
                                         if and(cond1,cond2)
-                                            Pre.reward.ccgM = [Pre.reward.ccgM , (ccg1(:,1,2)./sum(ccg1(:,1,2)))];
-                                            Post.reward.ccgM = [Post.reward.ccgM , (ccg2(:,1,2)./sum(ccg2(:,1,2)))];
+                                            Pre.reward.ccgM = [Pre.reward.ccgM , zscore(ccg1(:,1,2)./sum(ccg1(:,1,2)))];
+                                            Post.reward.ccgM = [Post.reward.ccgM , zscore(ccg2(:,1,2)./sum(ccg2(:,1,2)))];
                                             if conditional(i)
                                                 I.reward = [I.reward , true];
                                             else
@@ -569,78 +569,62 @@ end
 
 
 end
-% Pre.aversive.ccgM(:,sum(isnan(Post.aversive.ccgM))>0) = [];
-% I.aversive(:,sum(isnan(Post.aversive.ccgM))>0) = [];
-% Post.aversive.ccgM(:,sum(isnan(Post.aversive.ccgM))>0) = [];
-% 
-% m = Post.aversive.ccgM;%(:,logical(I.aversive));
-% mm = Pre.aversive.ccgM;%(:,logical(I.aversive));
-% 
-% m = m - min(m);
-% mm = mm - min(mm);
-% 
-% m = m ./ max(m);
-% mm = mm ./ max(mm);
-% 
-% %% Plot of Aversive assemblies
-% figure
-% [i ii] = max(m);
+Pre.aversive.ccgM(:,sum(isnan(Post.aversive.ccgM))>0) = [];
+I.aversive(:,sum(isnan(Post.aversive.ccgM))>0) = [];
+Post.aversive.ccgM(:,sum(isnan(Post.aversive.ccgM))>0) = [];
+
+m = Post.aversive.ccgM;%(:,logical(I.aversive));
+mm = Pre.aversive.ccgM;%(:,logical(I.aversive));
+
+%% Plot of Aversive assemblies
+figure
+[i ii] = max(m);
+[i ii] = sort(ii);
+subplot(122),imagesc(T,[1:1:size(m,2)],m(:,ii)'),caxis([0 4]), colormap 'jet'
+xline(0,'--')
+subplot(121),imagesc(T,[1:1:size(mm,2)],mm(:,ii)'),caxis([0 4]), colormap 'jet'
+xline(0,'--')
+
+figure,
+m1 = nanmean(mm');
+s1 = nansem(mm');
+plot(T,m1,'k'),hold on
+ciplot(m1-s1 , m1+s1, T,'k'),alpha 0.5
+
+
+m2 = nanmean(m');
+s2 = nansem(m');
+plot(T,m2,'r')
+ciplot(m2-s2 , m2+s2, T,'r'),alpha 0.5
+ylim([0 3])
+xlim([-0.1 0.1])
+xline(0,'--')
+% xlim([-0.1 0.1])
+
+%% Plot of Reward assemblies
+Pre.reward.ccgM(:,sum(isnan(Post.reward.ccgM))>0) = [];
+I.reward(:,sum(isnan(Post.reward.ccgM))>0) = [];
+Post.reward.ccgM(:,sum(isnan(Post.reward.ccgM))>0) = [];
+figure
+[i ii] = max(Post.reward.ccgM);
+[i ii] = sort(ii);
+subplot(122),imagesc(T,[1:1:size(Post.reward.ccgM,2)],Post.reward.ccgM(:,ii)'),caxis([0 4]), colormap 'jet'
+xline(0,'--')
+% [i ii] = max(Pre.reward.ccgM);
 % [i ii] = sort(ii);
-% subplot(122),imagesc(T,[1:1:size(m,2)],m(:,ii)'),caxis([0 1]), colormap 'jet'
-% xline(0,'--')
-% subplot(121),imagesc(T,[1:1:size(mm,2)],mm(:,ii)'),caxis([0 1]), colormap 'jet'
-% xline(0,'--')
-% 
-% figure,
-% m1 = nanmean(mm');
-% s1 = nansem(mm');
-% plot(T,m1,'k'),hold on
-% ciplot(m1-s1 , m1+s1, T,'k'),alpha 0.5
-% 
-% 
-% m2 = nanmean(m');
-% s2 = nansem(m');
-% plot(T,m2,'r')
-% ciplot(m2-s2 , m2+s2, T,'r'),alpha 0.5
-% ylim([0.2 0.6])
-% xlim([-0.025 0.025])
-% xline(0,'--')
-% xlim([-0.05 0.05])
-% 
-% %% Plot of Reward assemblies
-% Pre.reward.ccgM(:,sum(isnan(Post.reward.ccgM))>0) = [];
-% I.reward(:,sum(isnan(Post.reward.ccgM))>0) = [];
-% Post.reward.ccgM(:,sum(isnan(Post.reward.ccgM))>0) = [];
-% 
-% m = Post.reward.ccgM;%(:,logical(I.aversive));
-% mm = Pre.reward.ccgM;%(:,logical(I.aversive));
-% 
-% m = m - min(m);
-% mm = mm - min(mm);
-% 
-% m = m ./ max(m);
-% mm = mm ./ max(mm);
-% 
-% figure
-% [i ii] = max(m);
-% [i ii] = sort(ii);
-% subplot(122),imagesc(T,[1:1:size(Post.reward.ccgM,2)],m(:,ii)'),caxis([0 1]), colormap 'jet'
-% xline(0,'--')
-% % [i ii] = max(Pre.reward.ccgM);
-% % [i ii] = sort(ii);
-% subplot(121),imagesc(T,[1:1:size(Post.reward.ccgM,2)],mm(:,ii)'),caxis([0 1]), colormap 'jet'
-% xline(0,'--')
-% 
-% figure,
-% m1 = nanmean(mm');
-% s1 = nansem(mm');
-% plot(T,m1,'k'),hold on
-% ciplot(m1-s1 , m1+s1, T,'k'),alpha 0.5
-% 
-% m2 = nanmean(m');
-% s2 = nansem(m');
-% plot(T,m2,'r')
-% ciplot(m2-s2 , m2+s2, T,'r'),alpha 0.5
-% ylim([0.2 0.6])
-% xlim([-0.025 0.025])
-% xline(0,'--')
+subplot(121),imagesc(T,[1:1:size(Post.reward.ccgM,2)],Pre.reward.ccgM(:,ii)'),caxis([0 4]), colormap 'jet'
+xline(0,'--')
+
+figure,
+m = nanmean(Pre.reward.ccgM');
+s = nansem(Pre.reward.ccgM');
+plot(T,m,'k'),hold on
+ciplot(m-s , m+s, T,'k'),alpha 0.5
+
+m = nanmean(Post.reward.ccgM');
+s = nansem(Post.reward.ccgM');
+plot(T,m,'r')
+ciplot(m-s , m+s, T,'r'),alpha 0.5
+ylim([0 3])
+xlim([-0.1 0.1])
+xline(0,'--')
