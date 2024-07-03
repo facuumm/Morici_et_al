@@ -138,7 +138,6 @@ within_mean = nanmean(within);
 spatial = quantile(within(:,1), 0.1);
 fr = quantile(within(:,2), 0.9);
 overlap = quantile(within(:,3), 0.1);
-shift = quantile(within(:,4), 0.9);
-within_percentil = [spatial, fr, overlap,shift]; 
+within_percentil = [spatial, fr, overlap]; 
 
 end

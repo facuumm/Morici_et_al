@@ -1,4 +1,4 @@
-function [curve , bins , responsive] = SU_responsivness(spikes,clusters,events,limits,period,window,bin,smooth,normalization,th)
+function [curve , bins , responsive] = SU_responsivness_fixed(spikes,clusters,events,limits,period,window,bin,smooth,normalization,th)
 % Fining rate tuning curve calculation.
 % This function construct a firing curve sourrounding an event and then, it
 % evaluates if the Single-Units (SU) increase or decrease their response.
@@ -53,7 +53,7 @@ function [curve , bins , responsive] = SU_responsivness(spikes,clusters,events,l
 %             if 0, no changment in the response.
 %             if -1, decreased response.
 %
-% Morici Juan Facundo, 09/2023
+% Morici Juan Facundo, Azul Silva 06/2024
 % Other funtions: binspikes, CCG from FMAToolbox
 
 curve = [];
@@ -111,11 +111,11 @@ for i = 1 : size(clusters,1)
         [h stop] = min(abs(bins-period(2)));
         
         threshold = [];
-        for ii = 1 : 200 % en este loop estoy corriendo  200 veces lo mismo! 
+        for ii = 1 : 200 
             x = events;
-            yy = ShuffleSpks(y); % ATTENTION YY is not being used! it should be used in line 118
+            yy = ShuffleSpks(y); 
             
-            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
+            [s,ids,groups] = CCGParameters(x,ones(length(x),1),yy,ones(length(yy),1)*2);
             [ccg,tttt] = CCG(s,ids,'binSize',bin,'duration',window,'smooth',0,'mode','ccg'); %ccg calculation
             if strcmp(normalization,'none')
                 threshold = [threshold ; (ccg(start:stop,1,2)./bin)./size(events,1)];
@@ -124,10 +124,11 @@ for i = 1 : size(clusters,1)
             end
         end
         
-        if mean(final(start:stop)) >= std(threshold)*th
+        th =  quantile(threshold,0.9);
+        if mean(final(start:stop)) >=  th
             responsive = [responsive , 1];
             
-        elseif mean(final(start:stop)) <= std(threshold)*th*-1
+        elseif mean(final(start:stop)) <= th
             responsive = [responsive , -1];
             
         else

@@ -839,7 +839,7 @@ for tt = 1:length(path)
                 PrefPos.dHPC = [PrefPos.dHPC ; ruler(ismember(tmp(:,2) , coordinated(:,2)))];
             end
             clear iri i
-            bursts_durations.dHPC = [bursts_durations.dHPC ; B.dHPC(:,2)-B.dHPC(:,1)];   
+            bursts_durations.dHPC = [bursts_durations.dHPC ; B.dHPC(:,3)-B.dHPC(:,1)];   
 
             
             % ventral
@@ -854,7 +854,7 @@ for tt = 1:length(path)
                 PrefPos.vHPC = [PrefPos.vHPC ; ruler(ismember(tmp(:,2) , coordinatedV(:,2)))];
             end
             clear iri i
-            bursts_durations.vHPC = [bursts_durations.vHPC ; B.vHPC(:,2)-B.vHPC(:,1)];
+            bursts_durations.vHPC = [bursts_durations.vHPC ; B.vHPC(:,3)-B.vHPC(:,1)];
             
             % CCG dT2 vs vt1
             x = B.dHPC(:,3);
@@ -1153,6 +1153,12 @@ scatter([1 2 3] , [nanmean((ripples_coordinated_numbers(:,5) ./ ripples_coordina
 boxplot(x(:,1),x(:,2)),ylim([0 60])
 [h p] = kruskalwallis(x(:,1) , x(:,2))
 
+x = [ (ripples_coordinated_numbers(:,5) ./ ripples_coordinated_numbers(:,6))*100 ,  (ripples_coordinated_numbers(:,7) ./ ripples_coordinated_numbers(:,8))*100 ,  (ripples_coordinated_numbers(:,9) ./ ripples_coordinated_numbers(:,10))*100];
+[h p] = friedman(x)
+c = multcompare(stats)
+tbl = array2table(c,"VariableNames", ...
+    ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
+
 subplot(122)
 x = [ (ripples_coordinated_numbers(:,11) ./ ripples_coordinated_numbers(:,12))*100 ;  (ripples_coordinated_numbers(:,13) ./ ripples_coordinated_numbers(:,14))*100;  (ripples_coordinated_numbers(:,15) ./ ripples_coordinated_numbers(:,16))*100];
 x = [x , [ones(40,1) ; ones(40,1)*2 ; ones(40,1)*3]];
@@ -1160,6 +1166,12 @@ scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 4]),ho
 scatter([1 2 3] , [nanmean((ripples_coordinated_numbers(:,11) ./ ripples_coordinated_numbers(:,12))*100) ;  nanmean((ripples_coordinated_numbers(:,13) ./ ripples_coordinated_numbers(:,14))*100) ;  nanmean((ripples_coordinated_numbers(:,15) ./ ripples_coordinated_numbers(:,16))*100)],'filled'),ylim([0 70])
 boxplot(x(:,1),x(:,2)),ylim([0 60])
 [h p] = kruskalwallis(x(:,1) , x(:,2))
+
+
+x = [ (ripples_coordinated_numbers(:,11) ./ ripples_coordinated_numbers(:,12))*100 , (ripples_coordinated_numbers(:,13) ./ ripples_coordinated_numbers(:,14))*100 , (ripples_coordinated_numbers(:,15) ./ ripples_coordinated_numbers(:,16))*100];
+[h p] = friedman(x)
+c = multcompare(stats)
+
 
 %% plot percentage after shuffling dRipples
 figure

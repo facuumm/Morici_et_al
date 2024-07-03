@@ -668,16 +668,16 @@ for i = 1 : size(Peaks.reward.Post,2)
 end
 
 
-
-figure,
-ii = nanmean(ReactR.post(1:20,:));
-[i ii] = sort(ii,'descend');
-
-subplot(121)
-imagesc([1:40],[1:size(ReactR.pre,2)],ReactR.pre(:,ii)'),caxis([0 0.5]),xlim([1 40])
-subplot(122)
-imagesc([1:40],[1:size(ReactR.post,2)],ReactR.post(:,ii)'),caxis([0 0.5]),xlim([1 40])
-
+% 
+% figure,
+% ii = nanmean(ReactR.post(1:20,:));
+% [i ii] = sort(ii,'descend');
+% 
+% subplot(121)
+% imagesc([1:40],[1:size(ReactR.pre,2)],ReactR.pre(:,ii)'),caxis([0 0.5]),xlim([1 40])
+% subplot(122)
+% imagesc([1:40],[1:size(ReactR.post,2)],ReactR.post(:,ii)'),caxis([0 0.5]),xlim([1 40])
+% 
 % 
 % 
 % %% Plor cumulatives
@@ -710,10 +710,21 @@ imagesc([1:40],[1:size(ReactR.post,2)],ReactR.post(:,ii)'),caxis([0 0.5]),xlim([
 % cdfplot(cumR2P),
 % xlim([0 1.2]),
 % [h p] = kstest2(cumR2,cumR2P,'Tail','smaller')
-
-
-
-
+% 
+% 
+% 
+% [h p] = kstest2(cumA,cumR,'Tail','smaller')
+% figure
+% subplot(121)
+% cdfplot(cumA),hold on
+% cdfplot(cumR),
+% xlim([0 0.6]),
+% 
+% [h p] = kstest2(cumA2,cumR2,'Tail','smaller')
+% subplot(122)
+% cdfplot(cumA2),hold on
+% cdfplot(cumR2),
+% xlim([0 0.6]),
 
 
 % 

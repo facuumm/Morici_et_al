@@ -7,7 +7,7 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
-W = 'D'; % to select what kind of ripples I want to check
+W = 'CB'; % to select what kind of ripples I want to check
 % E= all coordinated ripples, DV dRipple-vRipple, VD vRipple-dRipple
 % D= uncoordinated dorsal, V= uncoordinated ventral
 % CB = cooridnated bursts
@@ -62,147 +62,14 @@ for tt = 2:length(path)
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
+        
         %Loading TS of the sessions
-        disp('Uploading session time stamps')
-        x = dir([cd,'\*.cat.evt']);
-        segments = readtable([cd,'\',x.name],'FileType','text');
-        clear x
-        % TimeStamps of begening and end of the sleep and awake trials
-        % Reward and Aversive trials
-        aversiveTS = [];
-        aversiveTS_run = [];
-        rewardTS = [];
-        rewardTS_run = [];
-        for y = 1 : height(segments)
-            % Baseline sleep session TS detection
-            if y == 1
-                baselineTS(1,1) = segments.Var1(y);
-            elseif y ==2
-                baselineTS(1,2) = segments.Var1(y);
-            end
-            % Aversive sleep session TS detection
-            if strcmp(segments.Var2{y},'aversive')
-                if strcmp(segments.Var3{y},'End')
-                    aversiveTS(1,1) = segments.Var1(y+1);
-                    aversiveTS(1,2) = segments.Var1(y+2);
-                    aversiveTS_run(1,1) = segments.Var1(y-1);
-                    aversiveTS_run(1,2) = segments.Var1(y);
-                    A = y;
-                end
-                % Rewarded sleep session TS detection
-            elseif strcmp(segments.Var2{y},'reward')
-                if strcmp(segments.Var3{y},'End')
-                    rewardTS(1,1) = segments.Var1(y+1);
-                    rewardTS(1,2) = segments.Var1(y+2);
-                    rewardTS_run(1,1) = segments.Var1(y-1);
-                    rewardTS_run(1,2) = segments.Var1(y);
-                    R = y;
-                end
-            end
-        end
-        clear y A R
+        disp('Uploading session data')
+        load('session_organization.mat')
         
-        % Defining what condition was first
-        if aversiveTS_run(1) < rewardTS_run(1)
-            config = 1;
-        else
-            config = 2;
-        end
-%         save([cd,'\session_organization.mat'],'config','segments','rewardTS_run','rewardTS','aversiveTS_run','aversiveTS','baselineTS')
-
-        %% Awake
-        disp('Uploading digital imputs')
-        % Load digitalin.mat
-        load('digitalin.mat')
-        
-        %Shocks selection
-        Shocks_filt = Restrict(shock,aversiveTS_run ./1000);
-        % Keep only the first shock of each TTL (first from 20)
-        count = 1;
-        deff = [];
-        for i = 1:length(Shocks_filt)
-            if count == 1
-                deff = [deff ; Shocks_filt(i,1)];
-            end
-            if count ==20
-                count = 0;
-            end
-            count = count + 1;
-        end
-        Shocks_filt = deff;
-        clear count deff shock i
-        
-        %Rewards selection
-        Rewards_filt = Restrict([leftvalve ; rightvalve],rewardTS_run ./1000);
-                
-        % Behavioral calculations
-        disp('Uploading DLC outputs')
-        camara = ((camara(:,2)-camara(:,1))/2)+camara(:,1);
-        % periods of movment during eacj condition
-        if rewardTS_run(1) < aversiveTS_run(1)
-            load('laps1.mat','posx','posy');
-            [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
-            pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
-            %interpolation of dropped frames
-            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
-            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
-            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
-            behavior.pos.reward = [pos];
-            behavior.speed.reward = LinearVelocity(pos,0);
-            behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
-            behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
-            clear pos camaraR posx posy
-            load('laps2.mat','posx','posy');
-            [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
-            pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
-            %interpolation of dropped frames
-            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
-            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
-            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
-            behavior.pos.aversive = [pos];
-            behavior.speed.aversive = LinearVelocity(pos,0);
-            behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
-            behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
-            clear pos camaraR
-        else
-            load('laps2.mat','posx','posy');
-            [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
-            %         [camaraR2,~] = find((camara(:,1)-rewardTS_run(2)/1000)<0,1,'last'); %TimeStamp of the ending of aversive
-            pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
-            %interpolation of dropped frames
-            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
-            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
-            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
-            behavior.pos.reward = [pos];
-            behavior.speed.reward = LinearVelocity(pos,0);
-            behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
-            behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
-            clear pos camaraR posx posy
-            load('laps1.mat','posx','posy');
-            [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
-            pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
-            %interpolation of dropped frames
-            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
-            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
-            pos(:,2) =dX_int; pos(:,3) =dY_int; %saving corrected pos
-            behavior.pos.aversive = [pos];
-            behavior.speed.aversive = LinearVelocity(pos,0);
-            behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
-            behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
-            clear pos camaraA posx posy
-        end
-        
-        % Generation of no-movements periods
-        % Reward
-        start = behavior.speed.reward(1,1);   stop = behavior.speed.reward(end,1);
-        movement.reward = InvertIntervals(behavior.quiet.reward , start , stop); %keep only those higher than criteria
-        %         movement.reward(movement.reward(:,2) - movement.reward(:,1) <1,:)=[]; %eliminate 1sec segments
-        clear tmp start stop
-        % Aversive
-        start = behavior.speed.aversive(1,1);   stop = behavior.speed.aversive(end,1);
-        movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
-        %         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
-        clear tmp start stop
+        % Awake
+        disp('Uploading Behavioral Data')
+        load('behavioral_data.mat')
         
         %% load sleep states
         disp('Uploading sleep scoring')
@@ -321,6 +188,14 @@ for tt = 2:length(path)
             ripples.vHPC.reward = Restrict(ripplesV , NREM.reward);
             ripples.vHPC.aversive = Restrict(ripplesV , NREM.aversive);
         end
+        
+        %% Ripple bursts upload
+        load('coordinated_ripple_bursts.mat')
+        bursts.coordinated(or((bursts.coordinated(:,2)-bursts.coordinated(:,1))<0.08 , (bursts.coordinated(:,2)-bursts.coordinated(:,1))>1),:) = [];
+        ripple_bursts.baseline = Restrict(bursts.coordinated,NREM.baseline);
+        ripple_bursts.reward = Restrict(bursts.coordinated,NREM.reward);
+        ripple_bursts.aversive = Restrict(bursts.coordinated,NREM.aversive);        
+        clear B bursts
         
         %% Spikes
         % Load Units
@@ -517,13 +392,19 @@ for tt = 2:length(path)
                         is.sws.timestamps.sleep.aversive = NREM.aversive;
                         is.sws.timestamps.sleep.reward = NREM.reward;
                         is.sws.timestamps.sleep.baseline = NREM.baseline;
-                        
+                    else
+                        continue
                     end
                 elseif strcmp(W,'CB')
                     % coordinated event
                     is.sws.baseline = InIntervals(bins,ripple_bursts.baseline);
                     is.sws.reward = InIntervals(bins,ripple_bursts.reward);
                     is.sws.aversive = InIntervals(bins,ripple_bursts.aversive);
+                    
+                    is.sws.timestamps.sleep.aversive = NREM.aversive;
+                    is.sws.timestamps.sleep.reward = NREM.reward;
+                    is.sws.timestamps.sleep.baseline = NREM.baseline;
+                        
                 elseif strcmp(W,'D')
                     tmp = not(ismember(ripples.dHPC.baseline(:,2) , ripples.dHPC.coordinated.baseline(:,2)));
                     ripples.dHPC.uncoordinated.baseline = [ripples.dHPC.baseline(tmp,1) ripples.dHPC.baseline(tmp,3)];
@@ -1012,6 +893,14 @@ for tt = 2:length(path)
                     end
                 end
                 
+                if exist('RBA')
+                    save([cd,'\react_coord_ripples_aversive.mat'],'RBA')
+                end
+                
+                if exist('RBR')
+                    save([cd,'\react_coord_ripples_reward.mat'],'RBR')
+                end
+                clear RBA RBR
             end
             
             %% Triggered assemblies activity
