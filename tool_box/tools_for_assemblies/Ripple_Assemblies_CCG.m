@@ -26,7 +26,7 @@ criteria_type = 0; % criteria for celltype (0:pyr, 1:int, 2:all)
 th = 5; % threshold for detecting peak assemblies
 % 3 SD funciona
 % 5 SD funciona
-sm = 1;
+sm = 2;
 dur = 0.6;
 
 % storage variables
@@ -297,7 +297,6 @@ for tt = 1:length(path)
                     pks.aversive = assemblies_peaks([bins' Spikes] , patterns.aversive(:,cond.both) , th);
                     
                     % Iteration across assemblies
-                    conditional = [];
                     for i = 1 : size(pks.aversive,1)
                         % --- Pre ---
                         y = Restrict(pks.aversive{i}(:,1),TS.pre);
@@ -306,8 +305,13 @@ for tt = 1:length(path)
                             
                             x1 = Restrict(ripple_event.all(:,2),TS.pre);
                             [s,ids,groups] = CCGParameters(x1,ones(length(x1),1),y,ones(length(y),1)*2);
-                            [ccg1,T] = CCG(s,ids,'binSize',0.025,'duration',0.4,'smooth',1,'mode','ccg');
+                            [ccg1,T] = CCG(s,ids,'binSize',0.01,'duration',1,'smooth',2,'mode','ccg');
                             cond1 = true;
+%                             x1 = Restrict([ripple_event.all(:,1)-0.05 ripple_event.all(:,3)+0.05],TS.pre);
+                            x1 =[ripple_event.all(:,1)-0.05 ripple_event.all(:,3)+0.05];
+%                             m1 = InvertIntervals(x1,TS.pre(1,1) , TS.pre(end,2));
+                            m1 = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
+                            m1 = length(Restrict(y,m1))/(sum(m1(:,2)-m1(:,1)));
                         else
                             cond1 = false;
                         end
@@ -319,145 +323,177 @@ for tt = 1:length(path)
                             
                             x2 = Restrict(ripple_event.all(:,2),TS.post);
                             [s,ids,groups] = CCGParameters(x2,ones(length(x2),1),y,ones(length(y),1)*2);
-                            [ccg2,T] = CCG(s,ids,'binSize',0.025,'duration',0.4,'smooth',1,'mode','ccg');
+                            [ccg2,T] = CCG(s,ids,'binSize',0.01,'duration',1,'smooth',2,'mode','ccg');
                             cond2 = true;
+%                             x2 = Restrict([ripple_event.all(:,1)-0.05 ripple_event.all(:,3)+0.05],TS.post);
+                            x2 = [ripple_event.all(:,1)-0.05 ripple_event.all(:,3)+0.05];
+%                             m2 = InvertIntervals(x2,TS.post(1,1) , TS.post(end,2));
+                            m2 = InvertIntervals(x2,NREM.all(1,1),NREM.all(end,2));
+                            m2 = length(Restrict(y,m2))/(sum(m2(:,2)-m2(:,1)));                            
                         else
                             cond2 = false;
                         end
                         
                         if and(cond1,cond2)
-                            Pre.aversive.ccg = [Pre.aversive.ccg , zscore(ccg1(:,1,2)./0.025)./length(x1)] ;
+                            x1 = Restrict(ripple_event.all(:,2),TS.pre);
+                            x2 = Restrict(ripple_event.all(:,2),TS.post);
+                            Pre.aversive.ccg = [Pre.aversive.ccg , ((ccg1(:,1,2)./0.025)./length(x1))./m1] ;
                             Pre.aversive.iterator = [Pre.aversive.iterator ; pInc1 pDec1] ;
-                            Post.aversive.ccg = [Post.aversive.ccg , zscore(ccg2(:,1,2)./0.025)./length(x2)] ;
+                            Post.aversive.ccg = [Post.aversive.ccg , ((ccg2(:,1,2)./0.025)./length(x2))./m2] ;
                             Post.aversive.iterator = [Post.aversive.iterator ; pInc2 pDec2] ;
-                            conditional = [conditional or(and(pInc1<0.05 , pInc2<0.05) , or(pInc1<0.05 , pInc2<0.05))];
                         end
                         clear y x pInc1 pInc2 pDec1 pDec2 surp1 surp2
-                        clear s ids groups ccg
+                        clear s ids groups ccg m1 m2 x1 x2
                     end
                     clear pks TS
                     
-                    % ccg between members
-                    if aversiveTS_run(1)<rewardTS_run(1)
-                        TS.pre = [ripple_event.baseline(:,1) ripple_event.baseline(:,3)];
-                        TS.post = [ripple_event.aversive(:,1) ripple_event.aversive(:,3)];
-                        
-%                         TS.pre = bursts.baseline;
-%                         TS.post = bursts.aversive;                        
-                    else
-                        TS.pre = [ripple_event.reward(:,1) ripple_event.reward(:,3)];
-                        TS.post = [ripple_event.aversive(:,1) ripple_event.aversive(:,3)];
-                        
-%                         TS.pre = bursts.reward;
-%                         TS.post = bursts.aversive;                        
-                    end
-                    
-                    load('react_coord_ripples_aversive.mat')
-                    % between members
-                    members = Thresholded.aversive(:,cond.both);
-                    for i = 1 : sum(cond.both)
-                        for ii = 1 : numberD
-                            if members(ii,i)
-%                                 break
-                                member1 = clusters.dHPC(ii);
-                                x = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
-                                for iii = 1 : numberV
-                                    if members(iii+numberD,i)
-%                                         break
-                                        member2 = clusters.vHPC(iii);
-                                        y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
-                                        
-                                        % --- Pre ---
-                                        xx = Restrict(x,TS.pre);
-                                        yy = Restrict(y,TS.pre);
-                                        if and(length(xx)>5 , length(yy)>5)
-                                            [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
-                                            [ccg1,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
-                                            cond1 = true;
-                                            
-                                            surrogate = surrogate_ccg(xx,yy);
-                                            
-                                        else
-                                            cond1 = false;
-                                        end
-                                        
-                                        % --- Post ---
-                                        xx = Restrict(x,TS.post);
-                                        yy = Restrict(y,TS.post);
-                                        if and(length(xx)>5 , length(yy)>5)
-                                            [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
-                                            [ccg2,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
-                                            cond2 = true;
-                                        else
-                                            cond2 = false;
-                                        end
-                                        
-                                        if and(cond1,cond2)
-                                            Pre.aversive.ccgM = [Pre.aversive.ccgM , zscore(ccg1(:,1,2)./sum(ccg1(:,1,2)))];
-                                            Post.aversive.ccgM = [Post.aversive.ccgM , zscore(ccg2(:,1,2)./sum(ccg2(:,1,2)))];
-                                            if conditional(i)
-                                                I.aversive = [I.aversive ; true , RBA(i,1)];
-                                            else
-                                                I.aversive = [I.aversive ; false , RBA(i,1)];
-                                            end
-                                        end
-                                        clear ccg1 ccg2 cond1 cond2
-                                        
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    
-                    % between non-members
-                    for i = 1 : sum(cond.both)
-                        for ii = 1 : numberD
-                            if (members(ii,i))
-                                member1 = clusters.dHPC(ii);
-                                x = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
-                                for iii = 1 : numberV
-                                    if not(members(iii+numberD,i))
-                                        member2 = clusters.vHPC(iii);
-                                        y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
-                                        
-                                        % --- Pre ---
-                                        xx = Restrict(x,TS.pre);
-                                        yy = Restrict(y,TS.pre);
-                                        if and(length(xx)>5 , length(yy)>5)
-                                            [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
-                                            [ccg1,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
-                                            cond1 = true;
-                                        else
-                                            cond1 = false;
-                                        end
-                                        
-                                        % --- Post ---
-                                        xx = Restrict(x,TS.post);
-                                        yy = Restrict(y,TS.post);
-                                        if and(length(xx)>5 , length(yy)>5)
-                                            [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
-                                            [ccg2,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
-                                            cond2 = true;
-                                        else
-                                            cond2 = false;
-                                        end
-                                        
-                                        if and(cond1,cond2)
-                                            Pre.aversive.ccgM1 = [Pre.aversive.ccgM1 , zscore(ccg1(:,1,2)./sum(ccg1(:,1,2)))];
-                                            Post.aversive.ccgM1 = [Post.aversive.ccgM1 , zscore(ccg2(:,1,2)./sum(ccg2(:,1,2)))];
-%                                             if conditional(i)
+%                     % ccg between members
+%                     if aversiveTS_run(1)<rewardTS_run(1)
+%                         TS.pre = [ripple_event.baseline(:,1) ripple_event.baseline(:,3)];
+%                         TS.post = [ripple_event.aversive(:,1) ripple_event.aversive(:,3)];
+%                         
+% %                         TS.pre = bursts.baseline;
+% %                         TS.post = bursts.aversive;                        
+%                     else
+%                         TS.pre = [ripple_event.reward(:,1) ripple_event.reward(:,3)];
+%                         TS.post = [ripple_event.aversive(:,1) ripple_event.aversive(:,3)];
+%                         
+% %                         TS.pre = bursts.reward;
+% %                         TS.post = bursts.aversive;                        
+%                     end
+%                     
+%                     load('react_coord_ripples_aversive.mat')
+%                     % between members
+%                     members = Thresholded.aversive(:,cond.both);
+%                     for i = 1 : sum(cond.both)
+%                         for ii = 1 : numberD
+%                             if members(ii,i)
+% %                                 break
+%                                 member1 = clusters.dHPC(ii);
+%                                 x = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
+%                                 for iii = 1 : numberV
+%                                     if members(iii+numberD,i)
+% %                                         break
+%                                         member2 = clusters.vHPC(iii);
+%                                         y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
+%                                         
+%                                         % --- Pre ---
+%                                         xx = Restrict(x,TS.pre);
+%                                         yy = Restrict(y,TS.pre);
+%                                         if and(length(xx)>5 , length(yy)>5)
+%                                             [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
+%                                             [ccg1,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
+%                                             cond1 = true;
+% 
+%                                             surrogate = surrogate_ccg(x,y,0.1,dur,sm,TS.pre);
+%                                             surrogate = quantile(surrogate,0.90);
+% 
+%                                             ccg1 = zscore(ccg1(:,1,2)./sum(ccg1(:,1,2)));
+%                                             [~,up] = min(abs(T-0.1));    [~,down] = min(abs(T-(-0.1)));
+%                                             
+%                                             increase1 = max(ccg1(down:up))>surrogate;
+%                                             clear surrogate up down s ids groups
+%                                         else
+%                                             cond1 = false;
+%                                         end
+%                                         
+%                                         % --- Post ---
+%                                         xx = Restrict(x,TS.post);
+%                                         yy = Restrict(y,TS.post);
+%                                         if and(length(xx)>5 , length(yy)>5)
+%                                             [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
+%                                             [ccg2,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
+%                                             cond2 = true;
+%                                             
+%                                             surrogate = surrogate_ccg(x,y,0.1,dur,sm,TS.post);
+%                                             surrogate = quantile(surrogate,0.90);
+%                                             
+%                                             ccg2 = zscore(ccg2(:,1,2)./sum(ccg2(:,1,2)));
+%                                             [~,up] = min(abs(T-0.1));    [~,down] = min(abs(T-(-0.1)));
+%                                             
+%                                             increase2 = max(ccg2(down:up))>surrogate; 
+%                                             clear surrogate up down s ids groups
+%                                         else
+%                                             cond2 = false;
+%                                         end
+%                                         
+%                                         if and(cond1,cond2)
+%                                             Pre.aversive.ccgM = [Pre.aversive.ccgM , (ccg1)];
+%                                             Post.aversive.ccgM = [Post.aversive.ccgM , (ccg2)];
+%                                             if and(not(increase1) , increase2)
+% %                                             if increase2
 %                                                 I.aversive = [I.aversive ; true , RBA(i,1)];
 %                                             else
 %                                                 I.aversive = [I.aversive ; false , RBA(i,1)];
 %                                             end
-                                        end
-                                        clear ccg1 ccg2 cond1 cond2
-                                        
-                                    end
-                                end
-                            end
-                        end
-                    end
+%                                         end
+%                                         clear ccg1 ccg2 cond1 cond2                                        
+% %                                         if and(cond1,cond2)
+% %                                             Pre.aversive.ccgM = [Pre.aversive.ccgM , zscore(ccg1)];
+% %                                             Post.aversive.ccgM = [Post.aversive.ccgM , zscore(ccg2(:,1,2))];
+% %                                             if conditional(i)
+% %                                                 I.aversive = [I.aversive ; true , RBA(i,1)];
+% %                                             else
+% %                                                 I.aversive = [I.aversive ; false , RBA(i,1)];
+% %                                             end
+% %                                         end
+% %                                         clear ccg1 ccg2 cond1 cond2
+%                                         
+%                                     end
+%                                 end
+%                             end
+%                         end
+%                     end
+                    
+%                     % between non-members
+%                     for i = 1 : sum(cond.both)
+%                         for ii = 1 : numberD
+%                             if (members(ii,i))
+%                                 member1 = clusters.dHPC(ii);
+%                                 x = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
+%                                 for iii = 1 : numberV
+%                                     if not(members(iii+numberD,i))
+%                                         member2 = clusters.vHPC(iii);
+%                                         y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
+%                                         
+%                                         % --- Pre ---
+%                                         xx = Restrict(x,TS.pre);
+%                                         yy = Restrict(y,TS.pre);
+%                                         if and(length(xx)>5 , length(yy)>5)
+%                                             [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
+%                                             [ccg1,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
+%                                             cond1 = true;
+%                                         else
+%                                             cond1 = false;
+%                                         end
+%                                         
+%                                         % --- Post ---
+%                                         xx = Restrict(x,TS.post);
+%                                         yy = Restrict(y,TS.post);
+%                                         if and(length(xx)>5 , length(yy)>5)
+%                                             [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
+%                                             [ccg2,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
+%                                             cond2 = true;
+%                                         else
+%                                             cond2 = false;
+%                                         end
+%                                         
+%                                         if and(cond1,cond2)
+%                                             Pre.aversive.ccgM1 = [Pre.aversive.ccgM1 , zscore(ccg1(:,1,2)./sum(ccg1(:,1,2)))];
+%                                             Post.aversive.ccgM1 = [Post.aversive.ccgM1 , zscore(ccg2(:,1,2)./sum(ccg2(:,1,2)))];
+% %                                             if conditional(i)
+% %                                                 I.aversive = [I.aversive ; true , RBA(i,1)];
+% %                                             else
+% %                                                 I.aversive = [I.aversive ; false , RBA(i,1)];
+% %                                             end
+%                                         end
+%                                         clear ccg1 ccg2 cond1 cond2
+%                                         
+%                                     end
+%                                 end
+%                             end
+%                         end
+%                     end
                                         
                     clear RBA
                     clear pks TS
@@ -465,219 +501,219 @@ for tt = 1:length(path)
             end
             
             
-            % --- Reward ---
-            if isfile('dorsalventral_assemblies_rewardVF.mat')
-                disp('Loading Reward template')
-                load('dorsalventral_assemblies_rewardVF.mat')
-                
-                Thresholded.reward = Th;
-                patterns.reward = pat;
-                clear cond Th pat
-                
-                patterns.reward = patterns.reward .* Thresholded.reward;
-                
-                % Detection of members
-                if not(isempty(patterns.reward))
-                    if numberD>0
-                        cond1 =  sum(Thresholded.reward(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
-                        cond2 =  sum(Thresholded.reward(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
-                        cond.dHPC = and(cond1 , not(cond2));
-                        cond.vHPC = and(cond2 , not(cond1));
-                        cond.both = and(cond1 , cond2); clear cond1 cond2
-                    else
-                        cond1 =  logical(zeros(1,size(Thresholded.reward,2))); %checking of dHPC SU
-                        cond2 =  logical(ones(1,size(Thresholded.reward,2))); %checking of vHPC SU
-                        cond.dHPC = and(cond1 , not(cond2));
-                        cond.vHPC = and(cond2 , not(cond1));
-                        cond.both = and(cond1 , cond2); clear cond1 cond2
-                    end
-                else
-                    cond1 =  false; %checking of dHPC SU
-                    cond2 =  logical(0); %checking of vHPC SU
-                    cond.dHPC = and(cond1 , not(cond2));
-                    cond.vHPC = and(cond2 , not(cond1));
-                    cond.both = and(cond1 , cond2); clear cond1 cond2
-                end
-                
-                
-                if sum(cond.both)>0
-                    %                     patterns.reward = patterns.reward(:,cond.both);
-                    if aversiveTS_run(1)<rewardTS_run(1)
-                        TS.pre = NREM.aversive;
-                        TS.post = NREM.reward;
-                        TS.run.run1 = movement.reward;
-                        TS.run.run2 = movement.aversive;
-                    else
-                        TS.pre = NREM.baseline;
-                        TS.post = NREM.reward;
-                        TS.run.run2 = movement.aversive;
-                    end
-                    %                     pks.reward = assemblies_peaks_joint(patterns.reward , cond.both , [bins' Spikes], Thresholded.reward, [numberD numberV]);
-                    pks.reward = assemblies_peaks([bins' Spikes] , patterns.reward(:,cond.both) , th);
-                    
-                    
-                    % Iteration across assemblies
-                    conditional = [];
-                    for i = 1 : size(pks.reward,1)
-                        % --- Pre ---
-                        y = Restrict(pks.reward{i}(:,1),TS.pre);
-                        if length(y)>5
-                            [pInc1 pDec1 surp1] = RippleModulation_assemblies(ripple_event.all,y,TS.pre);
-                            
-                            x1 = Restrict(ripple_event.all(:,2),TS.pre);
-                            [s,ids,groups] = CCGParameters(x1,ones(length(x1),1),y,ones(length(y),1)*2);
-                            [ccg1,T] = CCG(s,ids,'binSize',0.025,'duration',0.4,'smooth',1,'mode','ccg');
-                            cond1 = true;
-                        else
-                            cond1 = false;
-                        end
-                        
-                        % --- Post ---
-                        y = Restrict(pks.reward{i}(:,1),TS.post);
-                        if length(y)>5
-                            [pInc2 pDec2 surp2] = RippleModulation_assemblies(ripple_event.all,y,TS.post);
-                            
-                            x2 = Restrict(ripple_event.all(:,2),TS.post);
-                            [s,ids,groups] = CCGParameters(x2,ones(length(x2),1),y,ones(length(y),1)*2);
-                            [ccg2,T] = CCG(s,ids,'binSize',0.025,'duration',0.4,'smooth',1,'mode','ccg');
-                            cond2 = true;
-                        else
-                            cond2 = false;
-                        end
-                        
-                        if and(cond1,cond2)
-                            Pre.reward.ccg = [Pre.reward.ccg , zscore(ccg1(:,1,2)./0.025)./length(x1)] ;
-                            Pre.reward.iterator = [Pre.reward.iterator ; pInc1 pDec1] ;
-                            Post.reward.ccg = [Post.reward.ccg , zscore(ccg2(:,1,2)./0.025)./length(x2)] ;
-                            Post.reward.iterator = [Post.reward.iterator ; pInc2 pDec2] ;
-                            conditional = [conditional or(and(pInc1<0.05 , pInc2<0.05) , or(pInc1<0.05 , pInc2<0.05))];
-                        end
-                        clear y x pInc1 pInc2 pDec1 pDec2 surp1 surp2
-                        clear s ids groups ccg
-                    end
-                    clear pks TS
-                    
-                    
-                    % ccg between members
-                    if aversiveTS_run(1)<rewardTS_run(1)
-                        TS.pre = [ripple_event.aversive(:,1) ripple_event.aversive(:,3)];
-                        TS.post = [ripple_event.reward(:,1) ripple_event.reward(:,3)];
-
-%                         TS.pre = bursts.aversive;
-%                         TS.post = bursts.reward;
-                    else
-                        TS.pre = [ripple_event.baseline(:,1) ripple_event.baseline(:,3)];
-                        TS.post = [ripple_event.reward(:,1) ripple_event.reward(:,3)];
-
-%                         TS.pre = bursts.baseline;
-%                         TS.post = bursts.reward;
-                    end
-                    
-                    
-                    load('react_coord_ripples_reward.mat')
-                    members = Thresholded.reward(:,cond.both);
-                    % between members
-                    for i = 1 : sum(cond.both)
-                        for ii = 1 : numberD
-                            if members(ii,i)
-                                member1 = clusters.dHPC(ii);
-                                x = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
-                                for iii = 1 : numberV
-                                    if members(iii+numberD,i)
-                                        member2 = clusters.vHPC(iii);
-                                        y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
-                                        
-                                        % --- Pre ---
-                                        xx = Restrict(x,TS.pre);
-                                        yy = Restrict(y,TS.pre);
-                                        if and(length(xx)>5 , length(yy)>5)
-                                            [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
-                                            [ccg1,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
-                                            cond1 = true;
-                                        else
-                                            cond1 = false;
-                                        end
-                                        
-                                        % --- Post ---
-                                        xx = Restrict(x,TS.post);
-                                        yy = Restrict(y,TS.post);
-                                        if and(length(xx)>5 , length(yy)>5)
-                                            [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
-                                            [ccg2,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
-                                            cond2 = true;
-                                        else
-                                            cond2 = false;
-                                        end
-                                        
-                                        if and(cond1,cond2)
-                                            Pre.reward.ccgM = [Pre.reward.ccgM , zscore(ccg1(:,1,2)./sum(ccg1(:,1,2)))];
-                                            Post.reward.ccgM = [Post.reward.ccgM , zscore(ccg2(:,1,2)./sum(ccg2(:,1,2)))];
-                                            if conditional(i)
-                                                I.reward = [I.reward ; true , RBR(i,1)];
-                                            else
-                                                I.reward = [I.reward ; false , RBR(i,1)];
-                                            end
-                                        end
-                                        clear ccg1 ccg2 cond1 cond2
-                                        
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    
-                    % between non-members
-                    for i = 1 : sum(cond.both)
-                        for ii = 1 : numberD
-                            if (members(ii,i))
-                                member1 = clusters.dHPC(ii);
-                                x = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
-                                for iii = 1 : numberV
-                                    if not(members(iii+numberD,i))
-                                        member2 = clusters.vHPC(iii);
-                                        y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
-                                        
-                                        % --- Pre ---
-                                        xx = Restrict(x,TS.pre);
-                                        yy = Restrict(y,TS.pre);
-                                        if and(length(xx)>5 , length(yy)>5)
-                                            [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
-                                            [ccg1,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
-                                            cond1 = true;
-                                        else
-                                            cond1 = false;
-                                        end
-                                        
-                                        % --- Post ---
-                                        xx = Restrict(x,TS.post);
-                                        yy = Restrict(y,TS.post);
-                                        if and(length(xx)>5 , length(yy)>5)
-                                            [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
-                                            [ccg2,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
-                                            cond2 = true;
-                                        else
-                                            cond2 = false;
-                                        end
-                                        
-                                        if and(cond1,cond2)
-                                            Pre.reward.ccgM1 = [Pre.reward.ccgM1 , zscore(ccg1(:,1,2)./sum(ccg1(:,1,2)))];
-                                            Post.reward.ccgM1 = [Post.reward.ccgM1 , zscore(ccg2(:,1,2)./sum(ccg2(:,1,2)))];
+%             % --- Reward ---
+%             if isfile('dorsalventral_assemblies_rewardVF.mat')
+%                 disp('Loading Reward template')
+%                 load('dorsalventral_assemblies_rewardVF.mat')
+%                 
+%                 Thresholded.reward = Th;
+%                 patterns.reward = pat;
+%                 clear cond Th pat
+%                 
+%                 patterns.reward = patterns.reward .* Thresholded.reward;
+%                 
+%                 % Detection of members
+%                 if not(isempty(patterns.reward))
+%                     if numberD>0
+%                         cond1 =  sum(Thresholded.reward(1:size(clusters.dHPC,1),:),1)>0; %checking of dHPC SU
+%                         cond2 =  sum(Thresholded.reward(size(clusters.dHPC,1)+1:end,:),1)>0; %checking of vHPC SU
+%                         cond.dHPC = and(cond1 , not(cond2));
+%                         cond.vHPC = and(cond2 , not(cond1));
+%                         cond.both = and(cond1 , cond2); clear cond1 cond2
+%                     else
+%                         cond1 =  logical(zeros(1,size(Thresholded.reward,2))); %checking of dHPC SU
+%                         cond2 =  logical(ones(1,size(Thresholded.reward,2))); %checking of vHPC SU
+%                         cond.dHPC = and(cond1 , not(cond2));
+%                         cond.vHPC = and(cond2 , not(cond1));
+%                         cond.both = and(cond1 , cond2); clear cond1 cond2
+%                     end
+%                 else
+%                     cond1 =  false; %checking of dHPC SU
+%                     cond2 =  logical(0); %checking of vHPC SU
+%                     cond.dHPC = and(cond1 , not(cond2));
+%                     cond.vHPC = and(cond2 , not(cond1));
+%                     cond.both = and(cond1 , cond2); clear cond1 cond2
+%                 end
+%                 
+%                 
+%                 if sum(cond.both)>0
+%                     %                     patterns.reward = patterns.reward(:,cond.both);
+%                     if aversiveTS_run(1)<rewardTS_run(1)
+%                         TS.pre = NREM.aversive;
+%                         TS.post = NREM.reward;
+%                         TS.run.run1 = movement.reward;
+%                         TS.run.run2 = movement.aversive;
+%                     else
+%                         TS.pre = NREM.baseline;
+%                         TS.post = NREM.reward;
+%                         TS.run.run2 = movement.aversive;
+%                     end
+%                     %                     pks.reward = assemblies_peaks_joint(patterns.reward , cond.both , [bins' Spikes], Thresholded.reward, [numberD numberV]);
+%                     pks.reward = assemblies_peaks([bins' Spikes] , patterns.reward(:,cond.both) , th);
+%                     
+%                     
+%                     % Iteration across assemblies
+%                     conditional = [];
+%                     for i = 1 : size(pks.reward,1)
+%                         % --- Pre ---
+%                         y = Restrict(pks.reward{i}(:,1),TS.pre);
+%                         if length(y)>5
+%                             [pInc1 pDec1 surp1] = RippleModulation_assemblies(ripple_event.all,y,TS.pre);
+%                             
+%                             x1 = Restrict(ripple_event.all(:,2),TS.pre);
+%                             [s,ids,groups] = CCGParameters(x1,ones(length(x1),1),y,ones(length(y),1)*2);
+%                             [ccg1,T] = CCG(s,ids,'binSize',0.025,'duration',0.4,'smooth',1,'mode','ccg');
+%                             cond1 = true;
+%                         else
+%                             cond1 = false;
+%                         end
+%                         
+%                         % --- Post ---
+%                         y = Restrict(pks.reward{i}(:,1),TS.post);
+%                         if length(y)>5
+%                             [pInc2 pDec2 surp2] = RippleModulation_assemblies(ripple_event.all,y,TS.post);
+%                             
+%                             x2 = Restrict(ripple_event.all(:,2),TS.post);
+%                             [s,ids,groups] = CCGParameters(x2,ones(length(x2),1),y,ones(length(y),1)*2);
+%                             [ccg2,T] = CCG(s,ids,'binSize',0.025,'duration',0.4,'smooth',1,'mode','ccg');
+%                             cond2 = true;
+%                         else
+%                             cond2 = false;
+%                         end
+%                         
+%                         if and(cond1,cond2)
+%                             Pre.reward.ccg = [Pre.reward.ccg , zscore(ccg1(:,1,2)./0.025)./length(x1)] ;
+%                             Pre.reward.iterator = [Pre.reward.iterator ; pInc1 pDec1] ;
+%                             Post.reward.ccg = [Post.reward.ccg , zscore(ccg2(:,1,2)./0.025)./length(x2)] ;
+%                             Post.reward.iterator = [Post.reward.iterator ; pInc2 pDec2] ;
+%                             conditional = [conditional or(and(pInc1<0.05 , pInc2<0.05) , or(pInc1<0.05 , pInc2<0.05))];
+%                         end
+%                         clear y x pInc1 pInc2 pDec1 pDec2 surp1 surp2
+%                         clear s ids groups ccg
+%                     end
+%                     clear pks TS
+%                     
+%                     
+%                     % ccg between members
+%                     if aversiveTS_run(1)<rewardTS_run(1)
+%                         TS.pre = [ripple_event.aversive(:,1) ripple_event.aversive(:,3)];
+%                         TS.post = [ripple_event.reward(:,1) ripple_event.reward(:,3)];
+% 
+% %                         TS.pre = bursts.aversive;
+% %                         TS.post = bursts.reward;
+%                     else
+%                         TS.pre = [ripple_event.baseline(:,1) ripple_event.baseline(:,3)];
+%                         TS.post = [ripple_event.reward(:,1) ripple_event.reward(:,3)];
+% 
+% %                         TS.pre = bursts.baseline;
+% %                         TS.post = bursts.reward;
+%                     end
+%                     
+%                     
+%                     load('react_coord_ripples_reward.mat')
+%                     members = Thresholded.reward(:,cond.both);
+%                     % between members
+%                     for i = 1 : sum(cond.both)
+%                         for ii = 1 : numberD
+%                             if members(ii,i)
+%                                 member1 = clusters.dHPC(ii);
+%                                 x = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
+%                                 for iii = 1 : numberV
+%                                     if members(iii+numberD,i)
+%                                         member2 = clusters.vHPC(iii);
+%                                         y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
+%                                         
+%                                         % --- Pre ---
+%                                         xx = Restrict(x,TS.pre);
+%                                         yy = Restrict(y,TS.pre);
+%                                         if and(length(xx)>5 , length(yy)>5)
+%                                             [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
+%                                             [ccg1,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
+%                                             cond1 = true;
+%                                         else
+%                                             cond1 = false;
+%                                         end
+%                                         
+%                                         % --- Post ---
+%                                         xx = Restrict(x,TS.post);
+%                                         yy = Restrict(y,TS.post);
+%                                         if and(length(xx)>5 , length(yy)>5)
+%                                             [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
+%                                             [ccg2,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
+%                                             cond2 = true;
+%                                         else
+%                                             cond2 = false;
+%                                         end
+%                                         
+%                                         if and(cond1,cond2)
+%                                             Pre.reward.ccgM = [Pre.reward.ccgM , zscore(ccg1(:,1,2)./sum(ccg1(:,1,2)))];
+%                                             Post.reward.ccgM = [Post.reward.ccgM , zscore(ccg2(:,1,2)./sum(ccg2(:,1,2)))];
 %                                             if conditional(i)
 %                                                 I.reward = [I.reward ; true , RBR(i,1)];
 %                                             else
 %                                                 I.reward = [I.reward ; false , RBR(i,1)];
 %                                             end
-                                        end
-                                        clear ccg1 ccg2 cond1 cond2
-                                        
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    clear RBR
-                end
-            end
+%                                         end
+%                                         clear ccg1 ccg2 cond1 cond2
+%                                         
+%                                     end
+%                                 end
+%                             end
+%                         end
+%                     end
+%                     
+%                     % between non-members
+%                     for i = 1 : sum(cond.both)
+%                         for ii = 1 : numberD
+%                             if (members(ii,i))
+%                                 member1 = clusters.dHPC(ii);
+%                                 x = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
+%                                 for iii = 1 : numberV
+%                                     if not(members(iii+numberD,i))
+%                                         member2 = clusters.vHPC(iii);
+%                                         y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
+%                                         
+%                                         % --- Pre ---
+%                                         xx = Restrict(x,TS.pre);
+%                                         yy = Restrict(y,TS.pre);
+%                                         if and(length(xx)>5 , length(yy)>5)
+%                                             [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
+%                                             [ccg1,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
+%                                             cond1 = true;
+%                                         else
+%                                             cond1 = false;
+%                                         end
+%                                         
+%                                         % --- Post ---
+%                                         xx = Restrict(x,TS.post);
+%                                         yy = Restrict(y,TS.post);
+%                                         if and(length(xx)>5 , length(yy)>5)
+%                                             [s,ids,groups] = CCGParameters(xx,ones(length(xx),1),yy,ones(length(yy),1)*2);
+%                                             [ccg2,T] = CCG(s,ids,'binSize',0.003,'duration',dur,'smooth',sm,'mode','ccg');
+%                                             cond2 = true;
+%                                         else
+%                                             cond2 = false;
+%                                         end
+%                                         
+%                                         if and(cond1,cond2)
+%                                             Pre.reward.ccgM1 = [Pre.reward.ccgM1 , zscore(ccg1(:,1,2)./sum(ccg1(:,1,2)))];
+%                                             Post.reward.ccgM1 = [Post.reward.ccgM1 , zscore(ccg2(:,1,2)./sum(ccg2(:,1,2)))];
+% %                                             if conditional(i)
+% %                                                 I.reward = [I.reward ; true , RBR(i,1)];
+% %                                             else
+% %                                                 I.reward = [I.reward ; false , RBR(i,1)];
+% %                                             end
+%                                         end
+%                                         clear ccg1 ccg2 cond1 cond2
+%                                         
+%                                     end
+%                                 end
+%                             end
+%                         end
+%                     end
+%                     clear RBR
+%                 end
+%             end
         end
         
         
@@ -702,55 +738,26 @@ end
 Pre.aversive.ccgM(:,sum(isnan(Post.aversive.ccgM))>0) = [];
 I.aversive(sum(isnan(Post.aversive.ccgM))>0,:) = [];
 Post.aversive.ccgM(:,sum(isnan(Post.aversive.ccgM))>0) = [];
-% 
-% tmp = [];
-% for i = 1 : size(Post.aversive.ccgM,2)
-%     mm = Post.aversive.ccgM1(:,randperm(size(Post.aversive.ccgM1,2)));
-%     mm(:,sum(isnan(mm))>0) = [];
-%     mm = mm(:,1:size(Post.aversive.ccgM,2));
-%     
-%     tmp = [tmp , mm(:,23)];
-% end
-% Post.aversive.ccgM1 = tmp; clear tmp
-% 
-% tmp = [];
-% for i = 1 : size(Pre.aversive.ccgM,2)
-%     mm = Pre.aversive.ccgM1(:,randperm(size(Pre.aversive.ccgM1,2)));
-%     mm(:,sum(isnan(mm))>0) = [];
-%     mm = mm(:,1:size(Pre.aversive.ccgM,2));
-%     
-%     tmp = [tmp , mm(:,23)];
-% end
-% Pre.aversive.ccgM1 = tmp; clear tmp
-% 
-% 
+
 % Reward
 Pre.reward.ccgM(:,sum(isnan(Post.reward.ccgM))>0) = [];
 I.reward(sum(isnan(Post.reward.ccgM))>0,:) = [];
 Post.reward.ccgM(:,sum(isnan(Post.reward.ccgM))>0) = [];
-% 
-% tmp = [];
-% for i = 1 : size(Post.reward.ccgM,2)
-%     mm = Post.reward.ccgM1(:,randperm(size(Post.reward.ccgM1,2)));
-%     mm(:,sum(isnan(mm))>0) = [];
-%     mm = mm(:,1:size(Post.reward.ccgM,2));
-%     
-%     tmp = [tmp , mm(:,23)];
-% end
-% Post.reward.ccgM1 = tmp; clear tmp
-% 
-% tmp = [];
-% for i = 1 : size(Pre.reward.ccgM,2)
-%     mm = Pre.reward.ccgM1(:,randperm(size(Pre.reward.ccgM1,2)));
-%     mm(:,sum(isnan(mm))>0) = [];
-%     mm = mm(:,1:size(Pre.reward.ccgM,2));
-%     
-%     tmp = [tmp , mm(:,23)];
-% end
-% Pre.reward.ccgM1 = tmp; clear tmp
 
 
 end
+% 
+% m = nanmean(Post.aversive.ccgM(:,logical(I.aversive(:,1)))');
+% mm = nanmean(Pre.aversive.ccgM(:,logical(I.aversive(:,1)))');
+% s = nansem(Post.aversive.ccgM(:,logical(I.aversive(:,1)))');
+% ss = nansem(Pre.aversive.ccgM(:,logical(I.aversive(:,1)))');
+% 
+% plot(T,m,'r'),hold on,
+% ciplot(m-s,m+s,T,'r'),alpha 0.5
+% 
+% plot(T,mm,'k')
+% ciplot(mm-ss,mm+ss,T,'k'),alpha 0.5
+%  
 % 
 % 
 % % Cleaning the data
@@ -929,3 +936,25 @@ end
 % xlim([-0.3 0.3])
 % % ylim([-0.7 2.2])
 % xline(0,'--')
+% 
+% 
+% 
+% 
+% 
+%% Plot assemblies activity
+% C1 = nanmean(Pre.aversive.ccg');
+% S1 = nansem(Pre.aversive.ccg');
+% 
+% C2 = nanmean(Post.aversive.ccg');
+% S2 = nansem(Post.aversive.ccg');
+% 
+% plot(T,(C1),'k')
+% hold on
+% ciplot(C1-S1 , C1+S1 , T , 'k'),alpha 0.5
+% plot(T,(C2),'r')
+% ciplot(C2-S2 , C2+S2 , T , 'r'),alpha 0.5
+% 
+% 
+% 
+% 
+% 

@@ -3611,17 +3611,6 @@ sgtitle('Skaggs')
     title('vhpc'); 
     boxplot(vhpc_skaggs(:,1), vhpc_skaggs(:,2))
     xticklabels({'Ave','Rew'});
-    
-    
-    
-    data=[dhpc_skaggs(dhpc_skaggs(:,2)==1,1), dhpc_skaggs(dhpc_skaggs(:,2)==2,1)];
-    data(any(isnan(data), 2), :) = [];
-
-[p,~,stats] =  friedman(data,1); 
-c = multcompare(stats);
-tbl = array2table(c,"VariableNames", ...
-    ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])    
-     
 
 %% SUBSAMPLED PLOTS
 % Load subsampled parameters and creates matrix to plot and stats.
