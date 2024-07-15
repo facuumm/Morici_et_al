@@ -680,8 +680,8 @@ end
 % 
 % 
 % 
-% %% Plor cumulatives
-% % Aversive
+%% Plor cumulatives
+% Aversive
 % figure,
 % subplot(121)
 % cdfplot(cumA),hold on
@@ -691,7 +691,7 @@ end
 % 
 % subplot(122)
 % cdfplot(cumA2),hold on
-% cdfplot(cumA2P),
+% cdfplot(cumAP),
 % xlim([0 1.2]),
 % [h p] = kstest2(cumA2,cumA2P,'Tail','smaller')
 % 

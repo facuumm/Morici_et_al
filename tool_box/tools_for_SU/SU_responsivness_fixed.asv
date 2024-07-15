@@ -90,23 +90,23 @@ for i = 1 : size(clusters,1)
     end
 
     % Responsivness if Zscore or Gain
-    if and(strcmp(normalization,'zscore'), exist('th','var'))
-        [h start] = min(abs(bins-period(1)));
-        [h stop] = min(abs(bins-period(2)));
-        
-        if mean(final(start:stop)) >= th
-            responsive = [responsive , 1];
-            
-        elseif mean(final(start:stop)) <= th*-1
-            responsive = [responsive , -1];
-            
-        else
-            responsive = [responsive , 0];
-        end
-    end
+%     if and(strcmp(normalization,'zscore'), exist('th','var'))
+%         [h start] = min(abs(bins-period(1)));
+%         [h stop] = min(abs(bins-period(2)));
+%         
+%         if mean(final(start:stop)) >= th
+%             responsive = [responsive , 1];
+%             
+%         elseif mean(final(start:stop)) <= th*-1
+%             responsive = [responsive , -1];
+%             
+%         else
+%             responsive = [responsive , 0];
+%         end
+%     end
     
     % Responsivness if none normalization
-        if or(strcmp(normalization,'none') , strcmp(normalization,'gain'))
+        if or(strcmp(normalization,'zscore') , strcmp(normalization,'gain'))
             [h start] = min(abs(bins-period(1)));
             [h stop] = min(abs(bins-period(2)));
         
