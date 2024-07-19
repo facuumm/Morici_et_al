@@ -798,11 +798,11 @@ for tt = 1:length(path)
                 if sum(DV)>=1
                     down = z(i,1);
                     up = max(max([z1(DV,:) ; z(i,:)]));
-                    bursts.coordinated.DV = [bursts.coordinated.DV ; down up]; clear up down
+                    bursts.cooridnated.DV = [bursts.cooridnated.DV ; down up]; clear up down
                 elseif sum(VD)>=1
                     down = min(min(z1(VD,:)));
                     up = max(max([z1(VD,:) ; z(i,:)]));
-                    bursts.coordinated.VD = [bursts.coordinated.VD ; down up]; clear up down
+                    bursts.cooridnated.VD = [bursts.cooridnated.VD ; down up]; clear up down
                 end
                 
             end

@@ -3993,12 +3993,13 @@ Xedges = 60; %number of bins for RateMap construction - 3cm bin
 sigma = 2;%round(15/(180/Xedges)); %defined for gauss kernel of 15cm
 binSize = 0.001; % bin size for replay events detection
 bin_size = 1; % to bin pos ans spks in between/within  
+criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
 % Behavior
 minimal_speed = 2.5;% minimal speed to detect quite periods
 minimal_speed_time = 2; % minimal time to detect quite periods
 
 
-for tt = 1:length(path)
+for tt = 2:length(path)
     %List of folders from the path
     files = dir(path{tt});
     % Get a logical vector that tells which is a directory.
@@ -4007,7 +4008,7 @@ for tt = 1:length(path)
     subFolders = files(dirFlags);
     clear files dirFlags
     
-    for t = 1 : length(subFolders)-2
+    for t = 2 : length(subFolders)-2
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
@@ -4144,6 +4145,43 @@ for tt = 1:length(path)
         movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
         movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
         clear tmp start stop
+        %Restrict pos to inside maze and only movement periods
+        %---Aversive----
+        pos_ave = behavior.pos.aversive(:,1:2); 
+        pos_ave(:,2) = pos_ave(:,2)-min(pos_ave(:,2)); pos_ave(:,2) = pos_ave(:,2)/max(pos_ave(:,2)); %normalization of position 
+        in_maze = ToIntervals(pos_ave(:,1),and(pos_ave(:,2)>0.09 , pos_ave(:,2)<1-0.09));% eliminating the extrems of the maze
+                    
+       %Check lenght of in_maze segments to define real laps
+        in_lapA = []; % keeps only full laps (maybe too restrictive)
+        for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_ave(pos_ave(:,1)==ini,2); 
+                        fin_pos = pos_ave(pos_ave(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>0.6
+                             in_lapA = [in_lapA;in_maze(ix,:)]; 
+                        end
+        end
+        
+        pos_ave = Restrict(pos_ave,in_lapA);pos_ave = Restrict(pos_ave, movement.aversive); % Restrict pos to movement periods and laps
+       
+         %---Rewarded----
+        pos_rew = behavior.pos.reward(:,1:2);
+        pos_rew(:,2) = pos_rew(:,2)-min(pos_rew(:,2)); pos_rew(:,2) = pos_rew(:,2)/max(pos_rew(:,2)); %normalization of position 
+        in_maze = ToIntervals(pos_rew(:,1),and(pos_rew(:,2)>0.09 , pos_rew(:,2)<1-0.09));% eliminating the extrems of the maze (10cm-reward box)
+               
+        %Check lenght of in_maze segments to define real laps
+        in_lapR = []; 
+        for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_rew(pos_rew(:,1)==ini,2); 
+                        fin_pos = pos_rew(pos_rew(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>0.6
+                             in_lapR = [in_lapR;in_maze(ix,:)]; 
+                        end
+        end 
+        pos_rew = Restrict(pos_rew,in_lapR); pos_rew = Restrict(pos_rew , movement.reward);
 
         %% Spikes
         %Load Units
@@ -4188,7 +4226,7 @@ for tt = 1:length(path)
 
         % Select pc from already run
         try
-            load('dHPC_pc_skaggs_pos.mat');
+            load('dHPC_pc_skaggs_circular.mat');
             dhpc_pc = [];
             for d=1:size(dHPC,2)
                 pc = dHPC{d}; 
@@ -4204,86 +4242,52 @@ for tt = 1:length(path)
                 spks = spks_dHPC(spks_dHPC(:,1)==cluster,2); % select tspk from cluster
               
             
-                % --- Aversive ---
-            	 = spks; 
-                pos_tmp = behavior.pos.aversive(:,1:2); 
-                in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<180));% eliminating the extrems of the maze
-                    
-                %Check lenght of in_maze segments to define real laps
-                in_lapA = []; % keeps only full laps (maybe too restrictive)
-             for ix=1:size(in_maze,1)
-                        ini = in_maze(ix,1);
-                        fin = in_maze(ix,2);
-                        ini_pos = pos_tmp(pos_tmp(:,1)==ini,2); 
-                        fin_pos = pos_tmp(pos_tmp(:,1)==fin,2); 
-                        if abs(fin_pos-ini_pos)>100
-                             in_lapA = [in_lapA;in_maze(ix,:)]; 
-                        end
-             end
- 
+               % --- Aversive ---
+                spks_ave = spks; 
                 %Restrict spk and position to laps and movement periods
-                spks_tmp = Restrict(spks_tmp,in_lapA);spks_tmp = Restrict(spks_tmp , movement.aversive); % Restrict spikes to movement periods
-                pos_tmp = Restrict(pos_tmp,in_lapA);
-                pos_tmp = Restrict(pos_tmp, movement.aversive); % Restrict pos to movement periods
-
-                pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
-  
-                %Firing curve construction
-                [curveA , statsA] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4, 'minPeak' , 0.2);
-                curveA_dhpc = curveA.rate; 
+                spks_ave = Restrict(spks_ave,in_lapA);spks_ave = Restrict(spks_ave , movement.aversive); % Restrict spikes to movement periods and laps
+               
+                % --- Reward ---
+                spks_rew = spks; 
+                %Restrict spk  to laps and movement periods
+                spks_rew = Restrict(spks_rew,in_lapR); spks_rew = Restrict(spks_rew, movement.reward); % Restrict to movement periods
+                     
+   
+                %Checking pc criteria
+                % 1. Mean firing rate above tresh.
+                % 2.Skaggs > skaggs random. 
+                % 3. At least 1 pf > 4 bins in one of the cond.  
+     
+                [curveA , statsA] = FiringCurve(pos_ave , spks_ave , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 6, 'minPeak' , 0.2);
+                [curveR , statsR] = FiringCurve(pos_rew , spks_rew , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 6, 'minPeak' , 0.2);
 
                     
             %%%%%%% PLOT
             figure; hold on; 
             sgtitle(['dHPC ',session(end-14:end),' id ',num2str(cluster),' iteration ',num2str(ii)])
-            subplot(4,2,[1 5]); hold on; plot(pos_tmp(:,2),pos_tmp(:,1),'color','red');hold on; axis tight;
-            title('Aversive');
+            subplot(4,2,[1 5]); hold on; plot(pos_ave(:,2),pos_ave(:,1),'color','red');hold on; axis tight;
+            title('Aversive'); ylabel('Laps');
             %Find interpolated position of each spike:
-            xs = interp1(pos_tmp(:,1),pos_tmp(:,2),spks_tmp); scatter(xs,spks_tmp,'filled', 'MarkerFaceColor',[.3 .3 .3]); 
+            xs = interp1(pos_ave(:,1),pos_ave(:,2),spks_ave); s= scatter(xs,spks_ave,'filled','Marker','.', 'MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor',[.3 .3 .3]); 
             %Fr map 
-            subplot(4,2,7); hold on;imagesc(curveA.rate), colormap 'jet';
+            subplot(4,2,7); hold on;plot(curveA.rate,'Color',[.3 .3 .3]);ylabel('Fr(Hz)');xlabel('Spatial Bins');
   
-            % --- Reward ---
-            spks_tmp = spks; 
-            pos_tmp = behavior.pos.reward(:,1:2);
-            in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<180));% eliminating the extrems of the maze
-                    
-            %Check lenght of in_maze segments to define real laps
-            in_lapR = []; 
-          for ix=1:size(in_maze,1)
-                        ini = in_maze(ix,1);
-                        fin = in_maze(ix,2);
-                        ini_pos = pos_tmp(pos_tmp(:,1)==ini,2); 
-                        fin_pos = pos_tmp(pos_tmp(:,1)==fin,2); 
-                        if abs(fin_pos-ini_pos)>100
-                             in_lapR = [in_lapR;in_maze(ix,:)]; 
-                        end
-          end 
-                    
-
-            %Restrict spks and pos to valid laps 
-            spks_tmp = Restrict(spks_tmp,in_lapR); spks_tmp = Restrict(spks_tmp, movement.reward); % Restrict to movement periods
-            pos_tmp = Restrict(pos_tmp,in_lapR); pos_tmp = Restrict(pos_tmp , movement.reward);
-            pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
-
-            %Firing curve construction
-            [curveR , statsR] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
-            curveR_dhpc = curveR.rate;
-                    
-            subplot(4,2,[2 6]); hold on; plot(pos_tmp(:,2),pos_tmp(:,1),'color',[0.175 0.54 0.60] );hold on; axis tight;
-            title('Reward');
+           
+            subplot(4,2,[2 6]); hold on; plot(pos_rew(:,2),pos_rew(:,1),'color',[0.175 0.54 0.60] );hold on; axis tight;
+            title('Reward'); ylabel('Laps');
             %Find interpolated position of each spike:
-            xs = interp1(pos_tmp(:,1),pos_tmp(:,2),spks_tmp); scatter(xs,spks_tmp,'filled', 'MarkerFaceColor',[.3 .3 .3]); 
+            xs = interp1(pos_rew(:,1),pos_rew(:,2),spks_rew); scatter(xs,spks_rew,'filled','Marker','.', 'MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor',[.3 .3 .3]); 
             %Fr map 
-            subplot(4,2,8); hold on;imagesc(curveR.rate), colormap 'jet';
+            subplot(4,2,8); hold on;plot(curveR.rate,'Color',[.3 .3 .3]);ylabel('Fr(Hz)');xlabel('Spatial Bins');
             end
         catch 
             dHPC = []; disp(['No dHPC_pc.mat file in ',session]);
 
         end
         
+        
         try
-            load('vHPC_pc_skaggs_pos.mat');
+            load('vHPC_pc_skaggs_circular.mat');
             vhpc_pc = [];
             for d=1:size(vHPC,2)
                 pc = vHPC{d}; 
@@ -4295,84 +4299,52 @@ for tt = 1:length(path)
             disp('Plot vHPC Firing rate map')
           
             for ii=1:size(group_vHPC,1)
+                
                 cluster = group_vHPC(ii,1);
-
                 spks = spks_vHPC(spks_vHPC(:,1)==cluster,2); % select tspk from cluster
               
             
-                % --- Aversive ---
-                spks_tmp = spks; 
-                pos_tmp = behavior.pos.aversive(:,1:2); 
-                in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<180));% eliminating the extrems of the maze
-                    
-                %Check lenght of in_maze segments to define real laps
-                in_lapA = []; % keeps only full laps (maybe too restrictive)
-             for ix=1:size(in_maze,1)
-                        ini = in_maze(ix,1);
-                        fin = in_maze(ix,2);
-                        ini_pos = pos_tmp(pos_tmp(:,1)==ini,2); 
-                        fin_pos = pos_tmp(pos_tmp(:,1)==fin,2); 
-                        if abs(fin_pos-ini_pos)>100
-                             in_lapA = [in_lapA;in_maze(ix,:)]; 
-                        end
-             end
- 
+               % --- Aversive ---
+                spks_ave = spks; 
                 %Restrict spk and position to laps and movement periods
-                spks_tmp = Restrict(spks_tmp,in_lapA);spks_tmp = Restrict(spks_tmp , movement.aversive); % Restrict spikes to movement periods
-                pos_tmp = Restrict(pos_tmp,in_lapA);
-                pos_tmp = Restrict(pos_tmp, movement.aversive); % Restrict pos to movement periods
-
-                pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
-  
-                %Firing curve construction
-                [curveA , statsA] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4, 'minPeak' , 0.2);
-                curveA_dhpc = curveA.rate; 
+                spks_ave = Restrict(spks_ave,in_lapA);spks_ave = Restrict(spks_ave , movement.aversive); % Restrict spikes to movement periods and laps
+               
+                % --- Reward ---
+                spks_rew = spks; 
+                %Restrict spk  to laps and movement periods
+                spks_rew = Restrict(spks_rew,in_lapR); spks_rew = Restrict(spks_rew, movement.reward); % Restrict to movement periods
+                     
+   
+                %Checking pc criteria
+                % 1. Mean firing rate above tresh.
+                % 2.Skaggs > skaggs random. 
+                % 3. At least 1 pf > 4 bins in one of the cond.  
+     
+                [curveA , statsA] = FiringCurve(pos_ave , spks_ave , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 6, 'minPeak' , 0.2);
+                [curveR , statsR] = FiringCurve(pos_rew , spks_rew , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 6, 'minPeak' , 0.2);
 
                     
             %%%%%%% PLOT
             figure; hold on; 
             sgtitle(['vHPC ',session(end-14:end),' id ',num2str(cluster),' iteration ',num2str(ii)])
-            subplot(4,2,[1 5]); hold on; plot(pos_tmp(:,2),pos_tmp(:,1),'color', 'red');hold on; axis tight;
-            title('Aversive');
+            subplot(4,2,[1 5]); hold on; plot(pos_ave(:,2),pos_ave(:,1),'color','red');hold on; axis tight;
+            title('Aversive'); ylabel('Laps');
             %Find interpolated position of each spike:
-            xs = interp1(pos_tmp(:,1),pos_tmp(:,2),spks_tmp); scatter(xs,spks_tmp,'filled', 'MarkerFaceColor',[.3 .3 .3] ); 
+            xs = interp1(pos_ave(:,1),pos_ave(:,2),spks_ave); s= scatter(xs,spks_ave,'filled','Marker','.', 'MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor',[.3 .3 .3]); 
             %Fr map 
-            subplot(4,2,7); hold on;imagesc(curveA.rate), colormap 'jet';
+            subplot(4,2,7); hold on;plot(curveA.rate,'Color',[.3 .3 .3]);ylabel('Fr(Hz)');xlabel('Spatial Bins');
   
-            % --- Reward ---
-            spks_tmp = spks; 
-            pos_tmp = behavior.pos.reward(:,1:2);
-            in_maze = ToIntervals(pos_tmp(:,1),and(pos_tmp(:,2)>30 , pos_tmp(:,2)<180));% eliminating the extrems of the maze
-                    
-            %Check lenght of in_maze segments to define real laps
-            in_lapR = []; 
-          for ix=1:size(in_maze,1)
-                        ini = in_maze(ix,1);
-                        fin = in_maze(ix,2);
-                        ini_pos = pos_tmp(pos_tmp(:,1)==ini,2); 
-                        fin_pos = pos_tmp(pos_tmp(:,1)==fin,2); 
-                        if abs(fin_pos-ini_pos)>100
-                             in_lapR = [in_lapR;in_maze(ix,:)]; 
-                        end
-          end 
-                    
-
-            %Restrict spks and pos to valid laps 
-            spks_tmp = Restrict(spks_tmp,in_lapR); spks_tmp = Restrict(spks_tmp, movement.reward); % Restrict to movement periods
-            pos_tmp = Restrict(pos_tmp,in_lapR); pos_tmp = Restrict(pos_tmp , movement.reward);
-            pos_tmp(:,2) = pos_tmp(:,2)-min(pos_tmp(:,2)); pos_tmp(:,2) = pos_tmp(:,2)/max(pos_tmp(:,2)); %normalization of position
-
-            %Firing curve construction
-            [curveR , statsR] = FiringCurve(pos_tmp , spks_tmp , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2);
-            curveR_dhpc = curveR.rate;
-                    
-            subplot(4,2,[2 6]); hold on; plot(pos_tmp(:,2),pos_tmp(:,1),'color',[0.175 0.54 0.60]);hold on; axis tight;
-            title('Reward');
+           
+            subplot(4,2,[2 6]); hold on; plot(pos_rew(:,2),pos_rew(:,1),'color',[0.175 0.54 0.60] );hold on; axis tight;
+            title('Reward'); ylabel('Laps');
             %Find interpolated position of each spike:
-            xs = interp1(pos_tmp(:,1),pos_tmp(:,2),spks_tmp); scatter(xs,spks_tmp,'filled', 'MarkerFaceColor',[.3 .3 .3]); 
+            xs = interp1(pos_rew(:,1),pos_rew(:,2),spks_rew); scatter(xs,spks_rew,'filled','Marker','.', 'MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor',[.3 .3 .3]); 
             %Fr map 
-            subplot(4,2,8); hold on;imagesc(curveR.rate), colormap 'jet';
-       end
+            subplot(4,2,8); hold on;plot(curveR.rate,'Color',[.3 .3 .3]);ylabel('Fr(Hz)');xlabel('Spatial Bins');
+                
+                
+ 
+            end
 
         catch
             vHPC= []; disp(['No vHPC_pc.mat file in ',session]);
@@ -4827,3 +4799,62 @@ for tt = 1:length(path)
      
 end 
 
+%% # PC per session 
+clear
+clc
+close all
+% Parameters
+path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\ready';'\\Maryjackson\e\Rat103\usable';'\\Maryjackson\e\Rat132\recordings\in_pyr'; '\\Maryjackson\e\Rat165\in_pyr'; ...
+    '\\Maryjackson\e\Rat126\Ephys\in_Pyr'};%List of folders from the path
+
+%Output matrix 
+pc_session= [];
+ind_global=1;
+
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+    rat = str2num(subFolders(3).name(4:6));
+    
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd([session,'\Spikesorting'])
+        %Loading pc matrix of the session
+        s= str2num(session(end-7:end));
+        
+        disp('Uploading session pc matrix');
+        pc_session(ind_global,1) =rat; 
+        pc_session(ind_global,2) =s; 
+        try
+            load('dHPC_pc_skaggs_circular.mat');%'dHPC_pc_skaggs_pos.mat'
+             %Save session parameters 
+           
+            pc_session(ind_global,3) =size(dHPC,2); 
+            
+        catch 
+            dHPC = []; disp(['No dHPC_pc_lap.mat file in ',session]);
+        end 
+        
+        try
+            load('vHPC_pc_skaggs_circular.mat');%'vHPC_pc_skaggs_pos.mat'
+            pc_session(ind_global,4) =size(vHPC,2); 
+        catch
+            vHPC= []; disp(['No vHPC_pc_lap.mat file in ',session]);
+        end
+        ind_global = ind_global+1; 
+    end 
+    
+     
+end 
+
+
+T = array2table(pc_session);
+% Default heading for the columns will be A1, A2 and so on. 
+% You can assign the specific headings to your table in the following manner
+T.Properties.VariableNames(1:4) = {'Rat','Session','dHPC pc','vHPC pc'}

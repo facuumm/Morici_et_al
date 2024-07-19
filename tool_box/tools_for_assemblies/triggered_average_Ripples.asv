@@ -53,11 +53,7 @@ template1(1:counts(1)) = 0;
 if strcmp(components,'all')
     a = assembly_activity(patterns(:,cond) , spks(:,2:end)');
 elseif strcmp(components,'dHPC')
-    a = assembly_activity_only_joint(patterns(:,cond) , spks(:,2:end)',template, template1,'dHPC');
-elseif strcmp(components,'vHPC')
-    a = assembly_activity_only_joint(patterns(:,cond) , spks(:,2:end)',template, template1,'vHPC');
-elseif strcmp(components,'both')
-    a = assembly_activity_only_joint(patterns(:,cond) , spks(:,2:end)',template, template1,'both');
+    a = assembly_activity_only_joint(patterns(:,cond) , spks(:,2:end)',template, template1,'dHPC')
 end
 
 
@@ -65,7 +61,7 @@ end
 
 % itaration across Assemblies and Events
 for i = 1 : size(a,1)
-%     a(i,:) = smoothdata(a(i,:),'gaussian','SmoothingFactor',0.75,'SamplePoints',bins); %smooth the data a bit
+    a(i,:) = smoothdata(a(i,:),'gaussian','SmoothingFactor',0.75,'SamplePoints',bins); %smooth the data a bit
     tmp = [];
     for ii = 1 : size(events,1)
         [~ , index] = min(abs(events(ii)-bins));

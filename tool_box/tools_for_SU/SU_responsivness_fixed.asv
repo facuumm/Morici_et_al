@@ -89,15 +89,15 @@ for i = 1 : size(clusters,1)
     
     end
 
-    % Responsivness if Zscore or Gain
+    % Responsivness
 %     if and(strcmp(normalization,'zscore'), exist('th','var'))
 %         [h start] = min(abs(bins-period(1)));
 %         [h stop] = min(abs(bins-period(2)));
 %         
-%         if mean(final(start:stop)) >= th
+%         if nanmean(final(start:stop)) >= m+st*th
 %             responsive = [responsive , 1];
 %             
-%         elseif mean(final(start:stop)) <= th*-1
+%         elseif nanmean(final(start:stop)) <= m-st*th
 %             responsive = [responsive , -1];
 %             
 %         else
@@ -106,26 +106,43 @@ for i = 1 : size(clusters,1)
 %     end
     
     % Responsivness if none normalization
-        if or(strcmp(normalization,'zscore') , strcmp(normalization,'gain'))
-            [h start] = min(abs(bins-period(1)));
-            [h stop] = min(abs(bins-period(2)));
+        if or(strcmp(normalization,'none') , strcmp(normalization,'gain'))
+            
         
-            threshold = [];
+            shuffled_ccg = [];
+            
             for ii = 1 : 200 
-                x = events;
-                yy = ShuffleSpks(y); 
+                yy = ShuffleSpks(y);
+                
                 [s,ids,groups] = CCGParameters(x,ones(length(x),1),yy,ones(length(yy),1)*2);
                 [ccg,tttt] = CCG(s,ids,'binSize',bin,'duration',window,'smooth',0,'mode','ccg'); %ccg calculation
-                
-                if strcmp(normalization,'none')
-                    threshold = [threshold; (ccg(start:stop,1,2)./bin)./size(events,1)];
+                bins = tttt;
+    
+                %Compute fr and std outside events 
+                ist = InvertIntervals([events-4 events+4],limits(1),limits(2)); % keep intervals outside event
+                [tmp,b]=binspikes(y,1/bin,limits);
+                 tmp = tmp./bin; % binned firing rate
+                 is = InIntervals(b,ist); % binned idx outside events  
+                 m = mean(tmp(is),'omitnan'); % mean fr outside events
+                 st = std(tmp(is),0,1,'omitnan'); % std outside events
+    
+                if strcmp(normalization,'zscore')
+                    shuff = (((ccg(:,1,2)./bin)./size(events,1))-m)./st;
+                    shuffled_ccg = [shuffled_ccg;shuff];
                 elseif strcmp(normalization,'gain')
-                    threshold = [threshold ; ((ccg(start:stop,1,2)./bin)./size(events,1))./m];
+                    shuff = ((ccg(:,1,2)./bin)./size(events,1))./m;
+                    shuffled_ccg = [shuffled_ccg;shuff];
                 end
+                
+                
                 
             end
         
+            [h start] = min(abs(bins-period(1)));
+            [h stop] = min(abs(bins-period(2)));
+            
             th =  quantile(threshold,0.9);
+            
             if mean(final(start:stop)) >=  th
                 responsive = [responsive , 1];
             

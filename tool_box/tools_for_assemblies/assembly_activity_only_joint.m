@@ -1,4 +1,4 @@
-function [time_projection] = assembly_activity_only_joint(AssemblyTemplates,SpikeCount,template, template1)
+function [time_projection] = assembly_activity_only_joint(AssemblyTemplates,SpikeCount,template, template1,components)
 % I modified the function assembly_activity from Lopes-dos-Santos V et al (2013)
 % to only calculate the assemblies activity dirven by cross-structural
 % activity.
@@ -17,15 +17,28 @@ function [time_projection] = assembly_activity_only_joint(AssemblyTemplates,Spik
 %                                   1    vHPC2
 %                                   1    vHPC3
 %
+% components: string, to select what component of the projector matrix to
+%             use. 
+%                   'all' --> dorsal+ventral activations
+%                   'dHPC' --> dorsal activations
+%                   'vHPC' --> ventral activations
+%                   'both' --> just joint activations
+%
 % Please send bug reports to vitor@neuro.ufrn.br (Vítor)
 % Modified to exclude parts of the projector matrix (Morici Juan Facundo 02-2024)
 
 % Modification introduced by Morici Juan Facundo
-template = ((template*template') + (template1*template1')); % to eliminate D and V
-% template = or(or((template*template') , (template*template1')) , (template1*template')); % to eliminate V
-% template = or(or((template1*template1') , (template*template1')) , (template1*template')); % to eliminate D
+if strcmp(components,'all')
+    template = ones(size(template));
+    template = (template*template');
+elseif strcmp(components,'dHPC')
+    template = (template*template');
+elseif strcmp(components,'vHPC')
+    template = (template1*template1');
+elseif strcmp(components,'both')
+    template = not((template*template') + (template1*template1'));
+end
 
-% template = (template*template');
 
 try
 SpikeCount = zscore(SpikeCount')';
@@ -40,11 +53,8 @@ for assembly_idx = 1:size(AssemblyTemplates,2)
     
     % computing projector
     ASSEMBLYPROJECTOR=AssemblyTemplates(:,assembly_idx)*AssemblyTemplates(:,assembly_idx)';
-%     subplot(131),imagesc(ASSEMBLYPROJECTOR)
     ASSEMBLYPROJECTOR=squeeze(ASSEMBLYPROJECTOR)-diag(diag(squeeze(ASSEMBLYPROJECTOR)));
-%     subplot(132),imagesc(ASSEMBLYPROJECTOR)
     ASSEMBLYPROJECTOR = ASSEMBLYPROJECTOR.*template;
-%     subplot(133),imagesc(ASSEMBLYPROJECTOR)
 
     % computing activity time course
     for ntime=1:length(SpikeCount)

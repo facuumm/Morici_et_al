@@ -11,7 +11,7 @@ function shuffle = ShuffleSpks(spks)
     isi = diff(spks);
     isi_per = isi(randperm(length(isi)));%shuffle isi
     
-    %genero tiempos random para los spikes que respetan el isi original
+    %Create random spks keeping the original isi
     spks_R = [a; isi_per];
     shuffle =cumsum(spks_R);
 end 
