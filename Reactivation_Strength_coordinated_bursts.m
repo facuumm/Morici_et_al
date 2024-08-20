@@ -8,7 +8,7 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 % What par of the code I want to run
 S = logical(1);   % Reactivation Strength Calculation
 
-W = 'Coor'; % coordinated bursts = 'Coor'
+W = 'unCoorV'; % coordinated bursts = 'Coor'
                % uncoordinated dbursts = 'unCoorD'
                % uncoordinated vbursts = 'unCoorV'
 
@@ -43,6 +43,7 @@ Shock_response.dHPC.reward = []; Shock_response.vHPC.reward = []; Shock_response
 percentages = [];
 Number_of_assemblies.aversive = [];
 Number_of_assemblies.reward = [];
+total = [];
 
 %% Main loop, to iterate across sessions
 for tt = 1:length(path)
@@ -237,7 +238,20 @@ for tt = 1:length(path)
         end
         
         if isfile('coordinated_ripple_bursts.mat')
-            load('coordinated_ripple_bursts.mat')
+
+            load([cd , '\coordinated_ripple_bursts.mat'])
+            
+            % Separation of bursts across emotional condition
+            bursts.coordinated.all(bursts.coordinated.all(:,2)-bursts.coordinated.all(:,1)<0.06, : ) = [];
+            bursts.coordinated.all(bursts.coordinated.all(:,2)-bursts.coordinated.all(:,1)>0.2, : ) = [];
+
+%             bursts.uncoordinated.dHPC(bursts.uncoordinated.dHPC(:,2)-bursts.uncoordinated.dHPC(:,1)<0.06, : ) = [];
+%             bursts.uncoordinated.dHPC(bursts.uncoordinated.dHPC(:,2)-bursts.uncoordinated.dHPC(:,1)>0.2, : ) = [];
+
+%             bursts.uncoordinated.vHPC(bursts.uncoordinated.vHPC(:,2)-bursts.uncoordinated.vHPC(:,1)<0.06, : ) = [];
+%             bursts.uncoordinated.vHPC(bursts.uncoordinated.vHPC(:,2)-bursts.uncoordinated.vHPC(:,1)>0.2, : ) = [];
+            total = [total ; size(bursts.uncoordinated.dHPC,1) size(bursts.uncoordinated.vHPC,1) size(bursts.coordinated.all,1)];
+
             % Spikes
             % Load Units
             disp('Uploading Spiking activity')
@@ -326,6 +340,7 @@ for tt = 1:length(path)
                 
                 Thresholded.aversive.all = Th;
                 patterns.all.aversive = pat;
+                patterns.all.aversive = patterns.all.aversive .* Thresholded.aversive.all;
                 Eigen.all.aversive = eig.values;
                 clear cond Th pat eig
                 
@@ -361,6 +376,7 @@ for tt = 1:length(path)
                 
                 Thresholded.reward.all = Th;
                 patterns.all.reward = pat;
+                patterns.all.reward = patterns.all.reward .* Thresholded.reward.all;
                 Eigen.all.reward = eig.values;
                 clear Th pat eig
                 
@@ -395,20 +411,34 @@ for tt = 1:length(path)
                 clear limits events
                 
                 if S
-                    if and(not(isempty(bursts.coordinated)) , size(bursts.coordinated,1)>35)
-                        
+%                     if and(not(isempty(bursts.coordinated.DV)) , size(bursts.coordinated.DV,1)>35)
+%                     if and(and(size(bursts.coordinated.DV,1)>200 , size(bursts.uncoordinated.dHPC,1)>100) , size(bursts.uncoordinated.vHPC,1)>100)
                         if strcmp(W,'Coor')
-                            is.sws.baseline = InIntervals(bins,Restrict(bursts.coordinated,NREM.baseline));
-                            is.sws.reward = InIntervals(bins,Restrict(bursts.coordinated,NREM.reward));
-                            is.sws.aversive = InIntervals(bins,Restrict(bursts.coordinated,NREM.aversive));
+                            is.sws.baseline = InIntervals(bins,Restrict(bursts.coordinated.all,NREM.baseline));
+                            is.sws.reward = InIntervals(bins,Restrict(bursts.coordinated.all,NREM.reward));
+                            is.sws.aversive = InIntervals(bins,Restrict(bursts.coordinated.all,NREM.aversive));
+                            
+                            is.sws.timestamps.sleep.aversive = NREM.aversive;
+                            is.sws.timestamps.sleep.reward = NREM.reward;
+                            is.sws.timestamps.sleep.baseline = NREM.baseline;
+                            
                         elseif strcmp(W,'unCoorD')
                             is.sws.baseline = InIntervals(bins,Restrict(bursts.uncoordinated.dHPC,NREM.baseline));
                             is.sws.reward = InIntervals(bins,Restrict(bursts.uncoordinated.dHPC,NREM.reward));
                             is.sws.aversive = InIntervals(bins,Restrict(bursts.uncoordinated.dHPC,NREM.aversive));
+                            
+                            is.sws.timestamps.sleep.aversive = NREM.aversive;
+                            is.sws.timestamps.sleep.reward = NREM.reward;
+                            is.sws.timestamps.sleep.baseline = NREM.baseline;
+                            
                         elseif strcmp(W,'unCoorV')
                             is.sws.baseline = InIntervals(bins,Restrict(bursts.uncoordinated.vHPC,NREM.baseline));
                             is.sws.reward = InIntervals(bins,Restrict(bursts.uncoordinated.vHPC,NREM.reward));
                             is.sws.aversive = InIntervals(bins,Restrict(bursts.uncoordinated.vHPC,NREM.aversive));
+                        
+                            is.sws.timestamps.sleep.aversive = NREM.aversive;
+                            is.sws.timestamps.sleep.reward = NREM.reward;
+                            is.sws.timestamps.sleep.baseline = NREM.baseline;                        
                         end
                         
                         is.sws.runaversive = InIntervals(bins,movement.aversive);
@@ -420,14 +450,8 @@ for tt = 1:length(path)
                         %% Reactivation Strenght
                         % Joint Aversive Assemblies
                         if sum(cond.both.aversive)>=1
-                            e = Eigen.all.aversive(cond.both.aversive);
-                            templates = ones(size(patterns.all.aversive,1),1);
-                            templates(size(clusters.dHPC)+1:end) = 0;
-                            templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
-                            templates(1:size(clusters.dHPC),2) = 0;
-                            
                             [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
-                            reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R , e];
+                            reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
                             RBA = R; clear R e
                         end
                         
@@ -448,14 +472,8 @@ for tt = 1:length(path)
                         %% Same for Reward assemblies
                         % Joint Reward Assemblies
                         if sum(cond.both.reward)>=1
-                            e = Eigen.all.reward(cond.both.reward);
-                            templates = ones(size(patterns.all.aversive,1),1);
-                            templates(size(clusters.dHPC)+1:end) = 0;
-                            templates = [templates ,  ones(size(patterns.all.aversive,1),1)];
-                            templates(1:size(clusters.dHPC),2) = 0;
-                            
                             [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
-                            reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R , e];
+                            reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
                             RBR = R; clear R e
                         end
                         
@@ -472,7 +490,7 @@ for tt = 1:length(path)
                             reactivation.reward.vHPC = [reactivation.reward.vHPC ; R];
                             RVR = R; clear R
                         end
-                    end
+%                     end
                 end
             end
         end
@@ -576,9 +594,9 @@ y = reactivation.aversive.dvHPC(:,1);
 
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y)  
-[h, p] = signrank(y,0)
-[h, p] = signrank(x,0)
+[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = signrank(y,0,'tail','left')
+[h, p] = signrank(x,0,'tail','left')
 
 subplot(131),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
@@ -591,9 +609,9 @@ x = reactivation.reward.dHPC(:,1);
 y = reactivation.aversive.dHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y)  
-[h, p] = signrank(y,0)
-[h, p] = signrank(x,0)
+[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = signrank(y,0,'tail','left')
+[h, p] = signrank(x,0,'tail','left')
 
 subplot(132),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
@@ -606,9 +624,9 @@ x = reactivation.reward.vHPC(:,1);
 y = reactivation.aversive.vHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y)  
-[h, p] = signrank(y,0)
-[h, p] = signrank(x,0)
+[h, p] = ranksum(x,y,'tail','left')  
+[h, p] = signrank(y,0,'tail','left')
+[h, p] = signrank(x,0,'tail','left')
 
 subplot(133),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];

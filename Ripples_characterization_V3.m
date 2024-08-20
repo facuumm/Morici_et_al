@@ -434,25 +434,25 @@ for tt = 1:length(path)
                     coordinatedV_refined = [coordinatedV_refined ; z(indice,:)];
                     coordinated = [coordinated ; r];
                     
-                    if and(r(1,2)>baselineTS(1)/1000 , r(1,2)<baselineTS(2)/1000)
-                        iri_t = ripplesD(and(ripplesD(:,2)>r(1,2)-0.4 , ripplesD(:,2)<r(1,2)+0.4),2);
-                        tmpB_D = [tmpB_D ; iri_t]; clear iri_t
-                        
-                        iri_t = ripplesV(and(ripplesV(:,2)>z(indice,2)-0.4 , ripplesV(:,2)<z(indice,2)+0.4),2);
-                        tmpB_V = [tmpB_V ; z(indice,2)]; clear iri_t
-                    elseif and(r(1,2)>rewardTS(1)/1000 , r(1,2)<rewardTS(2)/1000)
-                        iri_t = ripplesD(and(ripplesD(:,2)>r(1,2)-0.4 , ripplesD(:,2)<r(1,2)+0.4),2);
-                        tmpR_D = [tmpR_D ; iri_t]; clear iri_t
-                        
-                        iri_t = ripplesV(and(ripplesV(:,2)>z(indice,2)-0.4 , ripplesV(:,2)<z(indice,2)+0.4),2);
-                        tmpR_V = [tmpR_V ; z(indice,2)]; clear iri_t
-                    elseif and(r(1,2)>aversiveTS(1)/1000 , r(1,2)<aversiveTS(2)/1000)
-                        iri_t = ripplesD(and(ripplesD(:,2)>r(1,2)-0.4 , ripplesD(:,2)<r(1,2)+0.4),2);
-                        tmpA_D = [tmpA_D ; iri_t]; clear iri_t
-                        
-                        iri_t = ripplesV(and(ripplesV(:,2)>z(indice,2)-0.4 , ripplesV(:,2)<z(indice,2)+0.4),2);
-                        tmpA_V = [tmpA_V ; z(indice,2)]; clear iri_t
-                    end
+%                     if and(r(1,2)>baselineTS(1)/1000 , r(1,2)<baselineTS(2)/1000)
+%                         iri_t = ripplesD(and(ripplesD(:,2)>r(1,2)-0.4 , ripplesD(:,2)<r(1,2)+0.4),2);
+%                         tmpB_D = [tmpB_D ; iri_t]; clear iri_t
+%                         
+%                         iri_t = ripplesV(and(ripplesV(:,2)>z(indice,2)-0.4 , ripplesV(:,2)<z(indice,2)+0.4),2);
+%                         tmpB_V = [tmpB_V ; z(indice,2)]; clear iri_t
+%                     elseif and(r(1,2)>rewardTS(1)/1000 , r(1,2)<rewardTS(2)/1000)
+%                         iri_t = ripplesD(and(ripplesD(:,2)>r(1,2)-0.4 , ripplesD(:,2)<r(1,2)+0.4),2);
+%                         tmpR_D = [tmpR_D ; iri_t]; clear iri_t
+%                         
+%                         iri_t = ripplesV(and(ripplesV(:,2)>z(indice,2)-0.4 , ripplesV(:,2)<z(indice,2)+0.4),2);
+%                         tmpR_V = [tmpR_V ; z(indice,2)]; clear iri_t
+%                     elseif and(r(1,2)>aversiveTS(1)/1000 , r(1,2)<aversiveTS(2)/1000)
+%                         iri_t = ripplesD(and(ripplesD(:,2)>r(1,2)-0.4 , ripplesD(:,2)<r(1,2)+0.4),2);
+%                         tmpA_D = [tmpA_D ; iri_t]; clear iri_t
+%                         
+%                         iri_t = ripplesV(and(ripplesV(:,2)>z(indice,2)-0.4 , ripplesV(:,2)<z(indice,2)+0.4),2);
+%                         tmpA_V = [tmpA_V ; z(indice,2)]; clear iri_t
+%                     end
                     
                     clear tmp2 tmp1 p indice z
                 end
