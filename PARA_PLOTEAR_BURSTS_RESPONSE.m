@@ -38,18 +38,18 @@ for i = 1 : size(Pre.aversive.members.dHPC,2)
     
 end
 
-[ii iii] = min(abs([-0.5 : 0.005 : 0.5]-(0)));
+[ii iii] = min(abs([-0.5 : 0.005 : 0.5]-(-0.2)));
 [ii iiii] = min(abs([-0.5 : 0.005 : 0.5]-0.2));
 
 T = nanmean(tmp(iii:iiii,:));
 TT = nanmean(tmp1(iii:iiii,:));
 
-% t = quantile(nanmean([T ; TT]),[0.25 0.50 0.75]);
-t = quantile(([T - TT]),[0.25 0.50 0.75]);
+t = quantile(nanmean([T ; TT]),[0.25 0.50 0.75]);
+% t = quantile(([T - TT]),[0.25 0.50 0.75]);
 
 
 % T = and([T - TT] < t(3) , [T - TT] > t(2)); %clear t
-T = [T - TT] >= t(3);
+T = nanmean([T ; TT]) >= t(3);
 % T = [T - TT] < t(1);
 % T = not([T > TT]);
 
@@ -58,7 +58,7 @@ subplot(121),plot([-0.5 : 0.005 : 0.5] ,nanmean(tmp(:,T)'),'g'),hold on
 ciplot(nanmean(tmp(:,T)')-nansem(tmp(:,T)') , nanmean(tmp(:,T)')+nansem(tmp(:,T)'),[-0.5 : 0.005 : 0.5],'g'),alpha 0.2
 plot([-0.5 : 0.005 : 0.5] ,nanmean(tmp1(:,T)'),'b')
 ciplot(nanmean(tmp1(:,T)')-nansem(tmp1(:,T)') , nanmean(tmp1(:,T)')+nansem(tmp1(:,T)'),[-0.5 : 0.005 : 0.5],'b'),alpha 0.2
-xline(0,'--'),xlim([-0.3 0.3]),ylim([0 10])
+xline(0,'--'),xlim([-0.5 0.5]),ylim([0 6])
 
 
 PostD = [];
@@ -124,25 +124,25 @@ for i = 1 : size(Pre.aversive.members.vHPC,2)
     
 end
 
-[ii iii] = min(abs([-0.5 : 0.005 : 0.5]-(0)));
+[ii iii] = min(abs([-0.5 : 0.005 : 0.5]-(-0.2)));
 [ii iiii] = min(abs([-0.5 : 0.005 : 0.5]-0.2));
 
 T = nanmean(tmp(iii:iiii,:));
 TT = nanmean(tmp1(iii:iiii,:));
 
-% t = quantile(nanmean([T ; TT]),[0.25 0.5 0.75]);
-t = quantile(([T - TT]),[0.25 0.50 0.75]);
+t = quantile(nanmean([T ; TT]),[0.25 0.5 0.75]);
+% t = quantile(([T - TT]),[0.25 0.50 0.75]);
 
 % T = and([T - TT] < t(3) , [T - TT] > t(2)); %clear t
 % T = [T - TT] < t(1);
-T = [T - TT] >= t(3);
+T = nanmean([T ; TT]) >= t(3);
 % T = not([T > TT]);
 
 subplot(122),plot([-0.5 : 0.005 : 0.5] ,nanmean(tmp(:,T)'),'g'),hold on
 ciplot(nanmean(tmp(:,T)')-nansem(tmp(:,T)') , nanmean(tmp(:,T)')+nansem(tmp(:,T)'),[-0.5 : 0.005 : 0.5],'g'),alpha 0.2
 plot([-0.5 : 0.005 : 0.5] ,nanmean(tmp1(:,T)'),'b')
 ciplot(nanmean(tmp1(:,T)')-nansem(tmp1(:,T)') , nanmean(tmp1(:,T)')+nansem(tmp1(:,T)'),[-0.5 : 0.005 : 0.5],'b'),alpha 0.2
-xline(0,'--'),xlim([-0.3 0.3]),ylim([0 10])
+xline(0,'--'),xlim([-0.5 0.5]),ylim([0 6])
 
 
 PostV = [];

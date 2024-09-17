@@ -223,77 +223,25 @@ for tt = 1:length(path)
          vHPC_valve_norm={};
          
         %%%%%%% PYR 
-%         group_dHPC = group_dHPC(group_dHPC(:,4)==1,:);
-%         group_vHPC = group_vHPC(group_vHPC(:,4)==1,:);
-%         
-%         if ~isempty(group_dHPC)
-%             %Aversive
-%             curve=[]; 
-%             limits=[behavior.speed.aversive(1,1),behavior.speed.aversive(end,1)];     
-%             [curve , bins , responsive] = SU_responsivness(spks_dHPC,group_dHPC(:,1),Shocks_filt,...
-%                                       limits,[0 1],window,bin,smooth,'gain',th); 
-%              
-%             %Save output
-%             dhpc_shock=[dhpc_shock;curve']; 
-%         end
-%         
-%         if ~isempty(group_vHPC)
-%             disp('vHPC Responsivness')
-%             %Aversive
-%             curve=[]; 
-%             limits=[behavior.speed.aversive(1,1),behavior.speed.aversive(end,1)];           
-%             [curve , bins , responsive] = SU_responsivness(spks_vHPC,group_vHPC(:,1),Shocks_filt,...
-%                                       limits,[0 1],4,bin,smooth,'gain',th);                                  
-%             %Save output
-%             vhpc_shock=[vhpc_shock;curve'];
-%         end 
-%         
+        group_dHPC = group_dHPC(group_dHPC(:,4)==1,:);
+        group_vHPC = group_vHPC(group_vHPC(:,4)==1,:);
         
-%         %%%%%%% PC
-        try
-            load('dHPC_pc_skaggs_circular.mat');
-            dhpc_pc = [];
-            for d=1:size(dHPC,2)
-                pc = dHPC{d}; 
-                dhpc_pc = [dhpc_pc;pc.id]; 
-            end
-            
-            group_dHPC = group_dHPC(ismember(group_dHPC(:,1),dhpc_pc),:); % keep only pc 
-            
-            disp('dHPC Responsivness')
+        if ~isempty(group_dHPC)
+             disp('dHPC Responsivness')
             %Aversive
             curve=[]; 
             limits=[behavior.speed.aversive(1,1),behavior.speed.aversive(end,1)];     
             [curve , bins , responsive] = SU_responsivness_fixed(spks_dHPC,group_dHPC(:,1),Shocks_filt,...
                                       limits,[0 1],window,bin,smooth,'zscore',th); 
-             
-            %Reward-valve
-            curveR=[]; 
-            window = 7;
-            limits=[behavior.speed.reward(1,1),behavior.speed.reward(end,1)];     
-            [curveR , bins , responsiveR] = SU_responsivness_fixed(spks_dHPC,group_dHPC(:,1),sort(Rewards_filt(:,1)),...
-                                      limits,[0 5],window,bin,smooth,'zscore',th);                       
+
             %Save output
             dHPC_resp.id = group_dHPC(:,1); 
             dHPC_resp.curve_ave=curve'; 
             dHPC_resp.resp_ave=responsive'; 
-            dHPC_resp.curve_rew=curveR'; 
-            dHPC_resp.resp_rew=responsiveR';
-            save([cd,'\dHPC_responsivness.mat'],'dHPC_resp'); 
-
-        catch 
-            dHPC = []; disp(['No dHPC_pc.mat file in ',session]);
-        end 
+            save([cd,'\dHPC_responsivness_all.mat'],'dHPC_resp'); 
+        end
         
-        try
-            load('vHPC_pc_skaggs_circular.mat');
-            vhpc_pc = [];
-            for d=1:size(vHPC,2)
-                pc = vHPC{d}; 
-                vhpc_pc = [vhpc_pc;pc.id]; 
-            end
-            group_vHPC = group_vHPC(ismember(group_vHPC(:,1),vhpc_pc),:);
-            
+        if ~isempty(group_vHPC)
             disp('vHPC Responsivness')
             %Aversive
             curve=[]; 
@@ -301,22 +249,83 @@ for tt = 1:length(path)
             [curve , bins , responsive] = SU_responsivness_fixed(spks_vHPC,group_vHPC(:,1),Shocks_filt,...
                                       limits,[0 1],4,bin,smooth,'zscore',th);                                  
            
-            curveR=[]; 
-            window = 7;
-            limits=[behavior.speed.reward(1,1),behavior.speed.reward(end,1)];     
-            [curveR , bins , responsiveR] = SU_responsivness_fixed(spks_vHPC,group_vHPC(:,1),sort(Rewards_filt(:,1)),...
-                                      limits,[0 5],window,bin,smooth,'zscore',th);                       
             %Save output
             vHPC_resp.id = group_vHPC(:,1); 
             vHPC_resp.curve_ave=curve'; 
             vHPC_resp.resp_ave=responsive'; 
-            vHPC_resp.curve_rew=curveR'; 
-            vHPC_resp.resp_rew=responsiveR';
-            save([cd,'\vHPC_responsivness.mat'],'vHPC_resp');
+            save([cd,'\vHPC_responsivness_all.mat'],'vHPC_resp');
+                                  
+        end 
         
-        catch
-            vHPC= []; disp(['No vHPC_pc.mat file in ',session]);
-        end
+        
+%         %%%%%%% PC
+%         try
+%             load('dHPC_pc_skaggs_circular.mat');
+%             dhpc_pc = [];
+%             for d=1:size(dHPC,2)
+%                 pc = dHPC{d}; 
+%                 dhpc_pc = [dhpc_pc;pc.id]; 
+%             end
+%             
+%             group_dHPC = group_dHPC(ismember(group_dHPC(:,1),dhpc_pc),:); % keep only pc 
+%             
+%             disp('dHPC Responsivness')
+%             %Aversive
+%             curve=[]; 
+%             limits=[behavior.speed.aversive(1,1),behavior.speed.aversive(end,1)];     
+%             [curve , bins , responsive] = SU_responsivness_fixed(spks_dHPC,group_dHPC(:,1),Shocks_filt,...
+%                                       limits,[0 1],window,bin,smooth,'zscore',th); 
+%              
+%             %Reward-valve
+%             curveR=[]; 
+%             window = 7;
+%             limits=[behavior.speed.reward(1,1),behavior.speed.reward(end,1)];     
+%             [curveR , bins , responsiveR] = SU_responsivness_fixed(spks_dHPC,group_dHPC(:,1),sort(Rewards_filt(:,1)),...
+%                                       limits,[0 5],window,bin,smooth,'zscore',th);                       
+%             %Save output
+%             dHPC_resp.id = group_dHPC(:,1); 
+%             dHPC_resp.curve_ave=curve'; 
+%             dHPC_resp.resp_ave=responsive'; 
+%             dHPC_resp.curve_rew=curveR'; 
+%             dHPC_resp.resp_rew=responsiveR';
+%             save([cd,'\dHPC_responsivness.mat'],'dHPC_resp'); 
+% 
+%         catch 
+%             dHPC = []; disp(['No dHPC_pc.mat file in ',session]);
+%         end 
+%         
+%         try
+%             load('vHPC_pc_skaggs_circular.mat');
+%             vhpc_pc = [];
+%             for d=1:size(vHPC,2)
+%                 pc = vHPC{d}; 
+%                 vhpc_pc = [vhpc_pc;pc.id]; 
+%             end
+%             group_vHPC = group_vHPC(ismember(group_vHPC(:,1),vhpc_pc),:);
+%             
+%             disp('vHPC Responsivness')
+%             %Aversive
+%             curve=[]; 
+%             limits=[behavior.speed.aversive(1,1),behavior.speed.aversive(end,1)];           
+%             [curve , bins , responsive] = SU_responsivness_fixed(spks_vHPC,group_vHPC(:,1),Shocks_filt,...
+%                                       limits,[0 1],4,bin,smooth,'zscore',th);                                  
+%            
+%             curveR=[]; 
+%             window = 7;
+%             limits=[behavior.speed.reward(1,1),behavior.speed.reward(end,1)];     
+%             [curveR , bins , responsiveR] = SU_responsivness_fixed(spks_vHPC,group_vHPC(:,1),sort(Rewards_filt(:,1)),...
+%                                       limits,[0 5],window,bin,smooth,'zscore',th);                       
+%             %Save output
+%             vHPC_resp.id = group_vHPC(:,1); 
+%             vHPC_resp.curve_ave=curve'; 
+%             vHPC_resp.resp_ave=responsive'; 
+%             vHPC_resp.curve_rew=curveR'; 
+%             vHPC_resp.resp_rew=responsiveR';
+%             save([cd,'\vHPC_responsivness.mat'],'vHPC_resp');
+%         
+%         catch
+%             vHPC= []; disp(['No vHPC_pc.mat file in ',session]);
+%         end
 
 
         clear specificity_dHPC_A specificity_dHPC_R specificity_vHPC_A specificity_vHPC_R

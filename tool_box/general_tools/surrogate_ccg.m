@@ -4,7 +4,9 @@ function surrogate = surrogate_ccg(times1,times2,win,dur,sm,limits)
 % times1 vs shuffled(times2) 200 times
 % Facundo Morici, 07/2024
 surrogate = [];
-times1 = Restrict(times1,limits);
+if not(isempty(limits))
+    times1 = Restrict(times1,limits);
+end
 for i = 1:200
     
     shuf = ShuffleSpks2(times2);

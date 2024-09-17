@@ -135,18 +135,18 @@ for tt = 1:length(path)
                     [p,indice] = min(abs(r(2)-z(:,2)));
                     coordinated = [coordinated ; r];
                     
-                    %                     temporal1 = sum(and(ripplesD(:,2) < r(2) + 0.4 , ripplesD(:,2) > r(2) - 0.4))>1;
-                    %                     temporal2 = sum(and(ripplesV(:,2) < z(indice,2) + 0.4 , ripplesV(:,2) > z(indice,2) - 0.4))>1;
+                    if r(2)<z(2) % keep only when dorsal happen first
+                        cooridnated_event = [cooridnated_event ; r];
+                    end
                     
-                    %                     if and(not(temporal1),not(temporal1))
-                    peak = min(min(z(indice,2),r(2)))+abs(z(indice,2)-r(2))/2;
-                    low = min([r(1) , z(indice,1)]);
-                    up = max([r(3) , z(indice,3)]);
-                    cooridnated_event = [cooridnated_event ; low , peak , up];
-                    durations.dHPC = [durations.dHPC ; r(3)-r(1)];
-                    durations.vHPC = [durations.vHPC ; z(indice,3)-z(indice,1)];
-                    durations.event = [durations.event ; up-low];
-                    %                     end
+%                     peak = min(min(z(indice,2),r(2)))+abs(z(indice,2)-r(2))/2;
+%                     low = min([r(1) , z(indice,1)]);
+%                     up = max([r(3) , z(indice,3)]);
+%                     cooridnated_event = [cooridnated_event ; low , peak , up];    
+%                     
+%                     durations.dHPC = [durations.dHPC ; r(3)-r(1)];
+%                     durations.vHPC = [durations.vHPC ; z(indice,3)-z(indice,1)];
+%                     durations.event = [durations.event ; up-low];
                     clear tmp2 tmp1 p indice z peak low up
                 end
                 clear r
@@ -201,78 +201,7 @@ for tt = 1:length(path)
         % Load Units
         disp('Uploading Spiking activity')
         cd 'Spikesorting'
-        spks = double([readNPY('spike_clusters.npy') readNPY('spike_times.npy')]);
-        K = tdfread('cluster_group.tsv'); % import clusters ID and groups (MUA,Noise,Good)
-        Kinfo = tdfread('cluster_info.tsv'); % import information of clusters
-        K = [K.cluster_id(K.group(:,1) == 'g') , Kinfo.ch(K.group(:,1) == 'g'),]; % defining good clusters
-        % Load neuronal classification
-        load('Cell_type_classification')
-        K = [K , Cell_type_classification(:,6:8)];
-        group_dHPC = K(K(:,2) > 63,:);
-        group_vHPC = K(K(:,2) <= 63,:);
-        
-        %Loop to select dorsal or ventral LFP and SU
-        % z=1 --> dorsal
-        % z=2 --> ventral
-        for z = 1:2
-            if z == 1
-                spks_dHPC = spks(ismember(spks(:,1),group_dHPC(:,1)),:); %keep spks from good clusters
-            else
-                spks_vHPC = spks(ismember(spks(:,1),group_vHPC(:,1)),:); %keep spks from good clusters
-            end
-        end
-        clear z
-        spks_vHPC(:,2) = double(spks_vHPC(:,2))./20000;
-        spks_dHPC(:,2) = double(spks_dHPC(:,2))./20000;
-        spks(:,2) = double(spks(:,2))./20000;
-        
-        % Selection of celltype to analyze
-        if criteria_type == 0 %pyr
-            cellulartype = [K(:,1) , K(:,4)];
-        elseif criteria_type == 1 % int
-            cellulartype = [K(:,1) , not(K(:,4))];
-        elseif criteria_type == 2 % all
-            cellulartype = [K(:,1) , ones(length(K),1)];
-        end
-        
-        %% Counting the Number f SU
-        numberD = 0;
-        clusters.all = [];
-        clusters.dHPC = [];
-        for ii=1:size(group_dHPC,1)
-            cluster = group_dHPC(ii,1);
-            Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
-            if Cellulartype
-                a = length(Restrict(spks(spks(:,1)==cluster,2),aversiveTS_run)) / ((aversiveTS_run(2)-aversiveTS_run(1)));
-                r = length(Restrict(spks(spks(:,1)==cluster,2),rewardTS_run)) / ((rewardTS_run(2)-rewardTS_run(1)));
-                if or(a > criteria_fr ,  r > criteria_fr)
-                    numberD = numberD+1;
-                    clusters.all = [clusters.all ; cluster];
-                    clusters.dHPC = [clusters.dHPC ; cluster];
-                end
-            end
-            clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
-        end
-        
-        numberV = 0;
-        clusters.vHPC = [];
-        for ii=1:size(group_vHPC,1)
-            cluster = group_vHPC(ii,1);
-            Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
-            if Cellulartype
-                a = length(Restrict(spks(spks(:,1)==cluster,2),aversiveTS_run)) / ((aversiveTS_run(2)-aversiveTS_run(1)));
-                r = length(Restrict(spks(spks(:,1)==cluster,2),rewardTS_run)) / ((rewardTS_run(2)-rewardTS_run(1)));
-                if or(a > criteria_fr ,  r > criteria_fr)
-                    numberV = numberV+1;
-                    clusters.all = [clusters.all ; cluster];
-                    clusters.vHPC = [clusters.vHPC ; cluster];
-                end
-            end
-            clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
-        end
-        clear freq limits
-        clear camara shock rightvalve leftvalve
-        clear ejeX ejeY dX dY dX_int dY_int
+        [clusters , numberD , numberV , spks , spks_dHPC , spks_vHPC , cellulartype] = load_SU_FM(cd,criteria_type,criteria_fr,aversiveTS_run,rewardTS_run);
         
         %% Assemblies detection
         if and(numberD > 3 , numberV > 3)
@@ -333,29 +262,25 @@ for tt = 1:length(path)
                         TS.run.run2 = movement.reward;
                     end
                     
+                    % Detection of peaks
                     pks.aversive = assemblies_peaks([bins' Spikes] , patterns.aversive , th);
-                    
-                    % Events for baseline calculation
-                    x =[ripplesD(:,1)-0.05 ripplesD(:,3)+0.05 ; ripplesV(:,1)-0.05 ripplesV(:,3)+0.05];
-                    %                     x =[ripple_event.all-0.05 ripple_event.all+0.05];
-                    [c cc] = sort(x(:,1)); x = x(cc,:); x = ConsolidateIntervals(x);
-                    
+                                        
                     iterador = [];
                     % Iteration across assemblies
                     for i = 1 : size(pks.aversive,1)
                         % --- Pre ---
                         y = Restrict(pks.aversive{i}(:,1),TS.pre);
-                        %                             x1 = Restrict(ripple_event.all(:,2),TS.pre);
-                        x1 = Restrict(bursts.coordinated.DV(:,1),TS.pre);
+                          x1 = Restrict(ripple_event.all(:,2),TS.pre);
+%                         x1 = Restrict(bursts.coordinated.DV(:,1),TS.pre);
                         if and(length(y)>5 , length(x1)>2)
                             [pInc1, pDec1 surp1] = RippleModulation_assemblies(ripple_event.all,y,TS.pre);
 
                             [s,ids,groups] = CCGParameters(x1,ones(length(x1),1),y,ones(length(y),1)*2);
-                            [ccg1,T] = CCG(s,ids,'binSize',0.02,'duration',4,'smooth',0,'mode','ccg');
+                            [ccg1,T] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',0,'mode','ccg');
                             cond1 = true;
-                            %                             x1 = Restrict(x,TS.pre);
-                            %                             m1 = InvertIntervals(x1,TS.pre(1,1) , TS.pre(end,2));
-                            m1 = InvertIntervals(x,NREM.all(1,1),NREM.all(end,2));
+                            
+                            x1 = Restrict([ripple_event.all(:,1)+0.05 ripple_event.all(:,3)+0.05],TS.pre);
+                            m1 = InvertIntervals(x1,TS.pre(1,1) , TS.pre(end,2));
                             m1 = length(Restrict(y,m1))/(sum(m1(:,2)-m1(:,1))); clear c cc
                         else
                             cond1 = false;
@@ -363,59 +288,59 @@ for tt = 1:length(path)
                         
                         % --- Post ---
                         y = Restrict(pks.aversive{i}(:,1),TS.post);
-                        %                             x2 = Restrict(ripple_event.all(:,2),TS.post);
-                        x2 = Restrict(bursts.coordinated.DV(:,1),TS.post);
+                        x2 = Restrict(ripple_event.all(:,2),TS.post);
+%                         x2 = Restrict(bursts.coordinated.DV(:,1),TS.post);
                         
                         if and(length(y)>5 , length(x2)>2)
                             [pInc2 pDec2 surp2] = RippleModulation_assemblies(ripple_event.all,y,TS.post);
                             
                             [s,ids,groups] = CCGParameters(x2,ones(length(x2),1),y,ones(length(y),1)*2);
-                            [ccg2,T] = CCG(s,ids,'binSize',0.02,'duration',4,'smooth',0,'mode','ccg');
+                            [ccg2,T] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',0,'mode','ccg');
                             cond2 = true;
-                            %                             x2 = Restrict(x,TS.post);
-                            %                             m2 = InvertIntervals(x2,TS.post(1,1) , TS.post(end,2));
-                            m2 = InvertIntervals(x,NREM.all(1,1),NREM.all(end,2));
+                            
+                            x2 = Restrict([ripple_event.all(:,1)+0.05 ripple_event.all(:,3)+0.05],TS.post);
+                            m2 = InvertIntervals(x2,TS.post(1,1) , TS.post(end,2));
                             m2 = length(Restrict(y,m2))/(sum(m2(:,2)-m2(:,1)));
                         else
                             cond2 = false;
                         end
                         
                         if and(cond1,cond2)
-                            %                             x1 = Restrict(ripple_event.all(:,2),TS.pre);
-                            %                             x2 = Restrict(ripple_event.all(:,2),TS.post);
-                            x1 = Restrict(bursts.coordinated.DV(:,1),TS.pre);
-                            x2 = Restrict(bursts.coordinated.DV(:,1),TS.post);
+                           x1 = Restrict(ripple_event.all(:,2),TS.pre);
+                           x2 = Restrict(ripple_event.all(:,2),TS.post);
+%                             x1 = Restrict(bursts.coordinated.DV(:,1),TS.pre);
+%                             x2 = Restrict(bursts.coordinated.DV(:,1),TS.post);
                             
-                            ccg1 = (ccg1(:,1,2)./length(x1)); ccg1 = ccg1./0.02;
-                            ccg2 = (ccg2(:,1,2)./length(x2)); ccg2 = ccg2./0.02;
+                            ccg1 = (ccg1(:,1,2)./length(x1)); ccg1 = ccg1./0.01;
+                            ccg2 = (ccg2(:,1,2)./length(x2)); ccg2 = ccg2./0.01;
                             Pre.aversive.ccg = [Pre.aversive.ccg , (ccg1)];%./m1)];%
                             Pre.aversive.iterator = [Pre.aversive.iterator ; pInc1 pDec1] ;
                             Post.aversive.ccg = [Post.aversive.ccg , (ccg2)];%./m2)];
                             Post.aversive.iterator = [Post.aversive.iterator ; pInc2 pDec2] ;
                             
-                            % all
-                            [average1 , time] = triggered_average_Ripples(x1,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'all',[numberD numberV]);
-                            [average2 , time] = triggered_average_Ripples(x2,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'all',[numberD numberV]);
-                            Pre.aversive.ccgM = [Pre.aversive.ccgM  , average1];
-                            Post.aversive.ccgM = [Post.aversive.ccgM  , average2]; clear average1 average2
-                            
-                            % Just dHPC
-                            [average1 , time] = triggered_average_Ripples(x1,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'dHPC',[numberD numberV]);
-                            [average2 , time] = triggered_average_Ripples(x2,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'dHPC',[numberD numberV]);
-                            Pre.aversive.ccgD = [Pre.aversive.ccgD  , average1];
-                            Post.aversive.ccgD = [Post.aversive.ccgD  , average2]; clear average1 average2
-                            
-                            % Just vHPC
-                            [average1 , time] = triggered_average_Ripples(x1,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'vHPC',[numberD numberV]);
-                            [average2 , time] = triggered_average_Ripples(x2,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'vHPC',[numberD numberV]);
-                            Pre.aversive.ccgV = [Pre.aversive.ccgV  , average1];
-                            Post.aversive.ccgV = [Post.aversive.ccgV  , average2]; clear average1 average2
-                            
-                            % Just Both
-                            [average1 , time] = triggered_average_Ripples(x1,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'both',[numberD numberV]);
-                            [average2 , time] = triggered_average_Ripples(x2,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'both',[numberD numberV]);
-                            Pre.aversive.ccgB = [Pre.aversive.ccgB  , average1];
-                            Post.aversive.ccgB = [Post.aversive.ccgB  , average2]; clear average1 average2
+%                             % all
+%                             [average1 , time] = triggered_average_Ripples(x1,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'all',[numberD numberV]);
+%                             [average2 , time] = triggered_average_Ripples(x2,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'all',[numberD numberV]);
+%                             Pre.aversive.ccgM = [Pre.aversive.ccgM  , average1];
+%                             Post.aversive.ccgM = [Post.aversive.ccgM  , average2]; clear average1 average2
+%                             
+%                             % Just dHPC
+%                             [average1 , time] = triggered_average_Ripples(x1,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'dHPC',[numberD numberV]);
+%                             [average2 , time] = triggered_average_Ripples(x2,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'dHPC',[numberD numberV]);
+%                             Pre.aversive.ccgD = [Pre.aversive.ccgD  , average1];
+%                             Post.aversive.ccgD = [Post.aversive.ccgD  , average2]; clear average1 average2
+%                             
+%                             % Just vHPC
+%                             [average1 , time] = triggered_average_Ripples(x1,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'vHPC',[numberD numberV]);
+%                             [average2 , time] = triggered_average_Ripples(x2,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'vHPC',[numberD numberV]);
+%                             Pre.aversive.ccgV = [Pre.aversive.ccgV  , average1];
+%                             Post.aversive.ccgV = [Post.aversive.ccgV  , average2]; clear average1 average2
+%                             
+%                             % Just Both
+%                             [average1 , time] = triggered_average_Ripples(x1,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'both',[numberD numberV]);
+%                             [average2 , time] = triggered_average_Ripples(x2,patterns.aversive(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'both',[numberD numberV]);
+%                             Pre.aversive.ccgB = [Pre.aversive.ccgB  , average1];
+%                             Post.aversive.ccgB = [Post.aversive.ccgB  , average2]; clear average1 average2
                             
                             [c cc] = min(abs(T-(-0.2)));
                             [c ccc] = min(abs(T-(0.2)));
@@ -437,216 +362,6 @@ for tt = 1:length(path)
                         clear average1 average2
                     end
                     clear pks
-                    
-                    % CCG betweem SY and coordinated Bursts
-%                     x1 =[ripple_event.all-0.05 ripple_event.all+0.05];
-                    [c cc] = sort(x(:,1));% x = x(cc,:); x = ConsolidateIntervals(x);
-                    
-                    members = Thresholded.aversive(:,cond.both);
-                    members = sum(members,2);
-                    members = members>=1;
-                    
-                    members1 = sum(Thresholded.aversive,2);
-                    members1 = members1>0;
-                    
-                    i = 1;
-                    %% Pre aversive members
-                    x1 =[ripplesD(:,1)-0.05 ripplesD(:,3)+0.05];
-                    iteratorD = [];
-                    for ii = 1 : numberD
-                        if (members(ii,i))
-                            member1 = clusters.dHPC(ii);
-                            y = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
-                            y = Restrict(y,TS.pre);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.pre);
-                            if and(size(y,1)>5 , size(x,1)>5)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.pre);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Pre.aversive.members.dHPC = [Pre.aversive.members.dHPC , ccg]; clear ccg x y m s ids groups
-                                I.aversive.dHPC = [I.aversive.dHPC ; countA];
-                                iteratorD = [iteratorD ; true];
-                            else
-                                iteratorD = [iteratorD ; false];
-                            end
-                        else
-                            iteratorD = [iteratorD ; false];
-                        end
-                    end
-                    
-                    x1 =[ripplesV(:,1)-0.05 ripplesV(:,3)+0.05];
-                    iteratorV = [];
-                    for iii = 1 : numberV
-                        if (members(iii+numberD,i))
-                            member2 = clusters.vHPC(iii);
-                            y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
-                            y = Restrict(y,TS.pre);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.pre);
-                            if and(size(y,1)>5 , size(x,1)>5)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.pre);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Pre.aversive.members.vHPC = [Pre.aversive.members.vHPC , ccg]; clear ccg x y m s ids groups
-                                I.aversive.vHPC = [I.aversive.vHPC ; countA];
-                                iteratorV = [iteratorV ; true];
-                            else
-                                iteratorV = [iteratorV ; false];
-                            end
-                        else
-                            iteratorV = [iteratorV ; false];
-                        end
-                    end
-                    
-                    %% Post  aversive members
-                    x1 =[ripplesD(:,1)-0.05 ripplesD(:,3)+0.05];
-                    for ii = 1 : numberD
-                        if (members(ii,i))
-                            member1 = clusters.dHPC(ii);
-                            y = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
-                            y = Restrict(y,TS.post);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.post);
-%                             if and(size(y,1)>5 , size(x,1)>5)
-                              if iteratorD(ii)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.post);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Post.aversive.members.dHPC = [Post.aversive.members.dHPC , ccg]; clear ccg x y m s ids groups
-                                I.aversive.dHPC = [I.aversive.dHPC ; countA];
-                            end
-                        end
-                    end
-                    
-                    x1 =[ripplesV(:,1)-0.05 ripplesV(:,3)+0.05];
-                    for iii = 1 : numberV
-                        if (members(iii+numberD,i))
-                            member2 = clusters.vHPC(iii);
-                            y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
-                            y = Restrict(y,TS.post);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.post);
-%                             if and(size(y,1)>5 , size(x,1)>5)
-                              if iteratorV(iii)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.post);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Post.aversive.members.vHPC = [Post.aversive.members.vHPC , ccg]; clear ccg x y m s ids groups
-                                I.aversive.vHPC = [I.aversive.vHPC ; countA];
-                            end
-                        end
-                    end
-                    
-                    
-                    %% Pre aversive non-members
-                    x1 =[ripplesD(:,1)-0.05 ripplesD(:,3)+0.05];
-                    for ii = 1 : numberD
-                        if not(members1(ii,i))
-                            member1 = clusters.dHPC(ii);
-                            y = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
-                            y = Restrict(y,TS.pre);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.pre);
-                            if and(size(y,1)>5 , size(x,1)>5)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.pre);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Pre.aversive.nomembers.dHPC = [Pre.aversive.nomembers.dHPC , ccg]; clear ccg x y m s ids groups
-                                I.aversive.dHPC = [I.aversive.dHPC ; countA];
-                            end
-                        end
-                    end
-                    
-                    x1 =[ripplesV(:,1)-0.05 ripplesV(:,3)+0.05];
-                    for iii = 1 : numberV
-                        if not(members1(iii+numberD,i))
-                            member2 = clusters.vHPC(iii);
-                            y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
-                            y = Restrict(y,TS.pre);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.pre);
-                            if and(size(y,1)>5 , size(x,1)>5)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.pre);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Pre.aversive.nomembers.vHPC = [Pre.aversive.nomembers.vHPC , ccg]; clear ccg x y m s ids groups
-                                I.aversive.vHPC = [I.aversive.vHPC ; countA];
-                            end
-                        end
-                    end
-                    
-                    %% Post  aversive non-members
-                    x1 =[ripplesD(:,1)-0.05 ripplesD(:,3)+0.05];
-                    for ii = 1 : numberD
-                        if not(members1(ii,i))
-                            member1 = clusters.dHPC(ii);
-                            y = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
-                            y = Restrict(y,TS.post);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.post);
-                            if and(size(y,1)>5 , size(x,1)>5)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.post);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Post.aversive.nomembers.dHPC = [Post.aversive.nomembers.dHPC , ccg]; clear ccg x y m s ids groups
-                                I.aversive.dHPC = [I.aversive.dHPC ; countA];
-                            end
-                        end
-                    end
-                    
-                    x1 =[ripplesV(:,1)-0.05 ripplesV(:,3)+0.05];
-                    for iii = 1 : numberV
-                        if not(members1(iii+numberD,i))
-                            member2 = clusters.vHPC(iii);
-                            y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
-                            y = Restrict(y,TS.post);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.post);
-                            if and(size(y,1)>5 , size(x,1)>5)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.post);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Post.aversive.nomembers.vHPC = [Post.aversive.nomembers.vHPC , ccg]; clear ccg x y m s ids groups
-                                I.aversive.vHPC = [I.aversive.vHPC ; countA];
-                            end
-                        end
-                    end
-                    countA = countA+1;                    
-                    clear RBA
-                    clear pks TS
                 end
             end
             
@@ -713,17 +428,17 @@ for tt = 1:length(path)
                     for i = 1 : size(pks.reward,1)
                         % --- Pre ---
                         y = Restrict(pks.reward{i}(:,1),TS.pre);
-                        %                             x1 = Restrict(ripple_event.all(:,2),TS.pre);
-                        x1 = Restrict(bursts.coordinated.DV(:,1),TS.pre);
+                        x1 = Restrict(ripple_event.all(:,2),TS.pre);
+%                         x1 = Restrict(bursts.coordinated.DV(:,1),TS.pre);
                         if and(length(y)>5 , length(x1)>2)
                             [pInc1 pDec1 surp1] = RippleModulation_assemblies(ripple_event.all,y,TS.pre);
                             
                             [s,ids,groups] = CCGParameters(x1,ones(length(x1),1),y,ones(length(y),1)*2);
-                            [ccg1,T] = CCG(s,ids,'binSize',0.02,'duration',4,'smooth',0,'mode','ccg');
+                            [ccg1,T] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',0,'mode','ccg');
                             cond1 = true;
-                            %                             x1 = Restrict(x,TS.pre);
-                            %                             m1 = InvertIntervals(x1,TS.pre(1,1) , TS.pre(end,2));
-                            m1 = InvertIntervals(x,NREM.all(1,1),NREM.all(end,2));
+                            
+                            x1 = Restrict([ripple_event.all(:,1)+0.05 ripple_event.all(:,3)+0.05],TS.pre);
+                            m1 = InvertIntervals(x1,TS.pre(1,1) , TS.pre(end,2));
                             m1 = length(Restrict(y,m1))/(sum(m1(:,2)-m1(:,1))); clear c cc
                             cond1 = true;
                         else
@@ -732,58 +447,58 @@ for tt = 1:length(path)
                         
                         % --- Post ---
                         y = Restrict(pks.reward{i}(:,1),TS.post);
-                        x2 = Restrict(bursts.coordinated.DV(:,1),TS.post);
-                        %                             x2 = Restrict(ripple_event.all(:,2),TS.post);
+%                         x2 = Restrict(bursts.coordinated.DV(:,1),TS.post);
+                        x2 = Restrict(ripple_event.all(:,2),TS.post);
                         if and(length(y)>5 , length(x2)>2)
                             [pInc2 pDec2 surp2] = RippleModulation_assemblies(ripple_event.all,y,TS.post);
                             
                             [s,ids,groups] = CCGParameters(x2,ones(length(x2),1),y,ones(length(y),1)*2);
-                            [ccg2,T] = CCG(s,ids,'binSize',0.02,'duration',4,'smooth',0,'mode','ccg');
+                            [ccg2,T] = CCG(s,ids,'binSize',0.01,'duration',4,'smooth',0,'mode','ccg');
                             cond2 = true;
-                            %                             x2 = Restrict(x,TS.post);
-                            %                             m2 = InvertIntervals(x2,TS.post(1,1) , TS.post(end,2));
-                            m2 = InvertIntervals(x,NREM.all(1,1),NREM.all(end,2));
+                            
+                            x2 = Restrict([ripple_event.all(:,1)+0.05 ripple_event.all(:,3)+0.05],TS.post);
+                            m2 = InvertIntervals(x2,TS.post(1,1) , TS.post(end,2));
                             m2 = length(Restrict(y,m2))/(sum(m2(:,2)-m2(:,1)));
                         else
                             cond2 = false;
                         end
                         
                         if and(cond1,cond2)
-                            %                             x1 = Restrict(ripple_event.all(:,2),TS.pre);
-                            %                             x2 = Restrict(ripple_event.all(:,2),TS.post);
-                            x1 = Restrict(bursts.coordinated.DV(:,1),TS.pre);
-                            x2 = Restrict(bursts.coordinated.DV(:,1),TS.post);
+                            x1 = Restrict(ripple_event.all(:,2),TS.pre);
+                            x2 = Restrict(ripple_event.all(:,2),TS.post);
+%                             x1 = Restrict(bursts.coordinated.DV(:,1),TS.pre);
+%                             x2 = Restrict(bursts.coordinated.DV(:,1),TS.post);
                             
-                            ccg1 = (ccg1(:,1,2)./length(x1)); ccg1 = ccg1./0.02;
-                            ccg2 = (ccg2(:,1,2)./length(x2)); ccg2 = ccg2./0.02;
+                            ccg1 = (ccg1(:,1,2)./length(x1)); ccg1 = ccg1./0.01;
+                            ccg2 = (ccg2(:,1,2)./length(x2)); ccg2 = ccg2./0.01;
                             Pre.reward.ccg = [Pre.reward.ccg , (ccg1)];%./m1)];%
                             Pre.reward.iterator = [Pre.reward.iterator ; pInc1 pDec1] ;
                             Post.reward.ccg = [Post.reward.ccg , (ccg2)];%./m2)];
                             Post.reward.iterator = [Post.reward.iterator ; pInc2 pDec2] ;
                             
-                            % all
-                            [average1 , time] = triggered_average_Ripples(x1,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'all',[numberD numberV]);
-                            [average2 , time] = triggered_average_Ripples(x2,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'all',[numberD numberV]);
-                            Pre.reward.ccgM = [Pre.reward.ccgM  , average1];
-                            Post.reward.ccgM = [Post.reward.ccgM  , average2]; clear average1 average2
-                            
-                            % Just dHPC
-                            [average1 , time] = triggered_average_Ripples(x1,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'dHPC',[numberD numberV]);
-                            [average2 , time] = triggered_average_Ripples(x2,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'dHPC',[numberD numberV]);
-                            Pre.reward.ccgD = [Pre.reward.ccgD  , average1];
-                            Post.reward.ccgD = [Post.reward.ccgD  , average2]; clear average1 average2
-                            
-                            % Just vHPC
-                            [average1 , time] = triggered_average_Ripples(x1,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'vHPC',[numberD numberV]);
-                            [average2 , time] = triggered_average_Ripples(x2,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'vHPC',[numberD numberV]);
-                            Pre.reward.ccgV = [Pre.reward.ccgV  , average1];
-                            Post.reward.ccgV = [Post.reward.ccgV  , average2]; clear average1 average2
-                            
-                            % Just Both
-                            [average1 , time] = triggered_average_Ripples(x1,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'both',[numberD numberV]);
-                            [average2 , time] = triggered_average_Ripples(x2,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'both',[numberD numberV]);
-                            Pre.reward.ccgB = [Pre.reward.ccgB  , average1];
-                            Post.reward.ccgB = [Post.reward.ccgB  , average2]; clear average1 average2
+%                             % all
+%                             [average1 , time] = triggered_average_Ripples(x1,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'all',[numberD numberV]);
+%                             [average2 , time] = triggered_average_Ripples(x2,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'all',[numberD numberV]);
+%                             Pre.reward.ccgM = [Pre.reward.ccgM  , average1];
+%                             Post.reward.ccgM = [Post.reward.ccgM  , average2]; clear average1 average2
+%                             
+%                             % Just dHPC
+%                             [average1 , time] = triggered_average_Ripples(x1,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'dHPC',[numberD numberV]);
+%                             [average2 , time] = triggered_average_Ripples(x2,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'dHPC',[numberD numberV]);
+%                             Pre.reward.ccgD = [Pre.reward.ccgD  , average1];
+%                             Post.reward.ccgD = [Post.reward.ccgD  , average2]; clear average1 average2
+%                             
+%                             % Just vHPC
+%                             [average1 , time] = triggered_average_Ripples(x1,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'vHPC',[numberD numberV]);
+%                             [average2 , time] = triggered_average_Ripples(x2,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'vHPC',[numberD numberV]);
+%                             Pre.reward.ccgV = [Pre.reward.ccgV  , average1];
+%                             Post.reward.ccgV = [Post.reward.ccgV  , average2]; clear average1 average2
+%                             
+%                             % Just Both
+%                             [average1 , time] = triggered_average_Ripples(x1,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'both',[numberD numberV]);
+%                             [average2 , time] = triggered_average_Ripples(x2,patterns.reward(:,i),logical(1),[bins' Spikes],[-0.2 0.6],'both',[numberD numberV]);
+%                             Pre.reward.ccgB = [Pre.reward.ccgB  , average1];
+%                             Post.reward.ccgB = [Post.reward.ccgB  , average2]; clear average1 average2
                             
                         end
                         clear y pInc1 pInc2 pDec1 pDec2 surp1 surp2
@@ -791,216 +506,6 @@ for tt = 1:length(path)
                         clear average1 average2
                     end
                     clear pks
-                    
-                    % CCG betweem SY and coordinated Bursts
-%                     x1 =[ripple_event.dHPC-0.05 ripple_event.dHPC+0.05];
-                    [c cc] = sort(x(:,1));% x = x(cc,:); x = ConsolidateIntervals(x);
-                    
-                    members = Thresholded.reward(:,cond.both);
-                    members = sum(members,2);
-                    members = members>=1;
-                    
-                    members1 = sum(Thresholded.reward,2);
-                    members1 = members1>0;  
-                    
-                    i = 1;
-                    %% Pre reward members
-                    x1 =[ripplesD(:,1)-0.05 ripplesD(:,3)+0.05];
-                    iteratorD = [];
-                    for ii = 1 : numberD
-                        if (members(ii,i))
-                            member1 = clusters.dHPC(ii);
-                            y = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
-                            y = Restrict(y,TS.pre);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.pre);
-                            if and(size(y,1)>5 , size(x,1)>5)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.pre);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Pre.reward.members.dHPC = [Pre.reward.members.dHPC , ccg]; clear ccg x y m s ids groups
-                                I.reward.dHPC = [I.reward.dHPC ; countR];
-                                iteratorD = [iteratorD , true];
-                            else
-                                iteratorD = [iteratorD , false];
-                            end
-                        else
-                            iteratorD = [iteratorD , false];
-                        end
-                    end
-                    
-                    x1 =[ripplesV(:,1)-0.05 ripplesV(:,3)+0.05];
-                    iteratorV = [];
-                    for iii = 1 : numberV
-                        if (members(iii+numberD,i))
-                            member2 = clusters.vHPC(iii);
-                            y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
-                            y = Restrict(y,TS.pre);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.pre);
-                            if and(size(y,1)>5 , size(x,1)>5)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.pre);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Pre.reward.members.vHPC = [Pre.reward.members.vHPC , ccg]; clear ccg x y m s ids groups
-                                I.reward.vHPC = [I.reward.vHPC ; countR];
-                                iteratorV = [iteratorV , true];
-                            else
-                                iteratorV = [iteratorV , false];
-                            end
-                        else
-                            iteratorV = [iteratorV , false];
-                        end
-                    end                    
-                    
-                    %% Post reward members
-                    x1 =[ripplesD(:,1)-0.05 ripplesD(:,3)+0.05];
-                    for ii = 1 : numberD
-                        if (members(ii,i))
-                            member1 = clusters.dHPC(ii);
-                            y = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
-                            y = Restrict(y,TS.post);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.post);
-%                             if and(size(y,1)>5 , size(x,1)>5)
-                            if iteratorD(ii)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.post);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Post.reward.members.dHPC = [Post.reward.members.dHPC , ccg]; clear ccg x y m s ids groups
-                                I.reward.dHPC = [I.reward.dHPC ; countR];
-                            end
-                        end
-                    end
-                    
-                    x1 =[ripplesV(:,1)-0.05 ripplesV(:,3)+0.05];
-                    for iii = 1 : numberV
-                        if (members(iii+numberD,i))
-                            member2 = clusters.vHPC(iii);
-                            y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
-                            y = Restrict(y,TS.post);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.post);
-%                             if and(size(y,1)>5 , size(x,1)>5)
-                            if iteratorV(iii)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.post);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Post.reward.members.vHPC = [Post.reward.members.vHPC , ccg]; clear ccg x y m s ids groups
-                                I.reward.vHPC = [I.reward.vHPC ; countR];
-                            end
-                        end
-                    end
-                    
-                    %% Pre reward non-members
-                    x1 =[ripplesD(:,1)-0.05 ripplesD(:,3)+0.05];
-                    for ii = 1 : numberD
-                        if not(members1(ii,i))
-                            member1 = clusters.dHPC(ii);
-                            y = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
-                            y = Restrict(y,TS.pre);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.pre);
-                            if and(size(y,1)>5 , size(x,1)>5)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.pre);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Pre.reward.nomembers.dHPC = [Pre.reward.nomembers.dHPC , ccg]; clear ccg x y m s ids groups
-                                I.reward.dHPC = [I.reward.dHPC ; countR];
-                            end
-                        end
-                    end
-                    
-                    x1 =[ripplesV(:,1)-0.05 ripplesV(:,3)+0.05];
-                    for iii = 1 : numberV
-                        if not(members1(iii+numberD,i))
-                            member2 = clusters.vHPC(iii);
-                            y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
-                            y = Restrict(y,TS.pre);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.pre);
-                            if and(size(y,1)>5 , size(x,1)>5)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.pre);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Pre.reward.nomembers.vHPC = [Pre.reward.nomembers.vHPC , ccg]; clear ccg x y m s ids groups
-                                I.reward.vHPC = [I.reward.vHPC ; countR];
-                            end
-                        end
-                    end                    
-                    
-                    %% Post reward non-members
-                    x1 =[ripplesD(:,1)-0.05 ripplesD(:,3)+0.05];
-                    for ii = 1 : numberD
-                        if not(members1(ii,i))
-                            member1 = clusters.dHPC(ii);
-                            y = spks_dHPC(spks_dHPC(:,1) == member1 , 2);
-                            y = Restrict(y,TS.post);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.post);
-                            if and(size(y,1)>5 , size(x,1)>5)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.post);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Post.reward.nomembers.dHPC = [Post.reward.nomembers.dHPC , ccg]; clear ccg x y m s ids groups
-                                I.reward.dHPC = [I.reward.dHPC ; countR];
-                            end
-                        end
-                    end
-                    
-                    x1 =[ripplesV(:,1)-0.05 ripplesV(:,3)+0.05];                    
-                    for iii = 1 : numberV
-                        if not(members1(iii+numberD,i))
-                            member2 = clusters.vHPC(iii);
-                            y = spks_vHPC(spks_vHPC(:,1) == member2 , 2);
-                            y = Restrict(y,TS.post);
-                            x = Restrict(bursts.coordinated.DV(:,1),TS.post);
-                            if and(size(y,1)>5 , size(x,1)>5)
-                                [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
-                                [ccg,T] = CCG(s,ids,'binSize',0.005,'duration',1,'smooth',0,'mode','ccg');
-                                ccg = ccg(:,1,2)./length(x); ccg = ccg./0.005;
-                                
-%                                 m = InvertIntervals(x1,NREM.all(1,1),NREM.all(end,2));
-%                                 m = Restrict(m,TS.post);
-%                                 m = length(Restrict(y,m))/(sum(m(:,2)-m(:,1)));
-%                                 ccg = ccg./m;
-                                Post.reward.nomembers.vHPC = [Post.reward.nomembers.vHPC , ccg]; clear ccg x y m s ids groups
-                                I.reward.vHPC = [I.reward.vHPC ; countR];
-                            end
-                        end
-                    end
-                    countR = countR+1;
-                    
-                    clear RBR
-                    clear pks TS
                 end
             end
         end
@@ -1035,3 +540,38 @@ Post.reward.ccgM(:,sum(isnan(Post.reward.ccgM))>0) = [];
 
 
 end
+% 
+
+tmp = [];
+for i = 1 : size(Post.aversive.ccg,2)
+    t = (Pre.aversive.ccg(:,i));
+    t = Smooth((t),2,'kernel','gaussian');
+    
+    [ii iii] = min(abs([-2 : 0.01 : 2]-(-0.3)));
+    [ii iiii] = min(abs([-0.5 : 0.005 : 0.5]-0.3));
+    C = (nanmean([t(1:iii) ; t(iiii:end)]));
+    t = t./C;  
+%     t = zscore(t);
+
+    tmp = [tmp , t]; clear t
+end
+
+tmp1 = [];
+for i = 1 : size(Post.aversive.ccg,2)
+    t = (Post.aversive.ccg(:,i));
+    t = Smooth((t),2,'kernel','gaussian');
+    
+    [ii iii] = min(abs([-2 : 0.01 : 2]-(-0.3)));
+    [ii iiii] = min(abs([-0.5 : 0.005 : 0.5]-0.2));
+    C = (nanmean([t(1:iii) ; t(iiii:end)]));
+    t = t./C;
+%     t = zscore(t);
+    
+    tmp1 = [tmp1 , t]; clear t
+end
+
+plot(T,nanmean(tmp'),'k'),hold on
+ciplot(nanmean(tmp')-nansem(tmp') , nanmean(tmp')+nansem(tmp') , T , 'k'),alpha 0.5
+plot(T,nanmean(tmp1'),'r'),hold on
+ciplot(nanmean(tmp1')-nansem(tmp1') , nanmean(tmp1')+nansem(tmp1') , T , 'r'),alpha 0.5
+xlim([-0.3 0.3])

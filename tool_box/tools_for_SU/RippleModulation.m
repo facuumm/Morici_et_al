@@ -26,7 +26,7 @@ for i = 1: size(cluster,1)
     spks=Restrict(Spks(Spks(:,1)==cluster(i),2),Periods);
     iii = Restrict(RipplesTS,Periods);
     
-    bufferedripples=[iii(:,1)-0.1 iii(:,3)+0.1];
+    bufferedripples=[iii(:,1)-0.05 iii(:,3)+0.05];
     [baseline,ind]=SubtractIntervals(Periods,bufferedripples,'strict','on');
     
     totalbaselinetime=sum(baseline(:,2)-baseline(:,1));
