@@ -183,8 +183,8 @@ for i = 1:size(a,1)
                 p1 = Restrict(loc.all,tmp1);
                 p2 = Restrict(loc.all,tmp2);
                 
-                strength1 = ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60))) / ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) + (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60)));
-%                 strength1 = (length(pks.aversive)/timeA - length(pks.baseline)/timeB);
+%                 strength1 = ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60))) / ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) + (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60)));
+                strength1 = (length(pks.aversive)/timeA - length(pks.baseline)/timeB)/(length(pks.aversive)/timeA + length(pks.baseline)/timeB);
 
                 FR.pre = (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
                 FR.post = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60));
@@ -194,7 +194,7 @@ for i = 1:size(a,1)
             else
                 strength = (nanmean(pks.aversive) - nanmean(pks.baseline));
 %                 strength1 = (length(pks.aversive)/timeA - length(pks.baseline)/timeB)/(sum([length(pks.aversive) , length(pks.baseline)])/(timeA+timeB));
-%                 strength1 = (length(pks.aversive)/timeA - length(pks.baseline)/timeB);
+                strength1 = (length(pks.aversive)/timeA - length(pks.baseline)/timeB);
 
 %                 tmp1 = Restrict(Is.timestamps.sleep.aversive,[Is.timestamps.aversiveSleep(1) Is.timestamps.aversiveSleep(1)+1800]);
 %                 tmp2 = Restrict(Is.timestamps.sleep.baseline,[Is.timestamps.baselineSleep(2)-1800 Is.timestamps.baselineSleep(2)]);
@@ -204,7 +204,7 @@ for i = 1:size(a,1)
                 p1 = Restrict(loc.all,tmp1);
                 p2 = Restrict(loc.all,tmp2);
                 
-                strength1 = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
+%                 strength1 = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
 
                 FR.pre = (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
                 FR.post = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60));
@@ -216,7 +216,7 @@ for i = 1:size(a,1)
             if normalization
                 strength = (nanmean(pks.aversive) - nanmean(pks.reward))/(nanmean([pks.aversive , pks.reward]));
 %                 strength1 = (length(pks.aversive)/timeA - length(pks.reward)/timeR)/(sum([length(pks.aversive) , length(pks.reward)])/(timeA+timeR));
-%                 strength1 = (length(pks.aversive)/timeA - length(pks.reward)/timeR);
+                strength1 = (length(pks.aversive)/timeA - length(pks.reward)/timeR)/(length(pks.aversive)/timeA + length(pks.reward)/timeR);
                
 %                 tmp1 = Restrict(Is.timestamps.sleep.aversive,[Is.timestamps.aversiveSleep(1) Is.timestamps.aversiveSleep(1)+1800]);
 %                 tmp2 = Restrict(Is.timestamps.sleep.reward,[Is.timestamps.rewardSleep(2)-1800 Is.timestamps.rewardSleep(2)]);
@@ -226,7 +226,7 @@ for i = 1:size(a,1)
                 p1 = Restrict(loc.all,tmp1);
                 p2 = Restrict(loc.all,tmp2);
                 
-                strength1 = ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60))) / ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) + (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60)));
+%                 strength1 = ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60))) / ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) + (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60)));
 
                 FR.pre = (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
                 FR.post = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60));
@@ -236,7 +236,7 @@ for i = 1:size(a,1)
             else
                 strength = (nanmean(pks.aversive) - nanmean(pks.reward));
 %                 strength1 = (length(pks.aversive)/timeA - length(pks.reward)/timeR)/(sum([length(pks.aversive) , length(pks.reward)])/(timeA+timeR));
-%                 strength1 = (length(pks.aversive)/timeA - length(pks.reward)/timeR);
+                strength1 = (length(pks.aversive)/timeA - length(pks.reward)/timeR);
 
 %                 tmp1 = Restrict(Is.timestamps.sleep.aversive,[Is.timestamps.aversiveSleep(1) Is.timestamps.aversiveSleep(1)+1800]);
 %                 tmp2 = Restrict(Is.timestamps.sleep.reward,[Is.timestamps.rewardSleep(2)-1800 Is.timestamps.rewardSleep(2)]);
@@ -246,7 +246,7 @@ for i = 1:size(a,1)
                 p1 = Restrict(loc.all,tmp1);
                 p2 = Restrict(loc.all,tmp2);
                 
-                strength1 = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
+%                 strength1 = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
 
 
                 FR.pre = (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
@@ -263,7 +263,7 @@ for i = 1:size(a,1)
             if normalization
                 strength = (nanmean(pks.reward) - nanmean(pks.baseline))/(nanmean([pks.reward , pks.baseline]));
 %                 strength1 = (length(pks.reward)/timeR - length(pks.baseline)/timeB)/(sum([length(pks.reward) , length(pks.baseline)])/(timeR+timeB));
-%                 strength1 = (length(pks.reward)/timeR - length(pks.baseline)/timeB);
+                strength1 = (length(pks.reward)/timeR - length(pks.baseline)/timeB) / (length(pks.reward)/timeR + length(pks.baseline)/timeB);
 
 %                 tmp1 = Restrict(Is.timestamps.sleep.reward,[Is.timestamps.rewardSleep(1) Is.timestamps.rewardSleep(1)+1800]);
 %                 tmp2 = Restrict(Is.timestamps.sleep.baseline,[Is.timestamps.baselineSleep(2)-1800 Is.timestamps.baselineSleep(2)]);
@@ -273,7 +273,7 @@ for i = 1:size(a,1)
                 p1 = Restrict(loc.all,tmp1);
                 p2 = Restrict(loc.all,tmp2);
                 
-                strength1 = ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60))) / ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) + (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60)));
+%                 strength1 = ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60))) / ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) + (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60)));
 
                 FR.pre = (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
                 FR.post = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60));
@@ -283,7 +283,7 @@ for i = 1:size(a,1)
             else
                 strength = (nanmean(pks.reward) - nanmean(pks.baseline));
 %                 strength1 = (length(pks.reward)/timeR - length(pks.baseline)/timeB)/(sum([length(pks.reward) , length(pks.baseline)])/(timeR+timeB));
-%                 strength1 = (length(pks.reward)/timeR - length(pks.baseline)/timeB);
+                strength1 = (length(pks.reward)/timeR - length(pks.baseline)/timeB);
 
 %                 tmp1 = Restrict(Is.timestamps.sleep.reward,[Is.timestamps.rewardSleep(1) Is.timestamps.rewardSleep(1)+1800]);
 %                 tmp2 = Restrict(Is.timestamps.sleep.baseline,[Is.timestamps.baselineSleep(2)-1800 Is.timestamps.baselineSleep(2)]);
@@ -293,7 +293,7 @@ for i = 1:size(a,1)
                 p1 = Restrict(loc.all,tmp1);
                 p2 = Restrict(loc.all,tmp2);
                 
-                strength1 = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
+%                 strength1 = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
 
                 FR.pre = (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
                 FR.post = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60));                
@@ -305,7 +305,7 @@ for i = 1:size(a,1)
             if normalization
                 strength = (nanmean(pks.reward) - nanmean(pks.aversive))/(nanmean([pks.reward , pks.aversive]));
 %                 strength1 = (length(pks.reward)/timeR - length(pks.aversive)/timeA)/(sum([length(pks.reward) , length(pks.aversive)])/(timeR+timeA));
-%                 strength1 = (length(pks.reward)/timeR - length(pks.aversive)/timeA);
+                strength1 = (length(pks.reward)/timeR - length(pks.aversive)/timeA) / (length(pks.reward)/timeR + length(pks.aversive)/timeA);
 
 %                 tmp1 = Restrict(Is.timestamps.sleep.reward,[Is.timestamps.rewardSleep(1) Is.timestamps.rewardSleep(1)+1800]);
 %                 tmp2 = Restrict(Is.timestamps.sleep.aversive,[Is.timestamps.aversiveSleep(2)-1800 Is.timestamps.aversiveSleep(2)]);
@@ -315,7 +315,7 @@ for i = 1:size(a,1)
                 p1 = Restrict(loc.all,tmp1);
                 p2 = Restrict(loc.all,tmp2);
                 
-                strength1 = ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60))) / ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) + (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60)));
+%                 strength1 = ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60))) / ((size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) + (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60)));
 
                 FR.pre = (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
                 FR.post = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60));
@@ -325,7 +325,7 @@ for i = 1:size(a,1)
             else
                 strength = (nanmean(pks.reward) - nanmean(pks.aversive));
 %                 strength1 = (length(pks.reward)/timeR - length(pks.aversive)/timeA)/(sum([length(pks.reward) , length(pks.aversive)])/(timeR+timeA));
-%                 strength1 = (length(pks.reward)/timeR - length(pks.aversive)/timeA);
+                strength1 = (length(pks.reward)/timeR - length(pks.aversive)/timeA);
 
 %                 tmp1 = Restrict(Is.timestamps.sleep.reward,[Is.timestamps.rewardSleep(1) Is.timestamps.rewardSleep(1)+1800]);
 %                 tmp2 = Restrict(Is.timestamps.sleep.aversive,[Is.timestamps.aversiveSleep(2)-1800 Is.timestamps.aversiveSleep(2)]);
@@ -335,7 +335,7 @@ for i = 1:size(a,1)
                 p1 = Restrict(loc.all,tmp1);
                 p2 = Restrict(loc.all,tmp2);
                 
-                strength1 = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
+%                 strength1 = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60)) - (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
 
                 FR.pre = (size(p2,1)/(sum(tmp2(:,2)-tmp2(:,1))/60));
                 FR.post = (size(p1,1)/(sum(tmp1(:,2)-tmp1(:,1))/60));

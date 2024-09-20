@@ -14,7 +14,7 @@ for ii = 1:size(i,1)
     C = curve.dHPC(tt,:);
     
     if not(isempty(C))
-        response.shock.dHPC = [response.shock.dHPC ; nanmean(C(iii:iiii))];
+        response.shock.dHPC = [response.shock.dHPC ; max(C(iii:iiii))];
     end
     
     clear t tt
@@ -33,8 +33,8 @@ for i = 1 : size(Pre.reward.dHPC,2)
     t = (t./M);
     t = Smooth(t,2);
     
-    [~ , ii] = min(abs(T-(-0.1)));    [~ , iii] = min(abs(T-(0.1)));
-    response.pre.dHPC = [response.pre.dHPC ; nanmean(t(ii:iii))];
+    [~ , ii] = min(abs(T-(-0.15)));    [~ , iii] = min(abs(T-(0.15)));
+    response.pre.dHPC = [response.pre.dHPC ; max(t(ii:iii))];
     
     tmp1 = [tmp1 , t]; clear M S
     
@@ -53,7 +53,7 @@ for i = 1 : size(Post.reward.dHPC,2)
     t = (t./M);
     t = Smooth(t,2);
     
-    [~ , ii] = min(abs(T-(-0.1)));    [~ , iii] = min(abs(T-(0.1)));
+    [~ , ii] = min(abs(T-(-0.15)));    [~ , iii] = min(abs(T-(0.15)));
     response.post.dHPC = [response.post.dHPC ; max(t(ii:iii))];
     
     tmp2 = [tmp2 , t]; clear M S
@@ -78,6 +78,8 @@ ciplot(m-s , m+s , T , 'r'),alpha 0.5
 xlim([-0.3 0.3])
 ylim([0 6])
 
+[h p] = signrank(response.pre.dHPC(i) , response.post.dHPC(i),'tail','left')
+
 
 subplot(222),
 
@@ -100,6 +102,8 @@ ciplot(m-s , m+s , T , 'r'),alpha 0.5
 xlim([-0.3 0.3])
 ylim([0 6])
 
+[h p] = signrank(response.pre.dHPC(i) , response.post.dHPC(i),'tail','left')
+
 %% vHPS SUs
 tmp1 = [];
 response.pre.vHPC = [];
@@ -114,8 +118,8 @@ for i = 1 : size(Pre.aversive.vHPC,2)
     t = (t./M);
     t = Smooth(t,2);
     
-    [~ , ii] = min(abs(T-(-0.2)));    [~ , iii] = min(abs(T-(0.2)));
-    response.pre.vHPC = [response.pre.vHPC ; nanmean(t(ii:iii))];
+    [~ , ii] = min(abs(T-(-0.15)));    [~ , iii] = min(abs(T-(0.15)));
+    response.pre.vHPC = [response.pre.vHPC ; max(t(ii:iii))];
     
     tmp1 = [tmp1 , t]; clear M S
     
@@ -134,8 +138,8 @@ for i = 1 : size(Post.aversive.vHPC,2)
     t = (t./M);
     t = Smooth(t,2);
     
-    [~ , ii] = min(abs(T-(-0.2)));    [~ , iii] = min(abs(T-(0.2)));
-    response.post.vHPC = [response.post.vHPC ; nanmean(t(ii:iii))];
+    [~ , ii] = min(abs(T-(-0.15)));    [~ , iii] = min(abs(T-(0.15)));
+    response.post.vHPC = [response.post.vHPC ; max(t(ii:iii))];
     
     tmp2 = [tmp2 , t]; clear M S
     
@@ -178,6 +182,8 @@ ciplot(m-s , m+s , T , 'r'),alpha 0.5
 xlim([-0.3 0.3])
 ylim([0 6])
 
+[h p] = signrank(response.pre.vHPC(i) , response.post.vHPC(i),'tail','left')
+
 % Downsampling the data of non-shock responssivness
 x = [1:length(i)];
 i = and(not(I.vHPC(:,1) == 1) , I.vHPC(:,5)==1);
@@ -197,6 +203,9 @@ plot(T,m','r'),hold on
 ciplot(m-s , m+s , T , 'r'),alpha 0.5
 xlim([-0.3 0.3])
 ylim([0 6])
+[h p] = signrank(response.pre.vHPC(i) , response.post.vHPC(i),'tail','left')
+
+
 
 %% Post-Pre vs Shock correlation
 response.delta.dHPC = response.post.dHPC - response.pre.dHPC;
@@ -205,15 +214,15 @@ response.delta.vHPC = response.post.vHPC - response.pre.vHPC;
 x = response.shock.dHPC(and((I.dHPC(:,1) == 1) , I.dHPC(:,5)==1));
 y = response.delta.dHPC(and((I.dHPC(:,1) == 1) , I.dHPC(:,5)==1));
 figure,fitlm(x,y)
-scatter(x,y,'filled'),hold on
-plot(ans) , ylim([-1.5 2]) , xlim([-0.5 3])
+subplot(121),scatter(x,y,'filled'), ylim([-1.5 2]) , xlim([-0.5 5])
+subplot(122),plot(ans), ylim([-1.5 2]) , xlim([-0.5 5])
 
 x = response.shock.vHPC(and((I.vHPC(:,1) == 1) , I.vHPC(:,5)==1));
 y = response.delta.vHPC(and((I.vHPC(:,1) == 1) , I.vHPC(:,5)==1));
 x(43) = []; x(18) = []; y(43) = []; y(18) = []; 
 figure,fitlm(x,y)
-scatter(x,y,'filled'),hold on
-plot(ans) , ylim([-1.5 2]) , xlim([-0.5 3])
+subplot(121),scatter(x,y,'filled'), ylim([-1.5 2]) , xlim([-0.5 5])
+subplot(122),plot(ans), ylim([-1.5 2]) , xlim([-0.5 5])
 
 %% Comparison members vs no-members
 xD = response.shock.dHPC(and((I.dHPC(:,1) == 1) , I.dHPC(:,5)==1));
@@ -221,11 +230,11 @@ yD = response.shock.dHPC(and((I.dHPC(:,1) == 1) , I.dHPC(:,5)==0));
 xV = response.shock.vHPC(and((I.vHPC(:,1) == 1) , I.vHPC(:,5)==1));
 yV = response.shock.vHPC(and((I.vHPC(:,1) == 1) , I.vHPC(:,5)==0));
 
-% subsampling no-members
-i = randperm(length(yD)); i = i(1:length(xD));
-yD = yD(i);
-i = randperm(length(yV)); i = i(1:length(xV));
-yV = yV(i);
+% % subsampling no-members
+% i = randperm(length(yD)); i = i(1:length(xD));
+% yD = yD(i);
+% i = randperm(length(yV)); i = i(1:length(xV));
+% yV = yV(i);
 
 
 y = [xD ; yD ; xV ; yV];
@@ -281,14 +290,9 @@ s = nansem(decorrelated.vHPC(:,i)');
 plot([-2:0.1:2],m,'g'), hold on
 ciplot(m-s , m+s , [-2:0.1:2] , 'g'),alpha 0.10
 
-values.vHPC.decorrelated = [];
-for ii = 1 : sum(i)
-    if i(ii)
-        [~ , iii] = min(abs([-2:0.1:2]-0));
-        [~ , iiii] = min(abs([-2:0.1:2]-0.5));
-        values.vHPC.decorrelated = [values.vHPC.decorrelated ; max(decorrelated.vHPC(iii:iiii,ii))];
-    end
-end
+[~ , iii] = min(abs([-2:0.1:2]-0));
+[~ , iiii] = min(abs([-2:0.1:2]-1));
+values.vHPC.decorrelated = max(decorrelated.vHPC(iii:iiii,i))';
 
 i = curve.id.vHPC(:,2) == 1;
 m = nanmean(curve.vHPC(i,:));
@@ -296,15 +300,7 @@ s = nansem(curve.vHPC(i,:));
 plot([-2:0.1:2],m,'y'), hold on
 ciplot(m-s , m+s , [-2:0.1:2] , 'y'),alpha 0.1
 
-values.vHPC.shock = [];
-for ii = 1 : sum(i)
-    if i(ii)
-        [~ , iii] = min(abs([-2:0.1:2]-0));
-        [~ , iiii] = min(abs([-2:0.1:2]-0.5));
-        values.vHPC.shock = [values.vHPC.shock ; max(curve.vHPC(ii,iii:iiii))];
-    end
-end
-
+values.vHPC.shock = [max(curve.vHPC(i,iii:iiii)')'];
 
 i = not(curve.id.vHPC(:,2) == 1);
 m = nanmean(curve.vHPC(i,:));
@@ -313,14 +309,8 @@ plot([-2:0.1:2],m,'k'), hold on
 ciplot(m-s , m+s , [-2:0.1:2] , 'k'),alpha 0.1
 ylim([-0.25 1.1])
 
-values.vHPC.no = [];
-for ii = 1 : sum(i)
-    if i(ii)
-        [~ , iii] = min(abs([-2:0.1:2]-0));
-        [~ , iiii] = min(abs([-2:0.1:2]-0.5));
-        values.vHPC.no = [values.vHPC.no ; max(curve.vHPC(ii,iii:iiii))];
-    end
-end
+values.vHPC.no =  max(curve.vHPC(i,iii:iiii)')';
+
 
 
 % dHPC
@@ -331,14 +321,7 @@ s = nansem(decorrelated.dHPC(:,i)');
 plot([-2:0.1:2],m,'g'), hold on
 ciplot(m-s , m+s , [-2:0.1:2] , 'g'),alpha 0.10
 
-values.dHPC.decorrelated = [];
-for ii = 1 : sum(i)
-    if i(ii)
-        [~ , iii] = min(abs([-2:0.1:2]-0));
-        [~ , iiii] = min(abs([-2:0.1:2]-0.5));
-        values.dHPC.decorrelated = [values.dHPC.decorrelated ; max(decorrelated.dHPC(iii:iiii,ii))];
-    end
-end
+values.dHPC.decorrelated =  max(decorrelated.dHPC(iii:iiii,i))';
 
 i = curve.id.dHPC(:,2) == 1;
 m = nanmean(curve.dHPC(i,:));
@@ -346,14 +329,8 @@ s = nansem(curve.dHPC(i,:));
 plot([-2:0.1:2],m,'y'), hold on
 ciplot(m-s , m+s , [-2:0.1:2] , 'y'),alpha 0.1
 
-values.dHPC.shock = [];
-for ii = 1 : sum(i)
-    if i(ii)
-        [~ , iii] = min(abs([-2:0.1:2]-0));
-        [~ , iiii] = min(abs([-2:0.1:2]-0.5));
-        values.dHPC.shock = [values.dHPC.shock ; max(curve.dHPC(ii,iii:iiii))];
-    end
-end
+values.dHPC.shock = max(curve.dHPC(i,iii:iiii)')';
+
 
 i = not(curve.id.dHPC(:,2) == 1);
 m = nanmean(curve.dHPC(i,:));
@@ -362,14 +339,7 @@ plot([-2:0.1:2],m,'k'), hold on
 ciplot(m-s , m+s , [-2:0.1:2] , 'k'),alpha 0.1
 ylim([-0.25 1.1])
 
-values.dHPC.no = [];
-for ii = 1 : sum(i)
-    if i(ii)
-        [~ , iii] = min(abs([-2:0.1:2]-0));
-        [~ , iiii] = min(abs([-2:0.1:2]-0.5));
-        values.dHPC.no = [values.dHPC.no ; max(curve.dHPC(ii,iii:iiii))];
-    end
-end
+values.dHPC.no = max(curve.dHPC(i,iii:iiii)')';
 
 
 
@@ -388,7 +358,7 @@ grps = [ones(size(values.dHPC.shock,1),1) ; ones(size(values.dHPC.decorrelated,1
 y = [values.dHPC.shock ; values.dHPC.decorrelated ; values.vHPC.shock ; values.vHPC.decorrelated]; 
 % boxplot(y,grps),xlim([0 7]) , ylim([-0.5 3.5]),hold on
 
-scatter(grps,y,'filled','jitter','on', 'jitterAmount',0.1),ylim([-0.5 3]) , xlim([0 5]),hold on
+scatter(grps,y,'filled','jitter','on', 'jitterAmount',0.1),ylim([-0.5 6]) , xlim([0 5]),hold on
 scatter([1 2 3 4] , [nanmean(values.dHPC.shock) ; nanmean(values.dHPC.decorrelated) ; nanmean(values.vHPC.shock) ; nanmean(values.vHPC.decorrelated)] , 'filled')
 
 

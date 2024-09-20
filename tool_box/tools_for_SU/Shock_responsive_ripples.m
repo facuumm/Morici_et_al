@@ -223,7 +223,7 @@ for tt = 1:length(path)
                     for ii = 1 : numberD
                         % Pre
                         y = Restrict(spks(spks(:,1)==clusters.dHPC(ii),2),TS.pre);
-                        x = Restrict(ripples.dHPC.coordinated.all(:,1:3),TS.pre);
+                        x = Restrict(ripples.dHPC.uncoordinated.all(:,1:3),TS.pre);
 %                         x = Restrict(ripplesD(:,1:3),TS.pre);
                         
                         if and(size(x,1)>5 , size(y,1)>5)
@@ -239,7 +239,7 @@ for tt = 1:length(path)
                         
                         % Post
                         y = Restrict(spks(spks(:,1)==clusters.dHPC(ii),2),TS.post);
-                        x = Restrict(ripples.dHPC.coordinated.all(:,1:3),TS.post);
+                        x = Restrict(ripples.dHPC.uncoordinated.all(:,1:3),TS.post);
 
                         if and(size(x,1)>5 , size(y,1)>5)
                             [s,ids,groups] = CCGParameters(x(:,2),ones(length(x(:,2)),1),y,ones(length(y),1)*2);
@@ -293,7 +293,7 @@ for tt = 1:length(path)
                     for ii = 1 : numberV
                         % Pre
                         y = Restrict(spks(spks(:,1)==clusters.vHPC(ii),2),TS.pre);
-                        x = Restrict(ripples.vHPC.coordinated.all(:,1:3),TS.pre);
+                        x = Restrict(ripples.vHPC.uncoordinated.all(:,1:3),TS.pre);
 
                         if and(size(x,1)>5 , size(y,1)>5)
                             [s,ids,groups] = CCGParameters(x(:,2),ones(length(x(:,2)),1),y,ones(length(y),1)*2);
@@ -306,7 +306,7 @@ for tt = 1:length(path)
                         
                         % Post
                         y = Restrict(spks(spks(:,1)==clusters.vHPC(ii),2),TS.post);
-                        x = Restrict(ripples.vHPC.coordinated.all(:,1:3),TS.post);
+                        x = Restrict(ripples.vHPC.uncoordinated.all(:,1:3),TS.post);
                         
                         if and(size(x,1)>5 , size(y,1)>5)
                             [s,ids,groups] = CCGParameters(x(:,2),ones(length(x(:,2)),1),y,ones(length(y),1)*2);

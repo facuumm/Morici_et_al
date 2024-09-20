@@ -1091,8 +1091,8 @@ scatter([1 2] , [nanmean(x) nanmean(y)],'filled'),xlim([0 3]),ylim([-1 1])
 %% Plot Peaks of activation
 %  for joint assemblies
 figure
-x = (reactivation.reward.dvHPC(:,7));
-y = (reactivation.aversive.dvHPC(:,7));
+x = reactivation.reward.dvHPC(:,7);
+y = reactivation.aversive.dvHPC(:,7);
 kstest(x)
 kstest(y)
 [h, p] = ranksum(x,y)  
