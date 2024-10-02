@@ -4283,14 +4283,7 @@ for tt = 4:length(path)
             subplot(4,2,8); hold on;plot(curveR.rate,'Color',[.3 .3 .3]);ylabel('Fr(Hz)');xlabel('Spatial Bins');
            
             %%%%%%%%PLOT OP 2 %%%%%%%%
-           
-           [N_ave,~,binX]  = histcounts(pos_ave(:,2),Xedges);
-           [N_rew,~,binXr] = histcounts(pos_rew(:,2),Xedges);
-
-            % Create matrices with bin info 
-            pos_ave = [pos_ave,binX];  
-            pos_rew = [pos_rew,binXr];
-
+            
             
             end
        
