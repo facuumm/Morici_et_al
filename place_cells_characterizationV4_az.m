@@ -3999,16 +3999,20 @@ minimal_speed = 2.5;% minimal speed to detect quite periods
 minimal_speed_time = 2; % minimal time to detect quite periods
 
 
-for tt = 4:length(path)
+pc_dhpc_all=[];
+pc_vhpc_all=[];
+
+for tt = 2:length(path)
     %List of folders from the path
     files = dir(path{tt});
     % Get a logical vector that tells which is a directory.
     dirFlags = [files.isdir];
     % Extract only those that are directories.
     subFolders = files(dirFlags);
+   
     clear files dirFlags
     
-    for t = 2 : length(subFolders)-2
+    for t = 1 : length(subFolders)-2
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
@@ -4236,13 +4240,30 @@ for tt = 4:length(path)
             end
             group_dHPC = group_dHPC(ismember(group_dHPC(:,1),dhpc_pc),:);
             
+            pc_dhpc_session = [];
+            
             % Plotting: 
-            for ii=31:size(group_dHPC,1)
+            for ii=1:size(group_dHPC,1)
                 cluster = group_dHPC(ii,1);
 
                 spks = spks_dHPC(spks_dHPC(:,1)==cluster,2); % select tspk from cluster
-              
-            
+                
+                %Save pc info 
+                pc_dhpc_session(ii,1)=cluster; 
+                
+                pc_dhpc_session(ii,2)=dHPC{1,ii}.stats_ave.specificity;% skaggs ave
+                pc_dhpc_session(ii,3)=dHPC{1,ii}.stats_rew.specificity;% skaggs rew
+                
+                pc_dhpc_session(ii,4)=dHPC{1,ii}.between(1);% between spatial
+                pc_dhpc_session(ii,5)=dHPC{1,ii}.between(3);% between overlap
+                
+                pc_dhpc_session(ii,6)=dHPC{1,ii}.within_ave(1);%  spatial
+                pc_dhpc_session(ii,7)=dHPC{1,ii}.within_ave(3);% n overlap
+                
+                pc_dhpc_session(ii,8)=dHPC{1,ii}.within_rew(1);%  spatial
+                pc_dhpc_session(ii,9)=dHPC{1,ii}.within_rew(3);% n overlap
+                
+                 
                % --- Aversive ---
                 spks_ave = spks; 
                 %Restrict spk and position to laps and movement periods
@@ -4262,36 +4283,31 @@ for tt = 4:length(path)
                 [curveA , statsA] = FiringCurve(pos_ave , spks_ave , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 6, 'minPeak' , 0.2);
                 [curveR , statsR] = FiringCurve(pos_rew , spks_rew , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 6, 'minPeak' , 0.2);
 
-                    
-            %%%%%%% PLOT
-            figure; hold on; 
+            %%%%%%% PLOT 
+            figure(2);clf; hold on; 
+            set(gcf,'position',[100,100,800,400])
             sgtitle(['dHPC ',session(end-14:end),' id ',num2str(cluster),' iteration ',num2str(ii)])
-            subplot(4,2,[1 5]); hold on; plot(pos_ave(:,2),pos_ave(:,1),'color','red');hold on; axis tight; xline(0.25);
+            subplot(5,6,[1 15]); hold on; plot(pos_ave(:,2),pos_ave(:,1),'color','red','LineWidth',1);hold on; axis tight; xline(0.25);set(gca,'yticklabel',[],'TickLength',[0 0],'YColor','none');
             title('Aversive'); ylabel('Laps');
             %Find interpolated position of each spike:
-            xs = interp1(pos_ave(:,1),pos_ave(:,2),spks_ave); s= scatter(xs,spks_ave,'filled','Marker','.', 'MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor',[.3 .3 .3]); 
+            xs = interp1(pos_ave(:,1),pos_ave(:,2),spks_ave); s= scatter(xs,spks_ave,100,'filled','Marker','.', 'MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor',[.3 .3 .3]); 
             %Fr map 
-            subplot(4,2,7); hold on;plot(curveA.rate,'Color',[.3 .3 .3]);ylabel('Fr(Hz)');xlabel('Spatial Bins');
-  
+            subplot(5,6,[19 21]); hold on;plot(curveA.rate,'Color',[.3 .3 .3],'LineWidth',1.5);ylabel('Fr(Hz)');xlabel('Spatial Bins');
+            subplot(5,6,[25 27]);imagesc(curveA.rate),colormap 'jet';
            
-            subplot(4,2,[2 6]); hold on; plot(pos_rew(:,2),pos_rew(:,1),'color',[0.175 0.54 0.60] );hold on; axis tight;
-            xline(0.25);
+            subplot(5,6,[4 18]); hold on; plot(pos_rew(:,2),pos_rew(:,1),'color',[0.175 0.54 0.60],'LineWidth',1);hold on; axis tight;
+            xline(0.25);set(gca,'yticklabel',[],'TickLength',[0 0],'YColor','none');
             title('Reward'); ylabel('Laps');
             %Find interpolated position of each spike:
-            xs = interp1(pos_rew(:,1),pos_rew(:,2),spks_rew); scatter(xs,spks_rew,'filled','Marker','.', 'MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor',[.3 .3 .3]); 
+            xs = interp1(pos_rew(:,1),pos_rew(:,2),spks_rew); scatter(xs,spks_rew,100,'filled','Marker','.', 'MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor',[.3 .3 .3]); 
             %Fr map 
-            subplot(4,2,8); hold on;plot(curveR.rate,'Color',[.3 .3 .3]);ylabel('Fr(Hz)');xlabel('Spatial Bins');
-           
-            %%%%%%%%PLOT OP 2 %%%%%%%%
-           
-           [N_ave,~,binX]  = histcounts(pos_ave(:,2),Xedges);
-           [N_rew,~,binXr] = histcounts(pos_rew(:,2),Xedges);
-
-            % Create matrices with bin info 
-            pos_ave = [pos_ave,binX];  
-            pos_rew = [pos_rew,binXr];
-
+            subplot(5,6,[22 24]); hold on;plot(curveR.rate,'Color',[.3 .3 .3],'LineWidth',1.5);ylabel('Fr(Hz)');xlabel('Spatial Bins');
+            subplot(5,6,[28 30]);imagesc(curveR.rate),colormap 'jet';
             
+            % Save figure:
+            saveas(figure(2),['W:\Remapping-analysis-Facu\Place cells examples\all\',session(end-14:end),'_dhpc_',num2str(cluster)], 'jpg');
+               
+
             end
        
             
@@ -4311,6 +4327,8 @@ for tt = 4:length(path)
             end
             group_vHPC = group_vHPC(ismember(group_vHPC(:,1),vhpc_pc),:);
             
+             pc_vhpc_session=[]; 
+                
             disp('Plot vHPC Firing rate map')
           
             for ii=1:size(group_vHPC,1)
@@ -4318,7 +4336,20 @@ for tt = 4:length(path)
                 cluster = group_vHPC(ii,1);
                 spks = spks_vHPC(spks_vHPC(:,1)==cluster,2); % select tspk from cluster
               
-            
+                pc_vhpc_session(ii,1)=cluster; 
+                
+                pc_vhpc_session(ii,2)=vHPC{1,ii}.stats_ave.specificity;% skaggs ave
+                pc_vhpc_session(ii,3)=vHPC{1,ii}.stats_rew.specificity;% skaggs rew
+                
+                pc_vhpc_session(ii,4)=vHPC{1,ii}.between(1);% between spatial
+                pc_vhpc_session(ii,5)=vHPC{1,ii}.between(3);% between overlap
+                
+                pc_vhpc_session(ii,6)=vHPC{1,ii}.within_ave(1);%  spatial
+                pc_vhpc_session(ii,7)=vHPC{1,ii}.within_ave(3);% n overlap
+                
+                pc_vhpc_session(ii,8)=vHPC{1,ii}.within_rew(1);%  spatial
+                pc_vhpc_session(ii,9)=vHPC{1,ii}.within_rew(3);% n overlap
+                
                % --- Aversive ---
                 spks_ave = spks; 
                 %Restrict spk and position to laps and movement periods
@@ -4339,31 +4370,37 @@ for tt = 4:length(path)
                 [curveR , statsR] = FiringCurve(pos_rew , spks_rew , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 6, 'minPeak' , 0.2);
 
                     
-            %%%%%%% PLOT
-            figure; hold on; 
+           %%%%%%% PLOT 
+            figure(3);clf; hold on; 
+            set(gcf,'position',[100,100,800,400])
             sgtitle(['vHPC ',session(end-14:end),' id ',num2str(cluster),' iteration ',num2str(ii)])
-            subplot(4,2,[1 5]); hold on; plot(pos_ave(:,2),pos_ave(:,1),'color','red');hold on; axis tight;
+            subplot(5,6,[1 15]); hold on; plot(pos_ave(:,2),pos_ave(:,1),'color','red','LineWidth',1);hold on; axis tight; xline(0.25);set(gca,'yticklabel',[],'TickLength',[0 0],'YColor','none');
             title('Aversive'); ylabel('Laps');
             %Find interpolated position of each spike:
-            xs = interp1(pos_ave(:,1),pos_ave(:,2),spks_ave); s= scatter(xs,spks_ave,'filled','Marker','.', 'MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor',[.3 .3 .3]); 
+            xs = interp1(pos_ave(:,1),pos_ave(:,2),spks_ave); s= scatter(xs,spks_ave,100,'filled','Marker','.', 'MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor',[.3 .3 .3]); 
             %Fr map 
-            subplot(4,2,7); hold on;plot(curveA.rate,'Color',[.3 .3 .3]);ylabel('Fr(Hz)');xlabel('Spatial Bins');
-  
+            subplot(5,6,[19 21]); hold on;plot(curveA.rate,'Color',[.3 .3 .3],'LineWidth',1.5);ylabel('Fr(Hz)');xlabel('Spatial Bins');
+            subplot(5,6,[25 27]);imagesc(curveA.rate),colormap 'jet';
            
-            subplot(4,2,[2 6]); hold on; plot(pos_rew(:,2),pos_rew(:,1),'color',[0.175 0.54 0.60] );hold on; axis tight;
+            subplot(5,6,[4 18]); hold on; plot(pos_rew(:,2),pos_rew(:,1),'color',[0.175 0.54 0.60],'LineWidth',1);hold on; axis tight;
+            xline(0.25);set(gca,'yticklabel',[],'TickLength',[0 0],'YColor','none');
             title('Reward'); ylabel('Laps');
             %Find interpolated position of each spike:
-            xs = interp1(pos_rew(:,1),pos_rew(:,2),spks_rew); scatter(xs,spks_rew,'filled','Marker','.', 'MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor',[.3 .3 .3]); 
+            xs = interp1(pos_rew(:,1),pos_rew(:,2),spks_rew); scatter(xs,spks_rew,100,'filled','Marker','.', 'MarkerFaceColor',[.3 .3 .3],'MarkerEdgeColor',[.3 .3 .3]); 
             %Fr map 
-            subplot(4,2,8); hold on;plot(curveR.rate,'Color',[.3 .3 .3]);ylabel('Fr(Hz)');xlabel('Spatial Bins');
-                
-                
- 
+            subplot(5,6,[22 24]); hold on;plot(curveR.rate,'Color',[.3 .3 .3],'LineWidth',1.5);ylabel('Fr(Hz)');xlabel('Spatial Bins');
+            subplot(5,6,[28 30]);imagesc(curveR.rate),colormap 'jet';
+            
+            % Save figure:
+            saveas(figure(3),['W:\Remapping-analysis-Facu\Place cells examples\all\',session(end-14:end),'_vhpc_',num2str(cluster)], 'pdf');
             end
 
         catch
             vHPC= []; disp(['No vHPC_pc.mat file in ',session]);
         end
+        
+        pc_dhpc_all = [pc_dhpc_all;pc_dhpc_session]; 
+        pc_vhpc_all = [pc_vhpc_all;pc_vhpc_session ]; 
         
         disp(['-- Finished folder #' , num2str(t) , ' from rat #' , num2str(tt) , ' ---'])
         disp('  ')
