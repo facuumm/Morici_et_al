@@ -4910,3 +4910,237 @@ T = array2table(pc_session);
 % Default heading for the columns will be A1, A2 and so on. 
 % You can assign the specific headings to your table in the following manner
 T.Properties.VariableNames(1:4) = {'Rat','Session','dHPC pc','vHPC pc'}
+
+%% TRAJECTORY AND VELOCITY PLOTS
+%First run initial segment 
+% tt chose rat
+% t chose session
+
+for tt = 4:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+   
+    clear files dirFlags
+    
+    for t = 2 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd(session)
+        %Loading TS of the sessions
+        disp('Uploading session time stamps')
+        x = dir([cd,'\*.cat.evt']);
+        segments = readtable([cd,'\',x.name],'FileType','text');
+        clear x
+        % TimeStamps of begening and end of the sleep and awake trials
+        % Reward and Aversive trials
+        aversiveTS = [];
+        aversiveTS_run = [];
+        rewardTS = [];
+        rewardTS_run = [];
+        for y = 1 : height(segments)
+            % Baseline sleep session TS detection
+            if y == 1
+                baselineTS(1,1) = segments.Var1(y);
+            elseif y ==2
+                baselineTS(1,2) = segments.Var1(y);
+            end
+            % Aversive sleep session TS detection
+            if strcmp(segments.Var2{y},'aversive')
+                if strcmp(segments.Var3{y},'End')
+                    aversiveTS(1,1) = segments.Var1(y+1);
+                    aversiveTS(1,2) = segments.Var1(y+2);
+                    aversiveTS_run(1,1) = segments.Var1(y-1);
+                    aversiveTS_run(1,2) = segments.Var1(y);
+                    A = y;
+                end
+                % Rewarded sleep session TS detection
+            elseif strcmp(segments.Var2{y},'reward')
+                if strcmp(segments.Var3{y},'End')
+                    rewardTS(1,1) = segments.Var1(y+1);
+                    rewardTS(1,2) = segments.Var1(y+2);
+                    rewardTS_run(1,1) = segments.Var1(y-1);
+                    rewardTS_run(1,2) = segments.Var1(y);
+                    R = y;
+                end
+            end
+        end
+        clear y
+
+        
+        %% Awake
+        disp('Uploading digital imputs')
+        % Load digitalin.mat
+        load('digitalin.mat')
+        %Shocks selection
+        Shocks_filt = Restrict(shock,aversiveTS_run ./1000);
+        % Keep only the first shock of each TTL (first from 20)
+        count = 1;
+        deff = [];
+        for i = 1:length(Shocks_filt)
+            if count == 1
+                deff = [deff ; Shocks_filt(i,1)];
+            end
+            if count ==20
+                count = 0;
+            end
+            count = count + 1;
+        end
+        Shocks_filt = deff;
+        clear count deff shock i
+        %Rewards selection
+        Rewards_filt = Restrict([leftvalve ; rightvalve],rewardTS_run ./1000);
+        disp('Uploading DLC outputs')
+        camara = ((camara(:,2)-camara(:,1))/2)+camara(:,1);
+        % periods of movment during each condition
+        if rewardTS_run(1) < aversiveTS_run(1)
+            load('laps1.mat','posx','posy');
+            [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            %         [camaraR2,~] = find((camara(:,1)-rewardTS_run(2)/1000)<0,1,'last'); %TimeStamp of the ending of aversive
+            pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
+            behavior.pos.reward = [pos];
+            behavior.speed.reward = LinearVelocity(pos,0);
+            behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
+            behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
+            clear pos camaraR posx posy
+            load('laps2.mat','posx','posy');
+            [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
+            behavior.pos.aversive = [pos];
+            behavior.speed.aversive = LinearVelocity(pos,0);
+            behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
+            behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
+            clear pos camaraR
+        else
+            load('laps2.mat','posx','posy');
+            [camaraR,~] = find((camara(:,1)-rewardTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            %         [camaraR2,~] = find((camara(:,1)-rewardTS_run(2)/1000)<0,1,'last'); %TimeStamp of the ending of aversive
+            pos = [camara(camaraR : camaraR+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int;%saving corrected pos
+            behavior.pos.reward = [pos];
+            behavior.speed.reward = LinearVelocity(pos,0);
+            behavior.speed.reward(:,2) = smoothdata(behavior.speed.reward(:,2),'gaussian',1,'SamplePoints',behavior.speed.reward(:,1));
+            behavior.quiet.reward = QuietPeriods( behavior.speed.reward , minimal_speed , minimal_speed_time);
+            clear pos camaraR posx posy
+            load('laps1.mat','posx','posy');
+            [camaraA,~] = find((camara(:,1)-aversiveTS_run(1)/1000)>0,1,'first'); %TimeStamp of the begining of aversive
+            pos = [camara(camaraA : camaraA+length(posx)-1),posx,posy];
+            %interpolation of dropped frames
+            ejeX = pos(~isnan(pos(:,2)),1); dX = pos(~isnan(pos(:,2)),2); dX_int = interp1(ejeX , dX , pos(:,1));
+            ejeY = pos(~isnan(pos(:,3)),1); dY = pos(~isnan(pos(:,3)),3); dY_int = interp1(ejeY , dY , pos(:,1));
+            pos(:,2) =dX_int; pos(:,3) =dY_int; %saving corrected pos
+            behavior.pos.aversive = [pos];
+            behavior.speed.aversive = LinearVelocity(pos,0);
+            behavior.speed.aversive(:,2) = smoothdata(behavior.speed.aversive(:,2),'gaussian',1,'SamplePoints',behavior.speed.aversive(:,1));
+            behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
+            clear pos camaraA posx posy
+        end
+        %Video sampling rate 
+        dt = (mean(diff(behavior.pos.aversive(:,1)))); 
+        
+        % Generation of no-movements periods
+        % Reward
+        start = behavior.speed.reward(1,1);   stop = behavior.speed.reward(end,1);
+        movement.reward = InvertIntervals(behavior.quiet.reward , start , stop); %keep only those higher than criteria
+        movement.reward(movement.reward(:,2) - movement.reward(:,1) <1,:)=[];
+        clear tmp start stop
+        % Aversive
+        start = behavior.speed.aversive(1,1);   stop = behavior.speed.aversive(end,1);
+        movement.aversive = InvertIntervals(behavior.quiet.aversive , start , stop);%keep only those higher than criteria
+        movement.aversive(movement.aversive(:,2) - movement.aversive(:,1) <1,:)=[];
+        clear tmp start stop
+        
+        %Restrict pos to inside maze and only movement periods
+        %---Aversive----
+        pos_ave = behavior.pos.aversive(:,1:2); 
+        pos_ave(:,2) = pos_ave(:,2)-min(pos_ave(:,2)); pos_ave(:,2) = pos_ave(:,2)/max(pos_ave(:,2)); %normalization of position 
+        in_maze = ToIntervals(pos_ave(:,1),and(pos_ave(:,2)>0.09 , pos_ave(:,2)<1-0.09));% eliminating the extrems of the maze
+                    
+       %Check lenght of in_maze segments to define real laps
+        in_lapA = []; % keeps only full laps (maybe too restrictive)
+        for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_ave(pos_ave(:,1)==ini,2); 
+                        fin_pos = pos_ave(pos_ave(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>0.6
+                             in_lapA = [in_lapA;in_maze(ix,:)]; 
+                        end
+        end
+        
+        pos_ave = Restrict(pos_ave,in_lapA);pos_ave = Restrict(pos_ave, movement.aversive); % Restrict pos to movement periods and laps
+       
+         %---Rewarded----
+        pos_rew = behavior.pos.reward(:,1:2);
+        pos_rew(:,2) = pos_rew(:,2)-min(pos_rew(:,2)); pos_rew(:,2) = pos_rew(:,2)/max(pos_rew(:,2)); %normalization of position 
+        in_maze = ToIntervals(pos_rew(:,1),and(pos_rew(:,2)>0.09 , pos_rew(:,2)<1-0.09));% eliminating the extrems of the maze (10cm-reward box)
+               
+        %Check lenght of in_maze segments to define real laps
+        in_lapR = []; 
+        for ix=1:size(in_maze,1)
+                        ini = in_maze(ix,1);
+                        fin = in_maze(ix,2);
+                        ini_pos = pos_rew(pos_rew(:,1)==ini,2); 
+                        fin_pos = pos_rew(pos_rew(:,1)==fin,2); 
+                        if abs(fin_pos-ini_pos)>0.6
+                             in_lapR = [in_lapR;in_maze(ix,:)]; 
+                        end
+        end 
+        pos_rew = Restrict(pos_rew,in_lapR); pos_rew = Restrict(pos_rew , movement.reward);
+
+       
+        
+        %% Plot
+       
+          
+            %%%%%%% PLOT 
+            figure(2);clf; hold on; 
+            set(gcf,'position',[100,100,400,800])
+            sgtitle(['Behavior ',session(end-14:end)])
+            %%%Ave 
+            %Position
+            subplot(2,1,1); hold on; plot(behavior.pos.aversive(:,2),behavior.pos.aversive(:,1)/.60000,'color','red','LineWidth',1);hold on; axis tight;%set(gca,'yticklabel',[],'TickLength',[0 0],'YColor','none');
+%             line([50 50], [1.865452772500000e+04 (1.865452772500000e+04 +60000)]);
+            title('Aversive run'); 
+            %Find interpolated position of each shock:
+            xs = interp1(behavior.pos.aversive(:,1),behavior.pos.aversive(:,2),Shocks_filt); 
+            s= scatter(xs,Shocks_filt,300,'filled','Marker','.', 'MarkerFaceColor','yellow','MarkerEdgeColor','yellow'); 
+            %Velocity 
+             plot(behavior.speed.aversive(:,2),behavior.speed.aversive(:,1),'color',[.3 .3 .3],'LineWidth',1)
+            
+             
+            %%%Rew
+            %Position
+            subplot(2,1,2); hold on; plot(behavior.pos.reward(:,2),behavior.pos.reward(:,1),'color',[0.175 0.54 0.60],'LineWidth',1);hold on; axis tight;set(gca,'yticklabel',[],'TickLength',[0 0],'YColor','none');
+            title('Reward run'); ylabel('Laps');
+            %Water
+            xs = interp1(behavior.pos.reward(:,1),behavior.pos.reward(:,2), Rewards_filt(:,1)); 
+            s= scatter(xs, Rewards_filt(:,1),300,'filled','Marker','.', 'MarkerFaceColor','blue','MarkerEdgeColor','blue'); 
+            %Velocity 
+            plot(behavior.speed.reward(:,2),behavior.speed.reward(:,1),'color',[.3 .3 .3],'LineWidth',1)
+    
+            
+            % Save figure:
+            saveas(figure(2),['W:\Remapping-analysis-Facu\Behavior plots\','trajectory_velocity',session(end-14:end)], 'pdf');
+               
+
+        disp(['-- Finished folder #' , num2str(t) , ' from rat #' , num2str(tt) , ' ---'])
+        disp('  ')
+    end
+    disp(['-------- Finished rat#' , num2str(tt) , ' --------'])
+    disp(' ')
+end
