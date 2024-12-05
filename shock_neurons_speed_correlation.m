@@ -1,6 +1,7 @@
-
-%Variables
-path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
+function [dHPC , vHPC] = FRSpeed_Shock(path)
+% This function correlates speed and Firing Rate, save the R2 of that
+% linear regression. Also save the Response during the Shock.
+% 
 criteria_fr = 0;
 criteria_type = 0; % criteria for celltype (0:pyr, 1:int, 2:all)
 win = 1;
@@ -60,7 +61,7 @@ for tt = 1:length(path)
         
         if exist('dHPC_responsivness_all.mat')
             load('dHPC_responsivness_all.mat')
-%             clu = dHPC_resp.id(dHPC_resp.resp_ave==1);
+            %             clu = dHPC_resp.id(dHPC_resp.resp_ave==1);
             clu = dHPC_resp.id;
             dHPC_resp.Speedcorrelation.ShockSU = [];
             dHPC_resp.Speedcorrelation.noShockSU = [];
@@ -72,7 +73,7 @@ for tt = 1:length(path)
                     %                     time1 = sum(Shocks_filt+1 - Shocks_filt);
                     %                     x = Restrict(spks(spks(:,1)==clu(i),2),[Shocks_filt Shocks_filt+1]);
                     %                     x = size(x,1);
-                    %                     
+                    %
                     %                     y = InvertIntervals([Shocks_filt Shocks_filt-1] , behavior.pos.aversive(1,1) , behavior.pos.aversive(end,1));
                     %                     time2 = sum(y(:,2)-y(:,1));
                     %                     y = Restrict(spks(spks(:,1)==clu(i),2),y);
@@ -83,12 +84,12 @@ for tt = 1:length(path)
                     spiketrain = spiketrain(1:size(meanSpeed,1),:);
                     f = fitlm(meanSpeed,spiketrain);
                     
-%                     if f.Rsquared.Ordinary>0.1
-%                         figure,
-%                         subplot(211),scatter((meanSpeed),(spiketrain),'filled','r'), hold on
-%                         legend(['R2=',num2str(f.Rsquared.Ordinary) , ' / p=',num2str(coefTest(f))],'Location','Best')
-%                         subplot(212),plot(f)
-%                     end
+                    %                     if f.Rsquared.Ordinary>0.1
+                    %                         figure,
+                    %                         subplot(211),scatter((meanSpeed),(spiketrain),'filled','r'), hold on
+                    %                         legend(['R2=',num2str(f.Rsquared.Ordinary) , ' / p=',num2str(coefTest(f))],'Location','Best')
+                    %                         subplot(212),plot(f)
+                    %                     end
                     
                     dHPC.shock = [dHPC.shock ];
                     speedCorrelation = [speedCorrelation ; f.Rsquared.Ordinary coefTest(f) clu(i) dHPC_resp.resp_ave(dHPC_resp.id==clu(i))];
@@ -99,12 +100,12 @@ for tt = 1:length(path)
                 dHPC_resp.Speedcorrelation.all = speedCorrelation;
             end
             
-%             save([cd,'\dHPC_responsivness_all.mat'],'dHPC_resp')
+            %             save([cd,'\dHPC_responsivness_all.mat'],'dHPC_resp')
         end
         
         if exist('vHPC_responsivness_all.mat')
             load('vHPC_responsivness_all.mat')
-%             clu = vHPC_resp.id(vHPC_resp.resp_ave==1);
+            %             clu = vHPC_resp.id(vHPC_resp.resp_ave==1);
             clu = vHPC_resp.id;
             vHPC_resp.Speedcorrelation.ShockSU = [];
             vHPC_resp.Speedcorrelation.noShockSU = [];
@@ -116,12 +117,12 @@ for tt = 1:length(path)
                     %                     time1 = sum(Shocks_filt+1 - Shocks_filt);
                     %                     x = Restrict(spks(spks(:,1)==clu(i),2),[Shocks_filt Shocks_filt+1]);
                     %                     x = size(x,1);
-                    %                     
+                    %
                     %                     y = InvertIntervals([Shocks_filt Shocks_filt-1] , behavior.pos.aversive(1,1) , behavior.pos.aversive(end,1));
                     %                     time2 = sum(y(:,2)-y(:,1));
                     %                     y = Restrict(spks(spks(:,1)==clu(i),2),y);
                     %                     y = size(y,1); y = y/time2;
-                    %                     
+                    %
                     %                     if y > 0
                     [spiketrain,bins]=binspikes(spks(spks(:,1)==clu(i),2),freq,[behavior.pos.aversive(1,1) : 1 : behavior.pos.aversive(end,1)]);
                     spiketrain = spiketrain(1:size(meanSpeed,1),:);
@@ -142,32 +143,10 @@ for tt = 1:length(path)
                 vHPC_resp.Speedcorrelation.all = speedCorrelation;
             end
             
-%             save([cd,'\vHPC_responsivness_all.mat'],'vHPC_resp')
+            %             save([cd,'\vHPC_responsivness_all.mat'],'vHPC_resp')
         end
         
     end
 end
 
-figure,
-m = nanmean(Speed);
-s = nansem(Speed);
-T = [-40 : 1/30:40-1/30];
-plot(T,m,'k'),hold on
-ciplot(m-s , m+s , T , 'k'), alpha 0.5
-xline(0,'--'),xline(1,'--')
-xlim([-10 40])
-ylim([2 16])
-
-
-figure
-subplot(121),bar([(sum(vHPC.shock(:,2)<0.05)/length(vHPC.shock))*100;100],'stacked')
-subplot(122),bar([(sum(dHPC.shock(:,2)<0.05)/length(dHPC.shock))*100;100],'stacked')
-
-figure
-subplot(121),bar([(sum(vHPC.no(:,2)<0.05)/length(vHPC.no))*100;100],'stacked')
-subplot(122),bar([(sum(dHPC.no(:,2)<0.05)/length(dHPC.no))*100;100],'stacked')
-
-
-figure
-histogram(vHPC(vHPC(:,2)<0.05 , 1),30,'Normalization','probability')
-
+end

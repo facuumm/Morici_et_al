@@ -346,8 +346,7 @@ for tt = 1:length(path)
     disp(' ')
 end
 
-
-%%%%%%% Shock resp prop /pc  %%%%%%%
+%% SHOCK RESPONSE PROP SHOCK/PC %%%%%%%
 %Output matrix 
 dHPC_pc = 0;dHPC_shock = 0;dHPC_reward=0;
 vHPC_pc = 0;vHPC_shock = 0;vHPC_reward=0;
@@ -458,6 +457,7 @@ vhpc_prop_reward = (vHPC_reward/vHPC_pc)*100;
 dhpc_shock = []; dhpc_valve = [];dhpc_ave = []; dhpc_rew = []; 
 vhpc_shock = []; vhpc_valve = []; vhpc_ave = []; vhpc_rew = []; 
 
+
 % 
 for tt = 1:length(path)
     %List of folders from the path
@@ -555,7 +555,11 @@ ylabel('Nuerons');
 figure(2);clf;hold on; 
 plot([1:1:size(dhpc_shock,2)],nanmean(tempA(dhpc_ave==1,:))); 
 ciplot(nanmean(tempA(dhpc_ave==1,:))-nansem(tempA(dhpc_ave==1,:)),nanmean(tempA(dhpc_ave==1,:))+nansem(tempA(dhpc_ave==1,:)),[1:1:size(dhpc_shock,2)]); alpha 0.1; hold on;
-xline(20,'r');xline(30,'r');ylabel('Mean zscore');title('Shock neurons'); xlim([0 40]); 
+
+plot([1:1:size(dhpc_shock,2)],nanmean(tempA(dhpc_ave==-1,:))); 
+ciplot(nanmean(tempA(dhpc_ave==-1,:))-nansem(tempA(dhpc_ave==-1,:)),nanmean(tempA(dhpc_ave==-1,:))+nansem(tempA(dhpc_ave==-1,:)),[1:1:size(dhpc_shock,2)]); alpha 0.1; hold on;
+
+xline(20,'r');xline(30,'r');ylabel('Mean zscore');title('Shock neurons'); xlim([10 40]);  ylim([-0.1 0.8]);
 
 %window for stats
 w_size = 2; % # of bins from the center. Each bin 3cm.
@@ -568,16 +572,20 @@ tempA=vhpc_shock;
 [h idx] = max (tempA, [],2);
 [m mm] = sort(idx); 
 
-% 
+% heatmap
 figure(3);clf;hold on;
 imagesc([0:1:4],[1:1:size(vhpc_shock,1)],tempA(mm,:)), colormap 'gray';axis tight 
 title('vHPC Aversive');xline(2,'r'); xline(3,'r'); xlabel(['Shock',char(10),'Time(sec)', char(10),num2str(vhpc_prop_shock),'% resp']); 
 ylabel('Nuerons');
 
+
 figure(4);clf;hold on; 
 plot([1:1:size(vhpc_shock,2)],nanmean(tempA(vhpc_ave==1,:))); 
 ciplot(nanmean(tempA(vhpc_ave==1,:))-nansem(tempA(vhpc_ave==1,:)),nanmean(tempA(vhpc_ave==1,:))+nansem(tempA(vhpc_ave==1,:)),[1:1:size(vhpc_shock,2)]); alpha 0.1; hold on;
-xline(20,'r');xline(30,'r');ylabel('Mean zscore');title('Shock neurons'); xlim([0 40]);
+xline(20,'r');xline(30,'r');ylabel('Mean zscore');title('Shock neurons'); xlim([10 40]);  ylim([-0.1 0.8]);
+plot([1:1:size(vhpc_shock,2)],nanmean(tempA(vhpc_ave==-1,:))); 
+ciplot(nanmean(tempA(vhpc_ave==-1,:))-nansem(tempA(vhpc_ave==-1,:)),nanmean(tempA(vhpc_ave==-1,:))+nansem(tempA(vhpc_ave==-1,:)),[1:1:size(vhpc_shock,2)]); alpha 0.1; hold on;
+
 % Stats 
 %window for stats
 w_size = 3; % # of bins from the center. Each bin 3cm.
@@ -786,7 +794,7 @@ for tt = 1:length(path)
             %Get id of shock cells 
             temp = [dHPC_shock_norm.id,dHPC_shock_norm.resp]; id_temp= temp(temp(:,2)==1,1);
             
-            load('dHPC_pc_skaggs_pos.mat');
+            load('dHPC_pc_skaggs_circular.mat');
             for d=1:size(dHPC,2)
                 pc = dHPC{d}; 
            
@@ -806,7 +814,7 @@ for tt = 1:length(path)
         try
             load('vHPC_shock_norm_skaggs.mat');
             temp = [vHPC_shock_norm.id,vHPC_shock_norm.resp]; id_temp= temp(temp(:,2)==1,1); 
-            load('vHPC_pc_skaggs_pos.mat');
+            load('vHPC_pc_skaggs_circular.mat');
             for d=1:size(vHPC,2)
                 pc = vHPC{d}; 
            
@@ -859,7 +867,7 @@ for a=1:size(ylabels,2)
     x = dhpc_sub(:,6);
     y= dhpc_sub(:,p);%Change the column number (1-4) to choose which variable to plot 
     c = [.3,.3,.3];
-    scatter(x,y,30,c,"filled",'jitter','on', 'jitterAmount',0.3); xlim([0 4]);
+    scatter(x,y,30,c,"filled",'jitter','on', 'jitterAmount',0.3,'MarkerFaceAlpha',.4); xlim([0 4]);
     ylabel(ylabels{a});
     xticks([1 2 3])
     xticklabels({'Bet', 'WA', 'WR'});
@@ -919,7 +927,7 @@ tbl = array2table(c,"VariableNames", ...
 
 % Paired non-parametric anova - Friedman test
 %Prepare data to test
-p = 3; % 1=sp corr 2=fr change 3=overlap 4=pf shift
+p = 4; % 1=sp corr 2=fr change 3=overlap 4=pf shift
 data=[vhpc_sub(vhpc_sub(:,6)==1,p), vhpc_sub(vhpc_sub(:,6)==2,p), ...
     vhpc_sub(vhpc_sub(:,6)==3,p), vhpc_sub(vhpc_sub(:,6)==4,p),vhpc_sub(vhpc_sub(:,6)==5,p)];
 data(any(isnan(data), 2), :) = [];
@@ -938,6 +946,7 @@ tbl = array2table(c,"VariableNames", ...
     ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
 
 %Only 3 plots
+figure(2);clf;hold on
 ylabels ={'Spatial correlation', 'Overlap', 'Pf shift'};
 idx = [1,3,4]; 
 xlabels = {'Between', 'Within Ave', 'Within Rew'}; 
@@ -988,7 +997,7 @@ for tt = 1:length(path)
         %Loading pc matrix of the sessions
         disp('Uploading session pc matrix');
         try
-            load('dHPC_pc_skaggs_pos.mat');
+            load('dHPC_pc_skaggs_circular.mat');
  
             for d=1:size(dHPC,2)
                 pc = dHPC{d};              
@@ -1007,7 +1016,7 @@ for tt = 1:length(path)
         
         try
             
-            load('vHPC_pc_skaggs_pos.mat');
+            load('vHPC_pc_skaggs_circular.mat');
             for d=1:size(vHPC,2)
                 pc = vHPC{d};              
                 th= 5;%# of bins to dicard 
@@ -1186,7 +1195,7 @@ for tt = 1:length(path)
         %Loading pc matrix of the sessions
         disp('Uploading session pc matrix');
         try
-            load('dHPC_pc_skaggs_pos.mat');
+            load('dHPC_pc_skaggs_circular.mat');
  
             for d=1:size(dHPC,2)
                 pc = dHPC{d};              
@@ -1212,7 +1221,7 @@ for tt = 1:length(path)
         
         try
             
-            load('vHPC_pc_skaggs_pos.mat');
+            load('vHPC_pc_skaggs_circular.mat');
             for d=1:size(vHPC,2)
                 pc = vHPC{d};              
                 th= 4;%# of bins to dicard 

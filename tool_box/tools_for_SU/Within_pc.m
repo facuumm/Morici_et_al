@@ -1,4 +1,4 @@
-function [within_mean,within_percentil ] = Within_pc(pos_tmp,spks_tmp,bin_size,sigma,Xedges)
+function [within_mean,within_percentil,mean_curve1,mean_curve2] = Within_pc(pos_tmp,spks_tmp,bin_size,sigma,Xedges)
 %
 % Within_pc - Randomly splits spike and position data in two and calcualtes remapping parameters
 % (spatial correlation, firing rate change, rate overlap and peak shift) within them. Repeat 100 times  
@@ -21,6 +21,9 @@ function [within_mean,within_percentil ] = Within_pc(pos_tmp,spks_tmp,bin_size,s
 %
 %Azul Silva, 2023
 within = nan(100,4);
+
+mean_curve1 = [];
+mean_curve2 = [];
 
 for c=1:100
 
@@ -130,6 +133,8 @@ for c=1:100
     within(c,4)=shift;
     within(c,5)=change_fr2;
     
+    mean_curve1 = [mean_curve1;curve1.rate];
+    mean_curve2 = [mean_curve2;curve2.rate];
    
 end 
 
@@ -138,6 +143,10 @@ within_mean = nanmean(within);
 spatial = quantile(within(:,1), 0.1);
 fr = quantile(within(:,2), 0.9);
 overlap = quantile(within(:,3), 0.1);
+
 within_percentil = [spatial, fr, overlap]; 
+
+mean_curve1 = nanmean(mean_curve1);
+mean_curve2 = nanmean(mean_curve2);
 
 end

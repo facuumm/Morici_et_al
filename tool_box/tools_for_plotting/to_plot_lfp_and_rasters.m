@@ -3,7 +3,7 @@ criteria_fr = 0;
 criteria_type = 0; % criteria for celltype (0:pyr, 1:int, 2:all)
 
 %% Load LFP
-load('lfp.mat')
+% load('lfp.mat')
 
 %% Loading TS of the sessions
 disp('Uploading session time stamps')
@@ -65,31 +65,116 @@ disp('Uploading Spiking activity')
 cd 'Spikesorting'
 [clusters , numberD , numberV , spks , spks_dHPC , spks_vHPC , cellulartype] = load_SU_FM(cd,criteria_type,criteria_fr,aversiveTS_run,rewardTS_run);
 
+% % for ripples
+% for i = 10 : 30 %length(ripple_event.all)
+%     idx = [ripple_event.all(i,2)-0.2 ripple_event.all(i,2)+0.2];
+%     
+%     % Restrictitng lfp
+%     lfp1 = Restrict(dHPC,idx);
+%     lfp2 = Restrict(vHPC1,idx);
+%     
+%     figure
+%     subplot(311)
+%     plot(lfp1(:,1) , lfp1(:,2)),hold on
+%     plot(lfp2(:,1) , lfp2(:,2)),hold on
+%     
+%     % filtering
+%     lfp1 = FilterLFP(lfp1,'passband',[100 250]);
+%     lfp2 = FilterLFP(lfp2,'passband',[100 250]);
+%     subplot(312)
+%     plot(lfp1(:,1) , lfp1(:,2)),hold on
+%     plot(lfp2(:,1) , lfp2(:,2)),hold on    
+% 
+%     % SUs
+%     subplot(313)
+%     iii=0
+% for ii = 1 : length(clusters.all)
+%     cluster = clusters.all(ii,1);
+% %     celltype = logical(cellulartype(cellulartype(:,1) == cluster,2));
+% %     if celltype
+%         iii = iii+1;
+%         s = spks(spks(:,1)==cluster,2);
+%         s = Restrict(s,idx);
+%         s = s';
+%         xspikes = repmat(s,3,1);
+%         yspikes = nan(size(xspikes));
+%         
+%         if not(isempty(yspikes))
+%             yspikes(1,:) = iii-1;
+%             yspikes(2,:) = iii;
+%         end
+%         
+%         %                             if i >= C
+%         if ii>length(clusters.vHPC)
+%             
+%             plot(xspikes,yspikes,'Color','r','LineWidth',1),hold on
+%         else
+%             plot(xspikes,yspikes,'Color','k','LineWidth',1),hold on
+%         end
+%         %                             yline(ii)
+% %     end
+% end
+% xlim(idx)
+% ylim([0 length(clusters.all)])
+% ylabel('Neuron#')    
+%     
+%     
+%     
+% end
 
-for i = 10 : 30 %length(ripple_event.all)
-    idx = [ripple_event.all(i,2)-0.2 ripple_event.all(i,2)+0.2];
+
+
+% for shocks
+for i = 1 : length(Shocks_filt) %length(ripple_event.all)
+    idx = [Shocks_filt(i) - 2 Shocks_filt(i) + 3];
     
-    % Restrictitng lfp
-    lfp1 = Restrict(dHPC,idx);
-    lfp2 = Restrict(vHPC1,idx);
-    
+%     % Restrictitng lfp
+%     lfp1 = Restrict(dHPC,idx);
+%     lfp2 = Restrict(vHPC1,idx);
+%     
     figure
-    subplot(311)
-    plot(lfp1(:,1) , lfp1(:,2)),hold on
-    plot(lfp2(:,1) , lfp2(:,2)),hold on
-    
-    % filtering
-    lfp1 = FilterLFP(lfp1,'passband',[100 250]);
-    lfp2 = FilterLFP(lfp2,'passband',[100 250]);
-    subplot(312)
-    plot(lfp1(:,1) , lfp1(:,2)),hold on
-    plot(lfp2(:,1) , lfp2(:,2)),hold on    
+%     subplot(311)
+%     plot(lfp1(:,1) , lfp1(:,2)),hold on
+%     plot(lfp2(:,1) , lfp2(:,2)),hold on
+%     
+%     % filtering
+%     lfp1 = FilterLFP(lfp1,'passband',[100 250]);
+%     lfp2 = FilterLFP(lfp2,'passband',[100 250]);
+%     subplot(312)
+%     plot(lfp1(:,1) , lfp1(:,2)),hold on
+%     plot(lfp2(:,1) , lfp2(:,2)),hold on    
 
     % SUs
-    subplot(313)
-    iii=0
-for ii = 1 : length(clusters.all)
+%     subplot(313)
+    tmp = [];
+    for ii = 1 : length(clusters.all)
     cluster = clusters.all(ii,1);
+
+        s = spks(spks(:,1)==cluster,2);
+        s = Restrict(s,[idx(1)+2 idx(1)+3]);
+        
+        if ii>length(clusters.dHPC)
+            tmp = [tmp ; size(s,1) , 1 , cluster];
+        else
+            tmp = [tmp ; size(s,1) , 0 , cluster];
+        end
+        %                             yline(ii)
+%     end
+    end
+
+    c1 = tmp(tmp(:,2)==0,:);
+    [p h] = sort(c1(:,1));
+    c1 = c1(h,3);
+    
+    c2 = tmp(tmp(:,2)==1,:);
+    [p h] = sort(c2(:,1));
+    c2 = c2(h,3);    
+    
+    c = [c1 ; c2];
+    
+    iii = 0;
+for ii = 1 : length(c)
+    cluster = c(ii,1);
 %     celltype = logical(cellulartype(cellulartype(:,1) == cluster,2));
 %     if celltype
         iii = iii+1;
@@ -105,8 +190,7 @@ for ii = 1 : length(clusters.all)
         end
         
         %                             if i >= C
-        if ii>length(clusters.vHPC)
-            
+        if ii>length(clusters.dHPC)
             plot(xspikes,yspikes,'Color','r','LineWidth',1),hold on
         else
             plot(xspikes,yspikes,'Color','k','LineWidth',1),hold on
@@ -115,9 +199,9 @@ for ii = 1 : length(clusters.all)
 %     end
 end
 xlim(idx)
-ylim([0 length(clusters.all)])
+ylim([0 length(c)])
 ylabel('Neuron#')    
-    
-    
+xline(idx(1)+2) 
+xline(idx(1)+3) 
     
 end
