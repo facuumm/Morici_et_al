@@ -177,8 +177,6 @@ set(gca, 'XScale', 'log')
 
 
 % subsampling
-R = [];
-for j = 1 : 1000
 i = vHPC.shock(:,6)<0.05;
 ii = vHPC.shock(:,5)==1;
 iii = and(i,ii);
@@ -191,16 +189,11 @@ x = dHPC.shock(iii,1);
 y = dHPC.shock(iii,3); y = y-min(y); y = y/max(y);
 nn = randperm(length(x));
 x = x(nn,:);    y = y(nn,:);
-x = x(1:n);     y = y(1:n);
 
-mdl3 = fitlm(x,y);
-R = [R ; mdl3.Rsquared.Ordinary];
-end
-
-
-[h hh] = kstest2(R,mdl2.Rsquared.Ordinary)
-histogram(R,50,'Normalization','probability')
-hold on,xline(mdl2.Rsquared.Ordinary)
+% x(y==1) = [];
+% y(y==1)=[];  y = y-min(y); y = y/max(y);
+subplot(121),scatter(x,y,'filled'),xlim([0 0.4])
+mdl1 = fitlm(x,y);
 
 
 

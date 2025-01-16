@@ -8253,8 +8253,9 @@ end
 dhpc_table = array2table([dhpc_params(:,6),dhpc_params(:,3)],'VariableNames',{'Mean velocity aversive','Overlap'}); 
 mdl = fitlm(dhpc_table)
 
-vhpc_table = array2table([vhpc_params(:,6),vhpc_params(:,3)],'VariableNames',{'Mean velocity aversive','Overlap'}); 
+vhpc_table = array2table([vhpc_params(:,6),vhpc_params(:,3)],'VariableNames',{'velocity_ave','overlap'}); 
 mdl = fitlm(vhpc_table)
+
 
 plot(mdl)
  %plot  
