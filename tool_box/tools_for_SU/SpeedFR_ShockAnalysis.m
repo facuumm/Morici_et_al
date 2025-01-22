@@ -157,50 +157,69 @@ end
 % subplot(122)
 % scatter(d(:,4) , d(:,3),'filled') , ylim([-0.5 4.5]) , xlim([0 70])
 % 
-y = [dHPC.shock(:,1) ; vHPC.shock(:,1)];
-x = [ones(length(dHPC.shock(:,1)),1) ; ones(length(vHPC.shock(:,1)),1)*2];
-figure
-boxplot(y,x)
-
-figure,
-scatter(x,y,[],"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
-scatter([1 2] , [nanmean(dHPC.shock(:,1)) ; nanmean(vHPC.shock(:,1))],'filled')
-
-[h p] = kstest2(dHPC.shock(:,1) , vHPC.shock(:,1))
-
-figure
-cdfplot(dHPC.shock(:,1)),hold on
-cdfplot(vHPC.shock(:,1)),hold on
-% xlim([0 0.4])
-set(gca, 'XScale', 'log')
-
-
-
+% y = [dHPC.shock(:,1) ; vHPC.shock(:,1)];
+% x = [ones(length(dHPC.shock(:,1)),1) ; ones(length(vHPC.shock(:,1)),1)*2];
+% figure
+% boxplot(y,x)
+% 
+% figure,
+% scatter(x,y,[],"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+% scatter([1 2] , [nanmean(dHPC.shock(:,1)) ; nanmean(vHPC.shock(:,1))],'filled')
+% 
+% [h p] = kstest2(dHPC.shock(:,1) , vHPC.shock(:,1))
+% 
+% figure
+% cdfplot(dHPC.shock(:,1)),hold on
+% cdfplot(vHPC.shock(:,1)),hold on
+% % xlim([0 0.4])
+% set(gca, 'XScale', 'log')
+% 
+% 
+% 
 % subsampling
 R = [];
 for j = 1 : 1000
 i = vHPC.shock(:,6)<0.05;
 ii = vHPC.shock(:,5)==1;
 iii = and(i,ii);
-n = sum(iii);
+x = vHPC.shock(iii==1,1);
+y = vHPC.shock(iii,3); y = y-min(y); y = y/max(y);
+% x(y==1) = [];
+% y(y==1)=[];  y = y-min(y); y = y/max(y);
+% x(y==1) = [];
+% y(y==1)=[];  y = y-min(y); y = y/max(y);
+x = vHPC.shock(iii,1);
+y = vHPC.shock(iii,3); y = y-min(y); y = y/max(y);
+x = x(not(isoutlier(y,"percentiles",[0 95]))); 
+y = y(not(isoutlier(y,"percentiles",[0 95]))); y = y-min(y); y = y/max(y);
+n = length(y);
 
 i = dHPC.shock(:,6)<0.05;
 ii = dHPC.shock(:,5)==1;
 iii = and(i,ii);
 x = dHPC.shock(iii,1);
 y = dHPC.shock(iii,3); y = y-min(y); y = y/max(y);
+x = x(not(isoutlier(y,"percentiles",[0 95]))); 
+y = y(not(isoutlier(y,"percentiles",[0 95]))); y = y-min(y); y = y/max(y);
 nn = randperm(length(x));
 x = x(nn,:);    y = y(nn,:);
 x = x(1:n);     y = y(1:n);
 
 mdl3 = fitlm(x,y);
-R = [R ; mdl3.Rsquared.Ordinary];
+p = coefTest(mdl3);
+R = [R ; mdl3.Rsquared.Ordinary p];
 end
 
+figure
+[h hh] = kstest2(R(:,1),mdl1.Rsquared.Ordinary)
+histogram(R(:,1),20,'Normalization','probability')
+hold on,xline(mdl1.Rsquared.Ordinary)
 
-[h hh] = kstest2(R,mdl2.Rsquared.Ordinary)
-histogram(R,50,'Normalization','probability')
-hold on,xline(mdl2.Rsquared.Ordinary)
+% figure
+% [h hh] = kstest2(R(:,2),coefTest(mdl1))
+% histogram(R(:,2),50,'Normalization','probability')
+% hold on,xline(coefTest(mdl1))
+% cdfplot(R(:,2)),hold on,xline(0.05)
 
 
 
@@ -210,9 +229,11 @@ ii = dHPC.shock(:,5)==1;
 iii = and(i,ii);
 x = dHPC.shock(iii,1);
 y = dHPC.shock(iii,3); y = y-min(y); y = y/max(y);
+x = x(not(isoutlier(y,"percentiles",[0 95]))); 
+y = y(not(isoutlier(y,"percentiles",[0 95]))); y = y-min(y); y = y/max(y);
 % x(y==1) = [];
 % y(y==1)=[];  y = y-min(y); y = y/max(y);
-subplot(121),scatter(x,y,'filled'),xlim([0 0.4])
+subplot(121),scatter(x,y,'filled'),xlim([0 0.3])
 mdl1 = fitlm(x,y);
 
 
@@ -221,19 +242,21 @@ ii = vHPC.shock(:,5)==1;
 iii = and(i,ii);
 x = vHPC.shock(iii==1,1);
 y = vHPC.shock(iii,3); y = y-min(y); y = y/max(y);
-x(y==1) = [];
-y(y==1)=[];  y = y-min(y); y = y/max(y);
-x(y==1) = [];
-y(y==1)=[];  y = y-min(y); y = y/max(y);
-
-mdl2 = fitlm(x,y);
+% x(y==1) = [];
+% y(y==1)=[];  y = y-min(y); y = y/max(y);
+% x(y==1) = [];
+% y(y==1)=[];  y = y-min(y); y = y/max(y);
+x = vHPC.shock(iii,1);
+y = vHPC.shock(iii,3); y = y-min(y); y = y/max(y);
+x = x(not(isoutlier(y,"percentiles",[0 95]))); 
+y = y(not(isoutlier(y,"percentiles",[0 95]))); y = y-min(y); y = y/max(y); = fitlm(x,y);
 subplot(122),scatter(x,y,'filled'),xlim([0 0.15])
 
 figure
 subplot(121),
 h = plot(mdl1);
 delete(h(1))
-xlim([0 0.4]), ylim([0 1])
+xlim([0 0.3]), ylim([0 1])
 
 subplot(122),
 h = plot(mdl2);

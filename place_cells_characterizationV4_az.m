@@ -7586,18 +7586,19 @@ yline(0);
  figure(1);clf; 
  sgtitle('dHPC')
  Q = quantile(dhpc_r_all(:,1),[0.025 0.25 0.5 0.75 0.975]); 
- subplot(1,2,1);histogram(dhpc_r_all(:,1)); title('Aversive r2'); xl = xline(Q(4),'r');
+ subplot(1,2,1);h=histogram(dhpc_r_all(:,1));h.EdgeColor = 'none';h.FaceColor=[.3,.3,.3];xlim([-0.2 0.8])
+ title('Aversive r2'); xl = xline(Q(4),'r');
  xlabel('r2'); ylabel('Counts');legend(xl,'Q 0.75')
- subplot(1,2,2);histogram(dhpc_r_all(:,2)); title('Reward r2');
+ subplot(1,2,2);h=histogram(dhpc_r_all(:,2));xlim([-0.2 0.8]);h.EdgeColor = 'none';h.FaceColor=[.3,.3,.3]; title('Reward r2');
  xline(Q(4),'r'); xlabel('r2'); ylabel('Counts');
  tresh_dhpc = Q(4); 
  
- figure(2);clf; 
+ figure(1);clf; 
  sgtitle('vHPC')
- subplot(1,2,1);histogram(vhpc_r_all(:,1)); title('Aversive r2');
+ subplot(1,2,1);h= histogram(vhpc_r_all(:,1)); title('Aversive r2');h.EdgeColor = 'none';h.FaceColor=[.3,.3,.3];xlim([-0.3 0.3]);ylim([0 60])
  Q = quantile(vhpc_r_all(:,1),[0.025 0.25 0.5 0.75 0.975]); 
  xl = xline(Q(4),'r'); xlabel('r2'); ylabel('Counts');legend(xl,'Q 0.75')
- subplot(1,2,2);histogram(vhpc_r_all(:,2)); title('Reward r2');
+ subplot(1,2,2);h= histogram(vhpc_r_all(:,2));h.EdgeColor = 'none';h.FaceColor=[.3,.3,.3]; title('Reward r2');ylim([0 60]);xlim([-0.3 0.3]);
  xline(Q(4),'r'); xlabel('r2'); ylabel('Counts');
  tresh_vhpc = Q(4); 
  
@@ -7977,7 +7978,7 @@ tbl = array2table(c,"VariableNames", ...
 ylabels ={'Spatial correlation', 'Overlap', 'Pf shift'};
 idx = [1,3,4]; 
 xlabels = {'Between', 'Within Ave', 'Within Rew'}; 
-figure(2);clf;hold on, 
+figure(1);clf;hold on, 
 sgtitle('vHPC')
 for a=1:size(ylabels,2)
     p = idx(a);
@@ -8250,10 +8251,10 @@ for tt = 1:length(path)
     disp(' ')
 end
 
-dhpc_table = array2table([dhpc_params(:,6),dhpc_params(:,3)],'VariableNames',{'Mean velocity aversive','Overlap'}); 
+dhpc_table = array2table([(dhpc_params(:,7)-dhpc_params(:,6))./(dhpc_params(:,7)+dhpc_params(:,6)),dhpc_params(:,3)],'VariableNames',{'Velocity change','overlap'}); 
 mdl = fitlm(dhpc_table)
 
-vhpc_table = array2table([vhpc_params(:,6),vhpc_params(:,3)],'VariableNames',{'Mean velocity aversive','Overlap'}); 
+vhpc_table = array2table([(vhpc_params(:,7)-vhpc_params(:,6))./(vhpc_params(:,7)+vhpc_params(:,6)),vhpc_params(:,1)],'VariableNames',{'Velocity change','overlap'}); 
 mdl = fitlm(vhpc_table)
 
 plot(mdl)
