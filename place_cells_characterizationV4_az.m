@@ -7335,16 +7335,17 @@ for tt = 1:length(path)
         %Aversive
         start = behavior.speed.aversive(1,1);   stop = behavior.speed.aversive(end,1);
         bin_limits = [start:bin_size:stop]; 
-        [mov_ave] = InIntervals(bin_limits,behavior.quiet.aversive); 
+%         [mov_ave] = InIntervals(bin_limits,behavior.quiet.aversive); 
         
         bin_velocity_ave= nan(size(bin_limits,2),1); 
         for v = 1:size(bin_velocity_ave,1)
             
-          if v == size(bin_velocity_ave,1)
+          if v == size(bin_velocity_ave,1) % for the last bin
               ini = bin_limits(v); fin = stop; 
               [status,~,~] = InIntervals(behavior.speed.aversive(:,1),[ini,fin]);
               bin_velocity_ave(v)=nanmean(behavior.speed.aversive(status,2));
           else 
+              
           ini = bin_limits(v); fin = bin_limits(v+1); 
           [status,~,~] = InIntervals(behavior.speed.aversive(:,1),[ini,fin]);
           bin_velocity_ave(v)=nanmean(behavior.speed.aversive(status,2));
@@ -7357,7 +7358,7 @@ for tt = 1:length(path)
         %Reward
         start = behavior.speed.reward(1,1);   stop = behavior.speed.reward(end,1);
         bin_limits = [start:bin_size:stop]; 
-        [mov_rew] = InIntervals(bin_limits,behavior.quiet.reward); 
+%         [mov_rew] = InIntervals(bin_limits,behavior.quiet.reward); 
         bin_velocity_rew= nan(size(bin_limits,2),1); 
         for v = 1:size(bin_velocity_rew,1)
             
@@ -7439,18 +7440,26 @@ for tt = 1:length(path)
                 [dN,~]=binspikes(spks,1/bin_size,[behavior.speed.aversive(1,1) behavior.speed.aversive(end,1)]); 
                 binned_fr = dN./bin_size; binned_fr =binned_fr(1:end-1);
                 
-                [R_ave,~] = corrcoef(bin_velocity_ave(mov_ave,2),binned_fr(mov_ave)); 
-      
-%                 figure(4); hold on; scatter(bin_velocity_ave(mov_ave,2),binned_fr(mov_ave), 'filled'); xlabel('Velocity'); ylabel('Fr')
-               
+%                 [R_ave,~] = corrcoef(bin_velocity_ave(mov_ave,2),binned_fr(mov_ave)); R_ave=R_ave(1,2);
+%                 
+%                 figure(); hold on; scatter(bin_velocity_ave(mov_ave,2),binned_fr(mov_ave), 'filled'); xlabel('Velocity'); ylabel('Fr')
+                dhpc_table = array2table([bin_velocity_ave(:,2),binned_fr(:)],'VariableNames',{'bin velocity','bin fr'}); 
+                mdl = fitlm(dhpc_table);R_ave= mdl.Rsquared.Ordinary; 
+%                 plot(mdl)
+
                 %Binned spikes
                 [dN,~]=binspikes(spks,1/bin_size,[behavior.speed.reward(1,1) behavior.speed.reward(end,1)]); 
                 binned_fr = dN./bin_size; binned_fr =binned_fr(1:end-1);
                 
-                [R_rew,~] = corrcoef(bin_velocity_rew(mov_rew,2),binned_fr(mov_rew)); 
+%                 [R_rew,~] = corrcoef(bin_velocity_rew(mov_rew,2),binned_fr(mov_rew));R_rew= R_rew(1,2);
 %                 figure; hold on; scatter(bin_velocity_rew',binned_fr(1:end-1) , 'filled'); xlabel('Velocity'); ylabel('Fr')
                 
-                dhpc_r_all= [dhpc_r_all;R_ave(1,2), R_rew(1,2)]; 
+
+                dhpc_table = array2table([bin_velocity_rew(:,2),binned_fr(:)],'VariableNames',{'bin velocity','bin fr'}); 
+                mdl = fitlm(dhpc_table);R_rew= mdl.Rsquared.Ordinary;
+%                 figure; plot(mdl)
+                
+                dhpc_r_all= [dhpc_r_all;R_ave, R_rew]; 
                 
             end
 
@@ -7475,18 +7484,24 @@ for tt = 1:length(path)
                 [dN,~]=binspikes(spks,1/bin_size,[behavior.speed.aversive(1,1) behavior.speed.aversive(end,1)]); 
                 binned_fr = dN./bin_size; binned_fr =binned_fr(1:end-1);
                 
-                [R_ave,~] = corrcoef(bin_velocity_ave(mov_ave,2),binned_fr(mov_ave));  
+%                 [R_ave,~] = corrcoef(bin_velocity_ave(mov_ave,2),binned_fr(mov_ave)); R_ave=R_ave(1,2);
       
 %                 figure; hold on; scatter(bin_velocity',binned_fr(1:end-1) , 'filled'); xlabel('Velocity'); ylabel('Fr')
                
+                table = array2table([bin_velocity_ave(:,2),binned_fr(:)],'VariableNames',{'bin velocity','bin fr'}); 
+                mdl = fitlm(table);R_ave= mdl.Rsquared.Ordinary; 
+                
                 %Binned spikes
                 [dN,~]=binspikes(spks,1/bin_size,[behavior.speed.reward(1,1) behavior.speed.reward(end,1)]); 
                 binned_fr = dN./bin_size;binned_fr =binned_fr(1:end-1);
                 
-                [R_rew,~] = corrcoef(bin_velocity_rew(mov_rew,2),binned_fr(mov_rew)); 
+%                 [R_rew,~] = corrcoef(bin_velocity_rew(mov_rew,2),binned_fr(mov_rew)); R_rew=R_rew(1,2);
 %                 figure; hold on; scatter(bin_velocity_rew',binned_fr(1:end-1) , 'filled'); xlabel('Velocity'); ylabel('Fr')
+
+                table = array2table([bin_velocity_rew(:,2),binned_fr(:)],'VariableNames',{'bin velocity','bin fr'}); 
+                mdl = fitlm(table);R_rew= mdl.Rsquared.Ordinary;
                 
-                vhpc_r_all= [vhpc_r_all;R_ave(1,2), R_rew(1,2)]; 
+                vhpc_r_all= [vhpc_r_all;R_ave,R_rew]; 
                 
             end
             
@@ -7513,11 +7528,13 @@ for tt = 1:length(path)
     disp(' ')
 end
 
+
+
 %%%%%Plot
 %Correlational plot 
 figure(1);clf; hold on;title('dhpc-green vhpc-blue');
-scatter(dhpc_r_all(:,1),dhpc_r_all(:,2),[],[0 1 0],'filled'); xlabel('Rave'); ylabel('Rrew'); ylim([-0.2 0.8]);xlim([-0.2 0.6]);
-scatter(vhpc_r_all(:,1),vhpc_r_all(:,2),[],[0 0 1],'filled'); xlabel('Rave'); ylabel('Rrew'); ylim([-0.2 0.8]);xlim([-0.2 0.6]);
+scatter(dhpc_r_all(:,1),dhpc_r_all(:,2),[],[0 1 0],'filled','g'); xlabel('Rave'); ylabel('Rrew'); ylim([-0.2 0.8]);xlim([-0.2 0.6]);
+scatter(vhpc_r_all(:,1),vhpc_r_all(:,2),[],[0 0 1],'filled','b'); xlabel('Rave'); ylabel('Rrew'); ylim([-0.2 0.8]);xlim([-0.2 0.6]);
 
 % plot([-0.2 0.6],[-0.2 0.8]);
 
@@ -7534,8 +7551,8 @@ subplot(1,2,2);mdl_vhpc = fitlm(array2table([vhpc_r_all(:,1),vhpc_r_all(:,2)]));
 [p, h] = signrank(dhpc_r_all(:,2)); % h=1, p sig, reject null hypothesis -> data differ from 0
 
 [p,h] = signrank(vhpc_r_all(:,1),vhpc_r_all(:,2))
-[p, h] = signrank(vhpc_r_all(:,1)); % h=1, p  0.0017, reject null hypothesis -> data differ from 0
-[p, h] = signrank(vhpc_r_all(:,2)); % h=0, p no sig, data do not differ from 0
+[p, h] = signrank(vhpc_r_all(:,1)); % h=0,p no sig, data do not differ from 0
+[p, h] = signrank(vhpc_r_all(:,2)); % h=1, p  sig, data  differ from 0
 
 % Scatter plots 
 figure(2);clf;hold on
@@ -7964,7 +7981,7 @@ tbl = array2table(c,"VariableNames", ...
 
 % Paired non-parametric anova - Friedman test
 %Prepare data to test
-p = 4; % 1=sp corr 2=fr change 3=overlap 4=pf shift
+p = 1; % 1=sp corr 2=fr change 3=overlap 4=pf shift
 data=[dhpc_params(dhpc_params(:,6)==1,p), dhpc_params(dhpc_params(:,6)==2,p), ...
     dhpc_params(dhpc_params(:,6)==3,p), dhpc_params(dhpc_params(:,6)==4,p),dhpc_params(dhpc_params(:,6)==5,p)];
 data(any(isnan(data), 2), :) = [];
@@ -8005,7 +8022,7 @@ tbl = array2table(c,"VariableNames", ...
 
 % Paired non-parametric anova - Friedman test
 %Prepare data to test
-p = 4; % 1=sp corr 2=fr change 3=overlap 4=pf shift
+p = 1; % 1=sp corr 2=fr change 3=overlap 4=pf shift
 data=[vhpc_params(vhpc_params(:,6)==1,p), vhpc_params(vhpc_params(:,6)==2,p), ...
     vhpc_params(vhpc_params(:,6)==3,p), vhpc_params(vhpc_params(:,6)==4,p),vhpc_params(vhpc_params(:,6)==5,p)];
 data(any(isnan(data), 2), :) = [];

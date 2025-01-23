@@ -3,8 +3,12 @@ clc
 close all
 
 %% Parameters
-path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\ready';'\\Maryjackson\e\Rat103\usable';'\\Maryjackson\e\Rat132\recordings\in_pyr'; '\\Maryjackson\e\Rat165\in_pyr'; ...
-    '\\Maryjackson\e\Rat126\Ephys\in_Pyr'};%List of folders from the path
+% path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\ready';'\\Maryjackson\e\Rat103\usable';'\\Maryjackson\e\Rat132\recordings\in_pyr'; '\\Maryjackson\e\Rat165\in_pyr'; ...
+%     '\\Maryjackson\e\Rat126\Ephys\in_Pyr'};%List of folders from the path
+
+path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
+
+
 %Sleep
 time_criteria = 1; % minimal time to include a NREM epoch (in min)
 
@@ -179,7 +183,6 @@ for tt = 1:length(path)
                 end 
                 if numberV >= 3
                     [Spikes.vHPC , bins , Clusters.vHPC] = spike_train_construction([spks_vHPC], clusters.vHPC, cellulartype, binSize, limits, events, false, true);
-                    
                 end 
                 clear limits events
                 
@@ -326,6 +329,7 @@ for tt = 1:length(path)
     clear num_assembliesA num_assembliesR
     
 end
+
 %% Plotting section
 % The following section is used to plot the outputs of the script
 % Please, be sure that you undersand the structure of the matrix you are
