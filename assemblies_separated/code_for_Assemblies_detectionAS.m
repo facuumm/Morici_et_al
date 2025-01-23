@@ -9,7 +9,7 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 criteria_fr = 0; %criteria to include or not a SU into the analysis
 criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
 criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
-binSize = [0.02]; %for assemblie detection and activity strength
+binSize = [0.01]; %for assemblie detection and activity strength
 
 % Behavior
 minimal_speed = 7; % minimal speed to detect quite periods

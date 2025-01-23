@@ -7194,6 +7194,7 @@ dhpc_r_all= [];
 vhpc_r_all= []; 
 
 
+
 for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
@@ -7335,8 +7336,8 @@ for tt = 1:length(path)
         %Aversive
         start = behavior.speed.aversive(1,1);   stop = behavior.speed.aversive(end,1);
         bin_limits = [start:bin_size:stop]; 
-%         [mov_ave] = InIntervals(bin_limits,behavior.quiet.aversive); 
-        
+        [mov_ave] = InIntervals(bin_limits,behavior.quiet.aversive); 
+        mov_ave=~mov_ave;
         bin_velocity_ave= nan(size(bin_limits,2),1); 
         for v = 1:size(bin_velocity_ave,1)
             
@@ -7358,7 +7359,8 @@ for tt = 1:length(path)
         %Reward
         start = behavior.speed.reward(1,1);   stop = behavior.speed.reward(end,1);
         bin_limits = [start:bin_size:stop]; 
-%         [mov_rew] = InIntervals(bin_limits,behavior.quiet.reward); 
+        [mov_rew] = InIntervals(bin_limits,behavior.quiet.reward); 
+        mov_rew=~mov_rew;
         bin_velocity_rew= nan(size(bin_limits,2),1); 
         for v = 1:size(bin_velocity_rew,1)
             
@@ -7442,20 +7444,20 @@ for tt = 1:length(path)
                 
 %                 [R_ave,~] = corrcoef(bin_velocity_ave(mov_ave,2),binned_fr(mov_ave)); R_ave=R_ave(1,2);
 %                 
-%                 figure(); hold on; scatter(bin_velocity_ave(mov_ave,2),binned_fr(mov_ave), 'filled'); xlabel('Velocity'); ylabel('Fr')
-                dhpc_table = array2table([bin_velocity_ave(:,2),binned_fr(:)],'VariableNames',{'bin velocity','bin fr'}); 
+%                 figure(2);clf; hold on; scatter(bin_velocity_ave(mov_ave,2),binned_fr(mov_ave), 'filled'); xlabel('Velocity'); ylabel('Fr')
+                dhpc_table = array2table([bin_velocity_ave(mov_ave,2),binned_fr(mov_ave)],'VariableNames',{'bin velocity','bin fr'}); 
                 mdl = fitlm(dhpc_table);R_ave= mdl.Rsquared.Ordinary; 
-%                 plot(mdl)
+%                 figure(1);plot(mdl)
 
                 %Binned spikes
                 [dN,~]=binspikes(spks,1/bin_size,[behavior.speed.reward(1,1) behavior.speed.reward(end,1)]); 
                 binned_fr = dN./bin_size; binned_fr =binned_fr(1:end-1);
                 
 %                 [R_rew,~] = corrcoef(bin_velocity_rew(mov_rew,2),binned_fr(mov_rew));R_rew= R_rew(1,2);
-%                 figure; hold on; scatter(bin_velocity_rew',binned_fr(1:end-1) , 'filled'); xlabel('Velocity'); ylabel('Fr')
+%               figure(); hold on; scatter(bin_velocity_rew(mov_rew,2),binned_fr(mov_rew), 'filled'); xlabel('Velocity'); ylabel('Fr');
                 
 
-                dhpc_table = array2table([bin_velocity_rew(:,2),binned_fr(:)],'VariableNames',{'bin velocity','bin fr'}); 
+                dhpc_table = array2table([bin_velocity_rew(mov_rew,2),binned_fr(mov_rew)],'VariableNames',{'bin velocity','bin fr'}); 
                 mdl = fitlm(dhpc_table);R_rew= mdl.Rsquared.Ordinary;
 %                 figure; plot(mdl)
                 
@@ -7488,7 +7490,7 @@ for tt = 1:length(path)
       
 %                 figure; hold on; scatter(bin_velocity',binned_fr(1:end-1) , 'filled'); xlabel('Velocity'); ylabel('Fr')
                
-                table = array2table([bin_velocity_ave(:,2),binned_fr(:)],'VariableNames',{'bin velocity','bin fr'}); 
+                table = array2table([bin_velocity_ave(mov_ave,2),binned_fr(mov_ave)],'VariableNames',{'bin velocity','bin fr'}); 
                 mdl = fitlm(table);R_ave= mdl.Rsquared.Ordinary; 
                 
                 %Binned spikes
@@ -7498,7 +7500,7 @@ for tt = 1:length(path)
 %                 [R_rew,~] = corrcoef(bin_velocity_rew(mov_rew,2),binned_fr(mov_rew)); R_rew=R_rew(1,2);
 %                 figure; hold on; scatter(bin_velocity_rew',binned_fr(1:end-1) , 'filled'); xlabel('Velocity'); ylabel('Fr')
 
-                table = array2table([bin_velocity_rew(:,2),binned_fr(:)],'VariableNames',{'bin velocity','bin fr'}); 
+                table = array2table([bin_velocity_rew(mov_rew,2),binned_fr(mov_rew)],'VariableNames',{'bin velocity','bin fr'}); 
                 mdl = fitlm(table);R_rew= mdl.Rsquared.Ordinary;
                 
                 vhpc_r_all= [vhpc_r_all;R_ave,R_rew]; 
@@ -7530,7 +7532,12 @@ end
 
 
 
+
+
 %%%%%Plot
+
+%Cumilative 
+figure(6);clf;hold on; 
 %Correlational plot 
 figure(1);clf; hold on;title('dhpc-green vhpc-blue');
 scatter(dhpc_r_all(:,1),dhpc_r_all(:,2),[],[0 1 0],'filled','g'); xlabel('Rave'); ylabel('Rrew'); ylim([-0.2 0.8]);xlim([-0.2 0.6]);
@@ -7603,20 +7610,20 @@ yline(0);
  figure(1);clf; 
  sgtitle('dHPC')
  Q = quantile(dhpc_r_all(:,1),[0.025 0.25 0.5 0.75 0.975]); 
- subplot(1,2,1);h=histogram(dhpc_r_all(:,1));h.EdgeColor = 'none';h.FaceColor=[.3,.3,.3];xlim([-0.2 0.8])
- title('Aversive r2'); xl = xline(Q(4),'r');
- xlabel('r2'); ylabel('Counts');legend(xl,'Q 0.75')
- subplot(1,2,2);h=histogram(dhpc_r_all(:,2));xlim([-0.2 0.8]);h.EdgeColor = 'none';h.FaceColor=[.3,.3,.3]; title('Reward r2');
- xline(Q(4),'r'); xlabel('r2'); ylabel('Counts');
+ subplot(1,2,1);h=histogram(dhpc_r_all(:,1));h.EdgeColor = 'none';h.FaceColor=[.3,.3,.3];xlim([0 0.4]);ylim([0 450]);
+ xl = xline(Q(4),'r');
+ xlabel('r2 aversive'); ylabel('Counts');legend(xl,'Q 0.75')
+ subplot(1,2,2);h=histogram(dhpc_r_all(:,2));xlim([0 0.4]);ylim([0 450]);h.EdgeColor = 'none';h.FaceColor=[.3,.3,.3]; 
+ xline(Q(4),'r'); xlabel('r2 reward'); ylabel('Counts');
  tresh_dhpc = Q(4); 
  
  figure(1);clf; 
  sgtitle('vHPC')
- subplot(1,2,1);h= histogram(vhpc_r_all(:,1)); title('Aversive r2');h.EdgeColor = 'none';h.FaceColor=[.3,.3,.3];xlim([-0.3 0.3]);ylim([0 60])
+ subplot(1,2,1);h= histogram(vhpc_r_all(:,1));h.EdgeColor = 'none';h.FaceColor=[.3,.3,.3];xlim([0 0.2]);ylim([0 130])
  Q = quantile(vhpc_r_all(:,1),[0.025 0.25 0.5 0.75 0.975]); 
- xl = xline(Q(4),'r'); xlabel('r2'); ylabel('Counts');legend(xl,'Q 0.75')
- subplot(1,2,2);h= histogram(vhpc_r_all(:,2));h.EdgeColor = 'none';h.FaceColor=[.3,.3,.3]; title('Reward r2');ylim([0 60]);xlim([-0.3 0.3]);
- xline(Q(4),'r'); xlabel('r2'); ylabel('Counts');
+ xl = xline(Q(4),'r'); xlabel('r2 aversive'); ylabel('Counts');legend(xl,'Q 0.75')
+ subplot(1,2,2);h= histogram(vhpc_r_all(:,2));h.EdgeColor = 'none';h.FaceColor=[.3,.3,.3];xlim([0 0.2]);ylim([0 130]);
+ xline(Q(4),'r'); xlabel('r2 reward'); ylabel('Counts');
  tresh_vhpc = Q(4); 
  
 
