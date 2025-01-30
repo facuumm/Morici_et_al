@@ -97,6 +97,8 @@ for i = 1:size(a,1)
         
         %firing curve calculation
         [m,stats] = FiringCurve(p,l,'nBins' , Nbins , 'smooth' , 2 , 'minPeak' , 0.2 , 'minSize' , 4);
+        q = SkaggsRandomFMT_1D(l, p, 2, 60, 0.9);
+        
         
         if ii == 1 %storing the constructed map
             map.cond1 = [map.cond1 ; m.rate];
@@ -104,11 +106,11 @@ for i = 1:size(a,1)
             map.cond2 = [map.cond2 ; m.rate];
         end
         
-        %check if field is larger than 4 bins
+        %check if field is > 4 bins and > surrogate skaggs
         %if so, it will be considered as a place assemblie
         if ii == 1
             if not(isempty(stats.field))
-                if sum(stats.field(:,:,1))>= 4
+                if and(sum(stats.field(:,:,1))>= 4 , stats.specificity >= q)
                     pc.cond1 = [pc.cond1 ; true];
                 else
                     pc.cond1 = [pc.cond1 ; false];
@@ -118,7 +120,7 @@ for i = 1:size(a,1)
             end
         else
             if not(isempty(stats.field))
-                if sum(stats.field(:,:,1))>= 4
+                if and(sum(stats.field(:,:,1))>= 4 , stats.specificity >= q)
                     pc.cond2 = [pc.cond2 ; true];
                 else
                     pc.cond2 = [pc.cond2 ; false];

@@ -751,7 +751,8 @@ for i = 1 : size(Peaks.reward.Post,2)
     end
 end
 
-p_value = compare_ks_distance(cumA , cumAP , cumR , cumRP , 1000)
+p_value = compare_ks_distance(cumA , cumR , cumAP , cumRP , 1000)
+
 
 figure,
 ii = nanmean(ReactR.post(1:20,:));

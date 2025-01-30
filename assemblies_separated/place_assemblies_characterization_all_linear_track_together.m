@@ -3,9 +3,6 @@ clc
 close all
 
 %% Parameters
-% path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\ready';'\\Maryjackson\e\Rat103\usable';'\\Maryjackson\e\Rat132\recordings\in_pyr'; '\\Maryjackson\e\Rat165\in_pyr'; ...
-%     '\\Maryjackson\e\Rat126\Ephys\in_Pyr'};%List of folders from the path
-
 path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 
 
@@ -16,11 +13,9 @@ time_criteria = 1; % minimal time to include a NREM epoch (in min)
 criteria_fr = 0; %criteria to include or not a SU into the analysis
 criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
 criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
-binSize = 0.01; %for qssemblie detection qnd qxctivity strength
+binSize = 0.02; %for qssemblie detection qnd qxctivity strength
 n_SU_V = 0;
 n_SU_D = 0;
-
-win = 300; % time window for bin construction
 
 % Behavior
 minimal_speed = 7; % minimal speed to detect quite periods
@@ -29,26 +24,17 @@ minimal_speed_time = 2; % minimal time to detect quite periods
 th = 3; % threshold for peak detection
 s = true; % true if I wanna save maps at each folder
 
-Number_of_assemblies.aversive = [];
-Number_of_assemblies.reward = [];
-
-map.bothA.aversive = []; map.bothA.reward = [];
-map.bothR.aversive = []; map.bothR.reward = [];
-map.dHPCA.aversive = []; map.dHPCA.reward = [];
-map.dHPCR.aversive = []; map.dHPCR.reward = [];
-map.vHPCA.aversive = []; map.vHPCA.reward = [];
-map.vHPCR.aversive = []; map.vHPCR.reward = [];
+Number_of_assemblies = [];
 
 
-Within.bothA.aversive = []; Within.bothA.reward = [];
-Within.bothR.aversive = []; Within.bothR.reward = [];
-Within.dHPCA.aversive = []; Within.dHPCA.reward = [];
-Within.dHPCR.aversive = []; Within.dHPCR.reward = [];
-Within.vHPCA.aversive = []; Within.vHPCA.reward = [];
-Within.vHPCR.aversive = []; Within.vHPCR.reward = [];
+map.dHPC.aversive = []; map.dHPC.reward = [];
+map.vHPC.aversive = []; map.vHPC.reward = [];
 
-Between.dHPCA = []; Between.dHPCR = [];
-Between.vHPCA = []; Between.vHPCR = [];
+
+Within.dHPC.aversive = []; Within.dHPC.reward = [];
+Within.vHPC.aversive = []; Within.vHPC.reward = [];
+
+Between.dHPC = [];     Between.vHPC = [];
 
 % Sacar el filtro que puse del FR en el counts de neuronas
 %% Main loop, to iterate across sessions
@@ -173,24 +159,27 @@ for tt = 1:length(path)
         if or(numberD >= 3 , numberV >= 3)
             disp('Lets go for the assemblies')
             if isfile('separated_assemblies.mat')
-                load('separated_assemblies.mat')
+                load('separated_assemblies_all_together.mat')
                 
                 % SpikeTrains construction
                 limits = [0 segments.Var1(end)/1000];
                 events = [];
                 if numberD >= 3
                     [Spikes.dHPC , bins , Clusters.dHPC] = spike_train_construction([spks_dHPC], clusters.dHPC, cellulartype, binSize, limits, events, false, true);
+                    Spikes.dHPC(InIntervals(bins,[Shocks_filt-0.5 Shocks_filt+1.5]),:) = [];
+                    bins(InIntervals(bins,[Shocks_filt-0.5 Shocks_filt+1.5])) = [];
                 end 
                 if numberV >= 3
                     [Spikes.vHPC , bins , Clusters.vHPC] = spike_train_construction([spks_vHPC], clusters.vHPC, cellulartype, binSize, limits, events, false, true);
+                    Spikes.vHPC(InIntervals(bins,[Shocks_filt-0.5 Shocks_filt+1.5]),:) = [];
+                    bins(InIntervals(bins,[Shocks_filt-0.5 Shocks_filt+1.5])) = [];
                 end 
                 clear limits events
                 
-                if isfield(patterns,'aversive')
                     % --- AVERSIVE ---
                     %dHPC
-                    if isfield(patterns.aversive,'dHPC')
-                        if and(not(isempty(patterns.aversive.dHPC)), size(patterns.aversive.dHPC,1)>2)
+                    if isfield(patterns,'dHPC')
+                        if and(not(isempty(patterns.dHPC)), size(patterns.dHPC,1)>2)
                         pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
                         [~, xx] = sort(pos(:,1));
                         pos = pos(xx,:);
@@ -198,27 +187,27 @@ for tt = 1:length(path)
                         events{1} = movement.aversive;
                         events{2}  = movement.reward;
                         
-                        [Maps pc between within] = FiringMap_Assemblies(patterns.aversive.dHPC , logical(ones(1,size(patterns.aversive.dHPC,2))) , [bins' , Spikes.dHPC] , th , pos , events , 60 , true , true);
+                        [Maps pc between within] = FiringMap_Assemblies(patterns.dHPC , logical(ones(1,size(patterns.dHPC,2))) , [bins' , Spikes.dHPC] , th , pos , events , 60 , true , true);
                         clear pos x xx
                         
                         
                         pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
                         
-                        map.dHPCA.aversive = [map.dHPCA.aversive ; Maps.cond1(pc,:)];
-                        map.dHPCA.reward = [map.dHPCA.reward ; Maps.cond2(pc,:)];
+                        map.dHPC.aversive = [map.dHPC.aversive ; Maps.cond1(pc,:)];
+                        map.dHPC.reward = [map.dHPC.reward ; Maps.cond2(pc,:)];
                         
-                        Within.dHPCA.aversive = [Within.dHPCA.aversive ; within.cond1(pc,:)];
-                        Within.dHPCA.reward = [Within.dHPCA.reward ; within.cond2(pc,:)];
+                        Within.dHPC.aversive = [Within.dHPC.aversive ; within.cond1(pc,:)];
+                        Within.dHPC.reward = [Within.dHPC.reward ; within.cond2(pc,:)];
                         
-                        Between.dHPCA = [Between.dHPCA ; between(pc,:)];
+                        Between.dHPC = [Between.dHPC ; between(pc,:)];
                         
                         clear within between pc Maps pos x xx events
                         end
                     end
                     
                     % vHPC
-                    if isfield(patterns.aversive,'vHPC')
-                        if and(not(isempty(patterns.aversive.vHPC)), size(patterns.aversive.vHPC,1)>2)
+                    if isfield(patterns,'vHPC')
+                        if and(not(isempty(patterns.vHPC)), size(patterns.vHPC,1)>2)
                         pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
                         [x xx] = sort(pos(:,1));
                         pos = pos(xx,:);
@@ -226,86 +215,24 @@ for tt = 1:length(path)
                         events{1} = movement.aversive;
                         events{2}  = movement.reward;
                         
-                        [Maps pc between within] = FiringMap_Assemblies(patterns.aversive.vHPC , logical(ones(1,size(patterns.aversive.vHPC,2))) , [bins' , Spikes.vHPC] , th , pos , events , 60 , true , true);
+                        [Maps pc between within] = FiringMap_Assemblies(patterns.vHPC , logical(ones(1,size(patterns.vHPC,2))) , [bins' , Spikes.vHPC] , th , pos , events , 60 , true , true);
                         clear pos x xx
                         
                         
                         
                         pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
                         
-                        map.vHPCA.aversive = [map.vHPCA.aversive ; Maps.cond1(pc,:)];
-                        map.vHPCA.reward = [map.vHPCA.reward ; Maps.cond2(pc,:)];
+                        map.vHPC.aversive = [map.vHPC.aversive ; Maps.cond1(pc,:)];
+                        map.vHPC.reward = [map.vHPC.reward ; Maps.cond2(pc,:)];
                         
-                        Within.vHPCA.aversive = [Within.vHPCA.aversive ; within.cond1(pc,:)];
-                        Within.vHPCA.reward = [Within.vHPCA.reward ; within.cond2(pc,:)];
+                        Within.vHPC.aversive = [Within.vHPC.aversive ; within.cond1(pc,:)];
+                        Within.vHPC.reward = [Within.vHPC.reward ; within.cond2(pc,:)];
                         
-                        Between.vHPCA = [Between.vHPCA ; between(pc,:)];
+                        Between.vHPC = [Between.vHPC ; between(pc,:)];
                         
                         clear within between pc Maps pos x xx events
                         end 
                     end
-                end
-                
-                
-                
-                if isfield(patterns,'reward')
-                    % --- Reward ---
-                    %dHPC
-                    if isfield(patterns.reward,'dHPC')
-                        if and(not(isempty(patterns.reward.dHPC)), size(patterns.reward.dHPC,1)>2)
-                        pos = [behavior.pos.reward(:,1:2) ; behavior.pos.aversive(:,1:2)];
-                        [~, xx] = sort(pos(:,1));
-                        pos = pos(xx,:);
-                        events = cell(2,1);
-                        events{1} = movement.reward;
-                        events{2}  = movement.aversive;
-                        
-                        [Maps pc between within] = FiringMap_Assemblies(patterns.reward.dHPC , logical(ones(1,size(patterns.reward.dHPC,2))) , [bins' , Spikes.dHPC] , th , pos , events , 60 , true , true);
-                        clear pos x xx
-                        
-                        
-                        pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
-                        
-                        map.dHPCR.reward = [map.dHPCR.reward ; Maps.cond1(pc,:)];
-                        map.dHPCR.aversive = [map.dHPCR.aversive ; Maps.cond2(pc,:)];
-                        
-                        Within.dHPCR.reward = [Within.dHPCR.reward ; within.cond1(pc,:)];
-                        Within.dHPCR.aversive = [Within.dHPCR.aversive ; within.cond2(pc,:)];
-                        
-                        Between.dHPCR = [Between.dHPCR ; between(pc,:)];
-                        
-                        clear within between pc Maps pos x xx events
-                        end
-                    end
-                    
-                    % vHPC
-                    if isfield(patterns.reward,'vHPC')
-                        if and(not(isempty(patterns.reward.vHPC)), size(patterns.reward.vHPC,1)>2)
-                        pos = [behavior.pos.reward(:,1:2) ; behavior.pos.aversive(:,1:2)];
-                        [x xx] = sort(pos(:,1));
-                        pos = pos(xx,:);
-                        events = cell(2,1);
-                        events{1} = movement.reward;
-                        events{2}  = movement.aversive;
-                        
-                        [Maps pc between within] = FiringMap_Assemblies(patterns.reward.vHPC , logical(ones(1,size(patterns.reward.vHPC,2))) , [bins' , Spikes.vHPC] , th , pos , events , 60 , true , true);
-                        clear pos x xx
-                        
-                        
-                        pc = or(pc.cond1 , pc.cond2); %logical to select maps to save
-                        
-                        map.vHPCR.reward = [map.vHPCR.reward ; Maps.cond1(pc,:)];
-                        map.vHPCR.aversive = [map.vHPCR.aversive ; Maps.cond2(pc,:)];
-                        
-                        Within.vHPCR.reward = [Within.vHPCR.reward ; within.cond1(pc,:)];
-                        Within.vHPCR.aversive = [Within.vHPCR.aversive ; within.cond2(pc,:)];
-                        
-                        Between.vHPCR = [Between.vHPCR ; between(pc,:)];
-                        
-                        clear within between pc Maps pos x xx events
-                         end 
-                    end
-                end                
                 
             end
  
@@ -324,8 +251,7 @@ for tt = 1:length(path)
         clear cooridnated_event coordinatedV_refined coordinatedV_refined
     end
     
-    Number_of_assemblies.aversive = [Number_of_assemblies.aversive ; sum(num_assembliesA)];
-    Number_of_assemblies.reward = [Number_of_assemblies.reward ; sum(num_assembliesR)];
+    Number_of_assemblies = [Number_of_assemblies ; sum(num_assembliesA)];
     clear num_assembliesA num_assembliesR
     
 end
@@ -337,10 +263,10 @@ end
 
 %% dHPC
 figure
-x = map.dHPCA.aversive - min(map.dHPCA.aversive,[],2);
+x = map.dHPC.aversive - min(map.dHPC.aversive,[],2);
 x = x./max(x,[],2);
 
-y = map.dHPCA.reward - min(map.dHPCA.reward,[],2);
+y = map.dHPC.reward - min(map.dHPC.reward,[],2);
 y = y./max(y,[],2);
 
 [c i] = max(x,[],2);
@@ -350,25 +276,13 @@ subplot(121),imagesc(x(i,:)); colormap 'gray'; title('Aversive')
 subplot(122),imagesc(y(i,:));colormap 'gray';title('Reward')
 sgtitle('dHPC-Aversive');
 
-figure
-x = map.dHPCR.aversive - min(map.dHPCR.aversive,[],2);
-x = x./max(x,[],2);
-
-y = map.dHPCR.reward - min(map.dHPCR.reward,[],2);
-y = y./max(y,[],2);
-
-[c i] = max(y,[],2);
-[c i] = sort(i);
-sgtitle('dHPC-Reward');
-subplot(121),imagesc(x(i,:));colormap 'gray'; title('Aversive')
-subplot(122),imagesc(y(i,:));colormap 'gray';title('Reward')
 
 %% vHPC
 figure
-x = map.vHPCA.aversive - min(map.vHPCA.aversive,[],2);
+x = map.vHPC.aversive - min(map.vHPC.aversive,[],2);
 x = x./max(x,[],2);
 
-y = map.vHPCA.reward - min(map.vHPCA.reward,[],2);
+y = map.vHPC.reward - min(map.vHPC.reward,[],2);
 y = y./max(y,[],2);
 
 [c i] = max(x,[],2);
@@ -379,41 +293,25 @@ subplot(122),imagesc(y(i,:));colormap 'gray';title('Reward')
 sgtitle('vHPC-Aversive');
 
 
-figure
-x = map.vHPCR.aversive - min(map.vHPCR.aversive,[],2);
-x = x./max(x,[],2);
-
-y = map.vHPCR.reward - min(map.vHPCR.reward,[],2);
-y = y./max(y,[],2);
-
-[c i] = max(y,[],2);
-[c i] = sort(i);
-
-subplot(121),imagesc(x(i,:)); colormap 'gray'; title('Aversive')
-subplot(122),imagesc(y(i,:));colormap 'gray';title('Reward')
-sgtitle('vHPC-Reward');
-
-
 %% Plot parameters
 % Spatial Correlation
 color = [.3,.3,.3];
 
 figure; hold on
-subplot(1,2,1)
 
-y = [Between.dHPCA(:,1);Within.dHPCA.aversive(:,1); Within.dHPCA.reward(:,1)];
-x = [ones(length(Between.dHPCA(:,1)),1) ; ones(length(Within.dHPCA.aversive(:,1)),1)*2 ; ones(length(Within.dHPCA.reward(:,1)),1)*3];
+y = [Between.dHPC(:,1);Within.dHPC.aversive(:,1); Within.dHPC.reward(:,1)];
+x = [ones(length(Between.dHPC(:,1)),1) ; ones(length(Within.dHPC.aversive(:,1)),1)*2 ; ones(length(Within.dHPC.reward(:,1)),1)*3];
 scatter(x,y,[],color,"filled",'jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
 ylabel('Spatial correlation');
 xticks([1 2 3])
 xticklabels({'Bet', 'WA', 'WR'});
-scatter([1 2 3],[nanmedian(Between.dHPCA(:,1)) , nanmedian( Within.dHPCA.aversive(:,1)), nanmedian( Within.dHPCA.reward(:,1))],'filled')
+scatter([1 2 3],[nanmedian(Between.dHPC(:,1)) , nanmedian( Within.dHPC.aversive(:,1)), nanmedian( Within.dHPC.reward(:,1))],'filled')
 % boxplot(y,x),ylim([-0.55 1.05])
 
 
 % Paired non-parametric anova - Friedman test
 %Prepare data to test
-data = [Between.dHPCA(:,1), Within.dHPCA.aversive(:,1),Within.dHPCA.reward(:,1)];
+data = [Between.dHPC(:,1), Within.dHPC.aversive(:,1),Within.dHPC.reward(:,1)];
 data(any(isnan(data), 2), :) = [];
 
 [p,~,stats] =  friedman(data,1); 
@@ -421,66 +319,26 @@ c = multcompare(stats);
 tbl = array2table(c,"VariableNames", ...
     ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
 
-subplot(1,2,2)
-y = [Between.dHPCR(:,1) ; Within.dHPCR.aversive(:,1);Within.dHPCR.reward(:,1)];
-x = [ones(length(Between.dHPCR(:,1)),1) ; ones(length(Within.dHPCR.aversive(:,1)),1)*2 ; ones(length(Within.dHPCR.reward(:,1)),1)*3];
-scatter(x,y,[],color,"filled",'jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
-scatter([1 2 3],[nanmedian(Between.dHPCR(:,1)) , nanmedian( Within.dHPCR.aversive(:,1)), nanmedian( Within.dHPCR.reward(:,1))],'filled')
-% boxplot(y,x),ylim([-0.55 1.05])
-ylabel('Spatial correlation');
-xticks([1 2 3])
-xticklabels({'Bet', 'WA', 'WR'});
-
 % Paired non-parametric anova - Friedman test
 %Prepare data to test
-data = [Between.dHPCR(:,1), Within.dHPCR.reward(:,1), Within.dHPCR.aversive(:,1)];
-data(any(isnan(data), 2), :) = [];
-
-[p,~,stats] =  friedman(data,1); 
-c = multcompare(stats);
-tbl = array2table(c,"VariableNames", ...
-    ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
-
 figure; hold on
-subplot(1,2,1)
-y = [Between.vHPCA(:,1) ; Within.vHPCA.aversive(:,1) ; Within.vHPCA.reward(:,1)];
-x = [ones(length(Between.vHPCA(:,1)),1) ; ones(length(Within.vHPCA.aversive(:,1)),1)*2 ; ones(length(Within.vHPCA.reward(:,1)),1)*3];
+y = [Between.vHPC(:,1) ; Within.vHPC.aversive(:,1) ; Within.vHPC.reward(:,1)];
+x = [ones(length(Between.vHPC(:,1)),1) ; ones(length(Within.vHPC.aversive(:,1)),1)*2 ; ones(length(Within.vHPC.reward(:,1)),1)*3];
 scatter(x,y,[],color,"filled",'jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
-scatter([1 2 3],[nanmedian(Between.vHPCA(:,1)) , nanmedian( Within.vHPCA.aversive(:,1)), nanmedian( Within.vHPCA.reward(:,1))],'filled')
+scatter([1 2 3],[nanmedian(Between.vHPC(:,1)) , nanmedian( Within.vHPC.aversive(:,1)), nanmedian( Within.vHPC.reward(:,1))],'filled')
 % boxplot(y,x),ylim([-0.55 1.05])
 ylabel('Spatial correlation');
 xticks([1 2 3])
 xticklabels({'Bet', 'WA', 'WR'});
 
 % stats
-data = [Between.vHPCA(:,1), Within.vHPCA.reward(:,1), Within.vHPCA.aversive(:,1)];
+data = [Between.vHPC(:,1), Within.vHPC.reward(:,1), Within.vHPC.aversive(:,1)];
 data(any(isnan(data), 2), :) = [];
 
 [p,~,stats] =  friedman(data,1); 
 c = multcompare(stats);
 tbl = array2table(c,"VariableNames", ...
     ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
-
-subplot(1,2,2)
-y = [Between.vHPCR(:,1) ; Within.vHPCR.aversive(:,1) ; Within.vHPCR.reward(:,1)];
-x = [ones(length(Between.vHPCR(:,1)),1) ; ones(length(Within.vHPCR.aversive(:,1)),1)*2 ; ones(length(Within.vHPCR.reward(:,1)),1)*3];
-scatter(x,y,[],color,"filled",'jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
-scatter([1 2 3],[nanmedian(Between.vHPCR(:,1)) , nanmedian( Within.vHPCR.aversive(:,1)), nanmedian( Within.vHPCR.reward(:,1))],'filled')
-% boxplot(y,x),ylim([-0.55 1.05])
-ylabel('Spatial correlation');
-xticks([1 2 3])
-xticklabels({'Bet', 'WA', 'WR'});
-sgtitle('vHPC Assemblies')
-
-
-data = [Between.vHPCR(:,1), Within.vHPCR.reward(:,1), Within.vHPCR.aversive(:,1)];
-data(any(isnan(data), 2), :) = [];
-
-[p,~,stats] =  friedman(data,1); 
-c = multcompare(stats);
-tbl = array2table(c,"VariableNames", ...
-    ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
-
 
 %% Comparing Between groups across type of assemblies
 figure

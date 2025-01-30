@@ -6585,7 +6585,7 @@ for tt = 1:length(path)
     subFolders = files(dirFlags);
    
     clear files dirFlags
-    
+    %t=9
     for t = 9 : length(subFolders)-2
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
@@ -7194,7 +7194,6 @@ dhpc_r_all= [];
 vhpc_r_all= []; 
 
 
-
 for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
@@ -7531,13 +7530,12 @@ for tt = 1:length(path)
 end
 
 
-
-
-
 %%%%%Plot
 
 %Cumilative 
-figure(6);clf;hold on; 
+figure(6);clf;hold on; cdfplot([dhpc_r_all(:,1);dhpc_r_all(:,2)]); 
+cdfplot([vhpc_r_all(:,1);vhpc_r_all(:,2)]); 
+
 %Correlational plot 
 figure(1);clf; hold on;title('dhpc-green vhpc-blue');
 scatter(dhpc_r_all(:,1),dhpc_r_all(:,2),[],[0 1 0],'filled','g'); xlabel('Rave'); ylabel('Rrew'); ylim([-0.2 0.8]);xlim([-0.2 0.6]);

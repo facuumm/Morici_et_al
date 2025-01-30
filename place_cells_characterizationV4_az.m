@@ -3517,22 +3517,23 @@ end
 
 %%%%% Ratemap Plots %%%%%
 % chaange vhpc or dhpc 
-[h idx] = max (vhpc_odd_ave, [],2);
+[h idx] = max (dhpc_odd_ave, [],2);
 [m mm] = sort(idx); 
 
 figure(2);clf;hold on;
-fr = vhpc_odd_ave(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
-subplot(1,4,1);imagesc([0:20:140], [1:1:size(vhpc_odd_ave,1)],fr), colormap 'gray'; title('Aversive');
-fr = vhpc_odd_rew(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
-subplot(1,4,2);imagesc([0:20:140], [1:1:size(vhpc_odd_rew,1)],fr), colormap 'gray'; title('Reward');
-sgtitle('vHPC firing maps ODD - EVEN sorted by ODD or EVEN AVE');
+fr = dhpc_odd_ave(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
+subplot(1,4,1);imagesc([0:20:140], [1:1:size(dhpc_odd_ave,1)],fr), colormap 'gray'; title('Aversive');
+fr = dhpc_odd_rew(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
+subplot(1,4,2);imagesc([0:20:140], [1:1:size(dhpc_odd_rew,1)],fr), colormap 'gray'; title('Reward');
+sgtitle('dHPC firing maps ODD - EVEN sorted by ODD AVE');
 
 [h idx] = max (vhpc_even_ave, [],2);
 [m mm] = sort(idx); 
-fr = vhpc_even_ave(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
-subplot(1,4,3);imagesc([0:20:140], [1:1:size(vhpc_even_ave,1)],fr), colormap 'gray'; title('Aversive');
-fr = vhpc_even_rew(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
-subplot(1,4,4);imagesc([0:20:140], [1:1:size(vhpc_even_rew,1)],fr), colormap 'gray'; title('Reward');
+
+fr = dhpc_even_ave(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
+subplot(1,4,3);imagesc([0:20:140], [1:1:size(dhpc_even_ave,1)],fr), colormap 'gray'; title('Aversive');
+fr = dhpc_even_rew(mm,:);  fr(~any(~isnan(fr), 2),:)=[];
+subplot(1,4,4);imagesc([0:20:140], [1:1:size(dhpc_even_rew,1)],fr), colormap 'gray'; title('Reward');
 
 
 %%%%% Spatial correlation plot %%%%%
@@ -5634,7 +5635,7 @@ histogram(dhpc_nlap(:,1),'FaceColor','r','EdgeColor','none','BinWidth',5);
 histogram(dhpc_nlap(:,2),'FaceColor','b','EdgeColor','none','BinWidth',5);
 ylim([0 12]);
 
-figure(4);clf;hold on;
+figure(3);clf;hold on;
 sgtitle('vHPC laps')
 histogram(vhpc_nlap(:,1),'FaceColor','r','EdgeColor','none','BinWidth',5);
 histogram(vhpc_nlap(:,2),'FaceColor','b','EdgeColor','none','BinWidth',5);
@@ -6585,8 +6586,8 @@ for tt = 1:length(path)
     subFolders = files(dirFlags);
    
     clear files dirFlags
-    
-    for t = 9 : length(subFolders)-2
+    %t=9
+    for t = 1 : length(subFolders)-2
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
@@ -6796,13 +6797,14 @@ for tt = 1:length(path)
             
             %%%%%%% PLOT OP 2
             
-            figure(4);clf; hold on; 
+            figure();clf; hold on; 
             set(gcf,'position',[100,100,400,800])
             sgtitle(['Behavior ',session(end-14:end)])
             %%%Ave 
     
             subplot(2,1,1); hold on; 
-            scatter(behavior.pos.aversive(:,2),behavior.pos.aversive(:,1)/.60000, 30, behavior.speed.aversive(:,2), 'filled');
+%             scatter(behavior.pos.aversive(:,2),behavior.pos.aversive(:,1)/.60000, 30, behavior.speed.aversive(:,2), 'filled');% velocity
+            plot(behavior.pos.aversive(:,2),behavior.pos.aversive(:,1)/.60000);%line
             hold on; axis tight;set(gca,'yticklabel',[],'TickLength',[0 0],'YColor','none');
             
             title('Aversive run'); 
@@ -6814,7 +6816,8 @@ for tt = 1:length(path)
             %%%Rew
            
             %Position
-            subplot(2,1,2); hold on; scatter(behavior.pos.reward(:,2),behavior.pos.reward(:,1)/.60000, 30, behavior.speed.reward(:,2), 'filled');
+            subplot(2,1,2); hold on; %scatter(behavior.pos.reward(:,2),behavior.pos.reward(:,1)/.60000, 30, behavior.speed.reward(:,2), 'filled');
+            plot(behavior.pos.reward(:,2),behavior.pos.reward(:,1)/.60000);
             hold on; axis tight;set(gca,'yticklabel',[],'TickLength',[0 0],'YColor','none');
             title('Reward run'); ylabel('Laps');
             %Water
@@ -7194,7 +7197,6 @@ dhpc_r_all= [];
 vhpc_r_all= []; 
 
 
-
 for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
@@ -7531,13 +7533,12 @@ for tt = 1:length(path)
 end
 
 
-
-
-
 %%%%%Plot
 
 %Cumilative 
-figure(6);clf;hold on; 
+figure(6);clf;hold on; cdfplot([dhpc_r_all(:,1);dhpc_r_all(:,2)]); 
+cdfplot([vhpc_r_all(:,1);vhpc_r_all(:,2)]); 
+
 %Correlational plot 
 figure(1);clf; hold on;title('dhpc-green vhpc-blue');
 scatter(dhpc_r_all(:,1),dhpc_r_all(:,2),[],[0 1 0],'filled','g'); xlabel('Rave'); ylabel('Rrew'); ylim([-0.2 0.8]);xlim([-0.2 0.6]);
