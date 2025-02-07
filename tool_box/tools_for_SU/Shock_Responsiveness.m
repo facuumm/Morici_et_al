@@ -141,7 +141,7 @@ for tt = 1:length(path)
             dHPC_shock.id = clusters.dHPC;
             dHPC_shock.curve = c;
             dHPC_shock.responssiveness = r; clear c r
-            save([cd,'\dHPC_shock.mat'],'dHPC_shock'); clear dHPC_shock
+%             save([cd,'\dHPC_shock.mat'],'dHPC_shock'); clear dHPC_shock
         end
         
         if numberV>0
@@ -151,7 +151,7 @@ for tt = 1:length(path)
             vHPC_shock.id = clusters.vHPC;
             vHPC_shock.curve = c;
             vHPC_shock.responssiveness = r; clear c r
-            save([cd,'\vHPC_shock.mat'],'vHPC_shock'); clear vHPC_shock
+%             save([cd,'\vHPC_shock.mat'],'vHPC_shock'); clear vHPC_shock
         end
         
     end

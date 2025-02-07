@@ -12,7 +12,7 @@ criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
 binSize = 0.025; %for qssemblie detection qnd qxctivity strength
 normalization = true; % to define if normalization over Reactivation Strength is applied or not
 th = 5; % threshold for peak detection
-iterations = 1; % number of iterations for downsampling
+iterations = 5; % number of iterations for downsampling
 
 % Behavior
 minimal_speed = 7; % minimal speed to detect quite periods
@@ -150,17 +150,24 @@ for tt = 2:length(path)
             ripples.vHPC.coordinated.aversive = Restrict(coordinatedV_refined , NREM.aversive);
             % ALL Uncoordinated
             % downsampling to have same amount of ripples
-            if size(ripples.vHPC.uncoordinated.all,1) < size(ripples.dHPC.uncoordinated.all,1)
+            if size(ripples.dHPC.uncoordinated.all,1)>size(ripples.dHPC.coordinated.all,1)
                 ran = randperm(size(ripples.dHPC.uncoordinated.all,1));
                 ran = ripples.dHPC.uncoordinated.all(ran,:);
-                ran = ran(1 : size(ripples.vHPC.uncoordinated.all,1) , :);
-                u = [ripples.vHPC.uncoordinated.all ; ran]; clear ran
+                ran = ran(1 : size(ripples.dHPC.coordinated.all,1) , :);
             else
-                ran = randperm(size(ripples.vHPC.uncoordinated.all,1));
-                ran = ripples.vHPC.uncoordinated.all(ran,:);
-                ran = ran(1 : size(ripples.dHPC.uncoordinated.all,1) , :);
-                u = [ripples.dHPC.uncoordinated.all ; ran]; clear ran
+                ran = ripples.dHPC.uncoordinated.all;
             end
+            
+            if size(ripples.vHPC.uncoordinated.all,1)>size(ripples.vHPC.coordinated.all,1)
+                ran1 = randperm(size(ripples.vHPC.uncoordinated.all,1));
+                ran1 = ripples.vHPC.uncoordinated.all(ran1,:);
+                ran1 = ran1(1 : size(ripples.vHPC.coordinated.all,1) , :);
+            else
+                ran1 = ripples.vHPC.uncoordinated.all;
+            end
+            
+            u = [ran ; ran1]; clear ran ran1
+            
             [B I] = sort(u(:,1));
             u = ConsolidateIntervals([u(I,1) u(I,3)]);
             ripple_event.uncoordinated = u; clear u
