@@ -350,6 +350,9 @@ scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [meanSpeed(:,3
 hold on
 scatter([1;2] , [mean(meanSpeed(:,3));mean(meanSpeed(:,4))],'filled','MarkerEdgeColor','none','MarkerFaceColor','r'),xlim([0 3]),ylim([0 60])
 
+[h p] = ttest2(meanSpeed(:,1),meanSpeed(:,2));
+[h p] = ttest2(meanSpeed(:,3),meanSpeed(:,4));
+
 subplot(143)
 scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [meanSpeed(:,5);meanSpeed(:,6)],'filled','MarkerEdgeColor','none','MarkerFaceColor','k'),,xlim([0 3]),ylim([0 100])
 hold on
@@ -360,3 +363,5 @@ scatter([ones(size(meanSpeed,1),1);ones(size(meanSpeed,1),1)*2] , [100-meanSpeed
 hold on
 scatter([1;2] , [100-mean(meanSpeed(:,5));100-mean(meanSpeed(:,6))],'filled','MarkerEdgeColor','none','MarkerFaceColor','r'),,xlim([0 3]),ylim([0 100])
 
+
+[h p] = ttest2(meanSpeed(:,5),meanSpeed(:,6));

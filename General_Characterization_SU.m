@@ -28,8 +28,8 @@ criteria_fr = 0; %criteria to include or not a SU into the analysis
 criteria_n = 3; % minimal number of neurons from each structure
 pval = 0.001/2; % p value to define if SU are ripple modulated
 ss = 2; %smooth level of CCG
-n_SU_V = 0;
-n_SU_D = 0;
+n_SU_V = [];
+n_SU_D = [];
 FR_B_V = []; FR_R_V = [];  FR_A_V = []; % Firing Rate during NREM
 FR_B_D = []; FR_R_D = [];  FR_A_D = []; % Firing Rate during NREM
 poisson_dHPC_split = []; poisson_vHPC_split = []; %poisson results split by conditions
@@ -141,10 +141,10 @@ for tt = 1:length(path)
         % z=2 --> ventral
         for z = 1:2
             if z == 1
-                n_SU_D = n_SU_D + length(group_dHPC);
+                n_SU_D = [n_SU_D ; length(group_dHPC)];
                 spks_dHPC = spks(ismember(spks(:,1),group_dHPC(:,1)),:); %keep spks from good clusters
             else
-                n_SU_V = n_SU_V + length(group_vHPC);
+%                 n_SU_V = [n_SU_V ; length(group_vHPC)];
                 spks_vHPC = spks(ismember(spks(:,1),group_vHPC(:,1)),:); %keep spks from good clusters
             end
         end
@@ -207,7 +207,8 @@ for tt = 1:length(path)
             clear spks tmp m1 m2 m3 m4 m5 m6 m7 m8 m9 m10 m11 m12 m13
             %             end
         end
-        
+        countP = 0;
+        countI = 0;
         for ii=1:size(group_vHPC,1)
             cluster = group_vHPC(ii,1);
             cellulartype = logical(Cell_type_classification(Cell_type_classification(:,1) == cluster,6));
@@ -246,16 +247,18 @@ for tt = 1:length(path)
             if logical(group_vHPC(ii,5)) %check if is pyr
                 spiketrains_vHPC_pyr = [spiketrains_vHPC_pyr , zscore(tmp./binSize,0,1)];
                 FR_vHPC_pyr = [FR_vHPC_pyr ; m4 m1 m2 m3 m8 m5 m6 m7 m11 m9 m10 m12 m13 iterator(6) iterator(5)];
+                countP = countP + 1;
             else
                 spiketrains_vHPC_int = [spiketrains_vHPC_int , zscore(tmp./binSize,0,1)];
                 FR_vHPC_int = [FR_vHPC_int ; m4 m1 m2 m3 m8 m5 m6 m7 m11 m9 m10 m12 m13 iterator(6) iterator(5)];
+                countI = countI + 1;
             end
             %                 end
             clear spks tmp m1 m2 m3 m4 m5 m6 m7 m8 m9 m10 m11 m12 m13
             %             end
         end
         clear freq limits
-        
+        n_SU_V = [n_SU_V ; countP countI]; clear countI countP
         %         if and(size(spiketrains_vHPC,2) >= criteria_n,size(spiketrains_dHPC,2) >= criteria_n)
         %Restricting bins inside each condition
         is.baseline.sws = InIntervals(bins,NREM_B);
