@@ -93,8 +93,7 @@ for c=1:100
      
     if ~isempty(varargin) && isequal(varargin{1}, 'velocity_norm')
         velocity_norm= varargin{2}; 
-        curve1.rate= curve1.rate./velocity_norm;
-        curve2.rate= curve2.rate./velocity_norm;
+        curve1.rate= curve1.rate./velocity_norm_ave;
     end 
   
     
