@@ -45,6 +45,12 @@ UnCoorAversive = nanmean(u');
 u = [UnCoorDReward(:,1) , UnCoorVReward(:,1)]; u(sum(isnan(u),2)>0,:) = [];
 UnCoorReward = nanmean(u');
 
+%% Perfrom 2-way anova in uncooridnated events
+x = UnCoorDReward(:,1));
+x(isnan(x)) = [];
+y = UnCoorDAversive(:,1);
+y(isnan(y)) = [];
+
 %% Figure all
 x = CoorReward(:,1);
 x(isnan(x)) = [];
@@ -75,5 +81,6 @@ ref = [ref , [ones(length(x),1) ; ones(length(y),1)*2 ; ones(length(x1),1) ; one
 
 
 perform2WayANOVANonPaired(data, ref(:,1), ref(:,2))
+
 
 save([cd,'\Extended_data_ventral_Assemblies.mat'])

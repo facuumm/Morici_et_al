@@ -9,7 +9,7 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 criteria_fr = 0; %criteria to include or not a SU into the analysis
 criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
 criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
-binSize = [0.01]; %for assemblie detection and activity strength
+binSize = [0.015]; %for assemblie detection and activity strength
 
 % Behavior
 minimal_speed = 7; % minimal speed to detect quite periods
@@ -218,11 +218,9 @@ subplot(122),venn(A,I), xlim([-7 11]), ylim([-6 6])
 %%
 
 figure
-subplot(221),bar([1 2 3 4] , [sum(Number_of_assemblies.aversive(:,1)) sum(Number_of_assemblies.aversive(:,3)) sum(Number_of_assemblies.aversive(:,5)) sum(Number_of_assemblies.aversive(:,7))]),ylim([0 100])
-subplot(222),bar([1 2 3 4] , [sum(Number_of_assemblies.aversive(:,2)) sum(Number_of_assemblies.aversive(:,4)) sum(Number_of_assemblies.aversive(:,6)) sum(Number_of_assemblies.aversive(:,8))]),ylim([0 150])
+subplot(121),bar([1 2] , [sum(Number_of_assemblies.aversive(:,1)) sum(Number_of_assemblies.aversive(:,2))])
 
-subplot(223),bar([1 2 3 4] , [sum(Number_of_assemblies.reward(:,1)) sum(Number_of_assemblies.reward(:,3)) sum(Number_of_assemblies.reward(:,5)) sum(Number_of_assemblies.reward(:,7))]),ylim([0 100])
-subplot(224),bar([1 2 3 4] , [sum(Number_of_assemblies.reward(:,2)) sum(Number_of_assemblies.reward(:,4)) sum(Number_of_assemblies.reward(:,6)) sum(Number_of_assemblies.reward(:,8))]),ylim([0 150])
+subplot(122),bar([1 2] , [sum(Number_of_assemblies.reward(:,1)) sum(Number_of_assemblies.reward(:,2))])
 
 
 figure

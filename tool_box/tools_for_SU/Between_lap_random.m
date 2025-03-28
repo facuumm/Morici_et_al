@@ -1,4 +1,4 @@
-function [between_mean] = Between_lap_random(pos_ave,spks_ave,in_lapA,pos_rew,spks_rew,in_lapR,sigma,Xedges)
+function [between_mean] = Between_lap_random(pos_ave,spks_ave,in_lapA,pos_rew,spks_rew,in_lapR,sigma,Xedges,varargin)
 %
 % Between_pc - Randomly splits laps of the two conditions (ave and rew) in two groups keeping similar #spks in 
 % each group and randomly selects one group of each condition and calcualtes remapping parameters
@@ -79,7 +79,16 @@ for c = 1:100
                     
     fr_A= nanmean(curveA.rate);
     fr_R= nanmean(curveR.rate);
-                    
+    
+    if ~isempty(varargin) && isequal(varargin{1}, 'velocity_norm_ave')
+        velocity_norm_ave= varargin{2}; 
+        curveA.rate= curveA.rate./velocity_norm_ave;
+    end 
+    if ~isempty(varargin) && isequal(varargin{3}, 'velocity_norm_rew')
+        velocity_norm_rew= varargin{4}; 
+        curveR.rate= curveR.rate./velocity_norm_rew;
+    end 
+    
     %Fr change
     fr_change = abs((fr_A - fr_R)/(fr_A + fr_R));
 

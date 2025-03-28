@@ -1,4 +1,4 @@
-function [within_mean] = Within_lap_random(pos_tmp,spks_tmp,in_lap,sigma,Xedges)
+function [within_mean] = Within_lap_random(pos_tmp,spks_tmp,in_lap,sigma,Xedges,varargin)
 %
 % Within_lap - Randomly splits laps in two 100 times. Each time calcualtes remapping parameters
 % (spatial correlation, firing rate change, rate overlap and peak
@@ -35,7 +35,13 @@ for c=1:100
     %% Calculate remapping parameters 
     [curve1,stats1] = FiringCurve(pos_1, spks_1 , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2,'minTime',0.15);
     [curve2,stats2] = FiringCurve(pos_2, spks_2 , 'smooth' , sigma , 'nBins' , Xedges , 'minSize' , 4 , 'minPeak' , 0.2,'minTime',0.15);
-                    
+    
+    if ~isempty(varargin) && isequal(varargin{1}, 'velocity_norm')
+        velocity_norm= varargin{2}; 
+        curve1.rate= curve1.rate./velocity_norm;
+        curve2.rate= curve2.rate./velocity_norm;
+    end                 
+    
     fr_1= nanmean(curve1.rate);
     fr_2= nanmean(curve2.rate);
                     

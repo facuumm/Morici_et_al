@@ -1,4 +1,4 @@
-function [within_mean1,within_mean2,between] = pc_parameters_laps(n_lap,pos_1,spks_1,in_lap1,pos_2,spks_2,in_lap2,sigma,Xedges)
+function [within_mean1,within_mean2,between] = pc_parameters_laps(n_lap,pos_1,spks_1,in_lap1,pos_2,spks_2,in_lap2,sigma,Xedges,varargin)
 %
 % pc_parameters_laps -
 % 
@@ -29,16 +29,25 @@ for c=1:100
     spks_1 = Restrict(spks_1, in_lap1);
     pos_1 = Restrict(pos_1, in_lap1); 
     
+    if ~isempty(varargin) && isequal(varargin{1}, 'velocity_norm_ave')
+        velocity_norm_ave= varargin{2}; 
+    end 
+    if ~isempty(varargin) && isequal(varargin{3}, 'velocity_norm_rew')
+        velocity_norm_rew= varargin{4}; 
+    end 
+    
+    
+    
     %Calculate within pc parameters  
-    [within_1] = Within_lap_random(pos_1,spks_1,in_lap1,sigma,Xedges);
-    [within_2] = Within_lap_random(pos_2,spks_2,in_lap2,sigma,Xedges);
+    [within_1] = Within_lap_random(pos_1,spks_1,in_lap1,sigma,Xedges,'velocity_norm',velocity_norm_rew);
+    [within_2] = Within_lap_random(pos_2,spks_2,in_lap2,sigma,Xedges,'velocity_norm',velocity_norm_ave);
     
     % Save 
     mean1=[mean1;within_1];
     mean2=[mean1;within_2];
     
     %Calculate between pc parameters
-    [between_lap_r] = Between_lap_random(pos_1,spks_1,in_lap1,pos_2,spks_2,in_lap2,sigma,Xedges);
+    [between_lap_r] = Between_lap_random(pos_1,spks_1,in_lap1,pos_2,spks_2,in_lap2,sigma,Xedges,'velocity_norm_ave',velocity_norm_ave,'velocity_norm_rew',velocity_norm_rew);
     
     between = [between;between_lap_r]; %save
 

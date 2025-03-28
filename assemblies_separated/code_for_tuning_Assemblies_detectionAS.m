@@ -9,7 +9,7 @@ path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Ra
 criteria_fr = 0; %criteria to include or not a SU into the analysis
 criteria_n = [3 3]; % minimal number of neurons from each structure [vHPC dHPC]
 criteria_type = 0; %criteria for celltype (0:pyr, 1:int, 2:all)
-binSize = [0.005 0.01 0.025 0.05 ]; %for qssemblie detection qnd qxctivity strength
+binSize = [0.01]; %for qssemblie detection qnd qxctivity strength
 
 % Behavior
 minimal_speed = 7; % minimal speed to detect quite periods
@@ -216,7 +216,7 @@ for tt = 1:length(path)
                 else
                     NV = 0;
                 end
-%                 save([cd,'\dorsalventral_assemblies_aversiveVF.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')
+                save([cd,'\assemblies_separated.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')
 %             end
             
             num_assembliesR = [num_assembliesR , ND NV]; clear ND NV
