@@ -233,8 +233,11 @@ for i = 1 : size(SAVED.aversive,2)
     TMP1 = and((I.vHPC(:,1) == 1) , I.vHPC(:,5)==1); tmp1 = and(TMP1,tmp1);
     tmp1 = I.vHPC(tmp1,2);
     
-    tmp2 = [I.vHPC(:,4) I.vHPC(:,3)];
-    tmp2 = response.post.vHPC(and(tmp2(:,1) == tmp.Session(1) , tmp2(:,2) == tmp.Session(2)),1);
+    tmpX = [I.vHPC(:,4) I.vHPC(:,3)];
+    tmp2 = response.post.vHPC(and(tmpX(:,1) == tmp.Session(1) , tmpX(:,2) == tmp.Session(2)),1);
+%     tmp3 = response.pre.vHPC(and(tmpX(:,1) == tmp.Session(1) , tmpX(:,2) == tmp.Session(2)),1);
+%     
+%     tmp2 = (tmp2-tmp3)./mean([tmp2,tmp3],2);
     
     for ii = 1 : size(tmp.ids,1)
         if ismember(tmp.ids(ii),tmp1)
@@ -246,8 +249,34 @@ end
 
 C(33,:) = [];
 fitlm(C(:,1),C(:,2))
-figure,plot(ans),ylim([1 8]),xlim([-0.55 1.2])
-figure,scatter(C(:,1),C(:,2),'filled'),ylim([1 8]),xlim([-0.55 1.2])
+figure,plot(ans),ylim([0 10]),xlim([-0.6 1.2])
+figure,scatter(C(:,1),C(:,2),'filled'),ylim([0 10]),xlim([-0.6 1.2])
+
+
+C = [];
+for i = 1 : size(SAVED.aversive,2)
+    tmp = SAVED.aversive{i};
+    tmp1 = [I.dHPC(:,4) I.dHPC(:,3)];
+    tmp1 = and(tmp1(:,1) == tmp.Session(1) , tmp1(:,2) == tmp.Session(2));
+    TMP1 = and((I.dHPC(:,1) == 1) , I.dHPC(:,5)==1); tmp1 = and(TMP1,tmp1);
+    tmp1 = I.dHPC(tmp1,2);
+    
+    tmp2 = [I.dHPC(:,4) I.dHPC(:,3)];
+    tmp2 = response.post.dHPC(and(tmp2(:,1) == tmp.Session(1) , tmp2(:,2) == tmp.Session(2)),1);
+%     tmp3 = response.pre.dHPC(and(tmp2(:,1) == tmp.Session(1) , tmp2(:,2) == tmp.Session(2)),1);
+%     
+%     tmp2 = tmp2-tmp3;
+    
+    for ii = 1 : size(tmp.ids,1)
+        if ismember(tmp.ids(ii),tmp1)
+            index = tmp1==tmp.ids(ii);
+            C = [C  ; tmp.Reactivation tmp2(index)];
+        end
+    end
+end
+fitlm(C(:,1),C(:,2))
+figure,plot(ans),ylim([0 10]),xlim([-0.6 1.2])
+figure,scatter(C(:,1),C(:,2),'filled'),ylim([0 10]),xlim([-0.6 1.2])
 %% Comparison members vs no-members
 xD = response.shock.dHPC(and((I.dHPC(:,1) == 1) , I.dHPC(:,5)==1));
 yD = response.shock.dHPC(and((I.dHPC(:,1) == 1) , I.dHPC(:,5)==0));
