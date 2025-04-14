@@ -28,7 +28,7 @@ function [p , t] = PHIST_Ripple_SU(Times1,Times2,baseline,d,b,sm,mode)
 ccg = (ccg(:,1,2)./length(Times1))./b;
 
 if strcmp(mode,'Gain')
-%     baseline = SubtractIntervals(baseline,[Times1(:,1)-0.05 Times1(:,3)+0.05]);
+    baseline = SubtractIntervals(baseline,[Times1(:,1)-0.05 Times1(:,3)+0.05]);
     bb =  length(Restrict(Times2,baseline));
     bb = bb/sum(baseline(:,2)-baseline(:,1));
     ccg = ccg ./bb;

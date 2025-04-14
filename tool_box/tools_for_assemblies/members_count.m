@@ -53,7 +53,7 @@ for tt = 1:length(path)
         %Loading TS of the sessions
         disp('Uploading session time stamps')
         load('session_organization.mat')
-        load('behavioral_data.mat')
+        load('behavioral_data.mat', 'movement')
         
         %% load sleep states
         disp('Uploading sleep scoring')
@@ -191,8 +191,8 @@ for tt = 1:length(path)
                 
                 if sum(cond.both)>0
                     tmp = Thresholded.aversive(:,cond.both);
-                    tmpD = [sum(tmp(1:numberD,:))./numberD];
-                    tmpV = [sum(tmp(numberD+1:end,:))./numberV];
+                    tmpD = [sum(tmp(1:numberD,:))];
+                    tmpV = [sum(tmp(numberD+1:end,:))];
                     Joint.aversive.dHPC = [Joint.aversive.dHPC ; tmpD'];
                     Joint.aversive.vHPC = [Joint.aversive.vHPC ; tmpV'];
                     clear tmp tmpD tmpV 
@@ -200,14 +200,14 @@ for tt = 1:length(path)
                 
                 if sum(cond.dHPC)>0
                     tmp = Thresholded.aversive(:,cond.dHPC);
-                    tmpD = [sum(tmp(1:numberD,:))./numberD];
+                    tmpD = [sum(tmp(1:numberD,:))];
                     dHPC.aversive = [dHPC.aversive ; tmpD'];
                     clear tmp tmpD tmpV 
                 end
                 
                 if sum(cond.vHPC)>0
                     tmp = Thresholded.aversive(:,cond.vHPC);
-                    tmpV = [sum(tmp(numberD+1:end,:))./numberV];
+                    tmpV = [sum(tmp(numberD+1:end,:))];
                     vHPC.aversive = [vHPC.aversive ; tmpV'];
                     clear tmp tmpD tmpV 
                 end    
@@ -250,8 +250,8 @@ for tt = 1:length(path)
                 
                 if sum(cond.both)>0
                     tmp = Thresholded.reward(:,cond.both);
-                    tmpD = [sum(tmp(1:numberD,:))./numberD];
-                    tmpV = [sum(tmp(numberD+1:end,:))./numberV];
+                    tmpD = [sum(tmp(1:numberD,:))];
+                    tmpV = [sum(tmp(numberD+1:end,:))];
                     Joint.reward.dHPC = [Joint.reward.dHPC ; tmpD'];
                     Joint.reward.vHPC = [Joint.reward.vHPC ; tmpV'];
                     clear tmp tmpD tmpV 
@@ -259,14 +259,14 @@ for tt = 1:length(path)
                 
                 if sum(cond.dHPC)>0
                     tmp = Thresholded.reward(:,cond.dHPC);
-                    tmpD = [sum(tmp(1:numberD,:))./numberD];
+                    tmpD = [sum(tmp(1:numberD,:))];
                     dHPC.reward = [dHPC.reward ; tmpD'];
                     clear tmp tmpD tmpV 
                 end
                 
                 if sum(cond.vHPC)>0
                     tmp = Thresholded.reward(:,cond.vHPC);
-                    tmpV = [sum(tmp(numberD+1:end,:))./numberV];
+                    tmpV = [sum(tmp(numberD+1:end,:))];
                     vHPC.reward = [vHPC.reward ; tmpV'];
                     clear tmp tmpD tmpV 
                 end    
@@ -300,14 +300,14 @@ subplot(221)
 grps = [ones(length(dHPC.reward),1) ; ones(length(dHPC.aversive),1)*2];
 x = [dHPC.reward ; dHPC.aversive];
 scatter(grps,x,'filled','Jitter',0.1), hold on
-scatter([1 2] , [nanmedian(dHPC.reward) , nanmedian(dHPC.aversive)],'filled'),xlim([0 3]),ylim([0 1])
+scatter([1 2] , [nanmedian(dHPC.reward) , nanmedian(dHPC.aversive)],'filled'),xlim([0 3])%,ylim([0 1])
 [h p] = ranksum(dHPC.reward , dHPC.aversive)
 
 subplot(222)
 grps = [ones(length(vHPC.reward),1) ; ones(length(vHPC.aversive),1)*2];
 x = [vHPC.reward ; vHPC.aversive];
 scatter(grps,x,'filled','Jitter',0.1), hold on
-scatter([1 2] , [nanmedian(vHPC.reward) , nanmedian(vHPC.aversive)],'filled'),xlim([0 3]),ylim([0 1])
+scatter([1 2] , [nanmedian(vHPC.reward) , nanmedian(vHPC.aversive)],'filled'),xlim([0 3])%,ylim([0 1])
 [h p] = ranksum(vHPC.reward , vHPC.aversive)
 
 
@@ -315,7 +315,7 @@ subplot(223)
 grps = [ones(length(Joint.reward.dHPC),1) ; ones(length(Joint.aversive.dHPC),1)*2];
 x = [Joint.reward.dHPC ; Joint.aversive.dHPC];
 scatter(grps,x,'filled','Jitter',0.1), hold on
-scatter([1 2] , [nanmedian(Joint.reward.dHPC) , nanmedian(Joint.aversive.dHPC)],'filled'),xlim([0 3]),ylim([0 1])
+scatter([1 2] , [nanmedian(Joint.reward.dHPC) , nanmedian(Joint.aversive.dHPC)],'filled'),xlim([0 3])%,ylim([0 1])
 [h p] = ranksum(Joint.reward.dHPC , Joint.aversive.dHPC)
 
 
@@ -323,7 +323,7 @@ subplot(224)
 grps = [ones(length(Joint.reward.vHPC),1) ; ones(length(Joint.aversive.vHPC),1)*2];
 x = [Joint.reward.vHPC ; Joint.aversive.vHPC];
 scatter(grps,x,'filled','Jitter',0.1), hold on
-scatter([1 2] , [nanmedian(Joint.reward.vHPC) , nanmedian(Joint.aversive.vHPC)],'filled'),xlim([0 3]),ylim([0 1])
+scatter([1 2] , [nanmedian(Joint.reward.vHPC) , nanmedian(Joint.aversive.vHPC)],'filled'),xlim([0 3])%,ylim([0 1])
 [h p] = ranksum(Joint.reward.vHPC , Joint.aversive.vHPC)
 
 end

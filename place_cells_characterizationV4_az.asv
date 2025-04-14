@@ -8207,14 +8207,7 @@ for tt = 1:length(path)
      
 end 
 
-dhpc_corr((dhpc_corr(:,1)<=-2.5),:)=[];dhpc_corr=abs(dhpc_corr);
+dhpc_corr((dhpc_corr(:,1)<=-2.5),/)
 dhpc_table = array2table(dhpc_corr,'VariableNames',{'spcorr','overlap'}); 
-                mdl = fitlm(dhpc_table)
-                R= mdl.Rsquared.Ordinary; 
-                figure;plot(mdl)
-
-                
-vhpc_table = array2table(vhpc_corr,'VariableNames',{'spcorr','overlap'}); 
-                mdl = fitlm(vhpc_table)
-                R= mdl.Rsquared.Ordinary; 
-                figure;plot(mdl)
+                mdl = fitlm(dhpc_table);R_ave= mdl.Rsquared.Ordinary; 
+%                 figure(1);plot(mdl)

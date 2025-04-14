@@ -195,23 +195,23 @@ for tt = 1:length(path)
                     % Saving data  
                     % dHPC
                     if not(isempty(output_metrics.dHPC.shock_member))
-                        Pred_shock.dHPC = [Pred_shock.dHPC ; vertcat(output_metrics.dHPC.shock_member.mse_delta) , vertcat(output_metrics.dHPC.shock_member.pearson_delta) , vertcat(output_metrics.dHPC.shock_member.spearman_delta)];
+                        Pred_shock.dHPC = [Pred_shock.dHPC ; vertcat(output_metrics.dHPC.shock_member.mse_delta) , vertcat(output_metrics.dHPC.shock_member.pearson_delta) , vertcat(output_metrics.dHPC.shock_member.spearman_delta) , vertcat(output_metrics.dHPC.shock_member.log_likelihood)];
                     end
                     if not(isempty(output_metrics.dHPC.non_member))
-                        Pred_nomember.dHPC = [Pred_nomember.dHPC ; vertcat(output_metrics.dHPC.non_member.mse_delta) , vertcat(output_metrics.dHPC.non_member.pearson_delta) , vertcat(output_metrics.dHPC.non_member.spearman_delta)];
+                        Pred_nomember.dHPC = [Pred_nomember.dHPC ; vertcat(output_metrics.dHPC.non_member.mse_delta) , vertcat(output_metrics.dHPC.non_member.pearson_delta) , vertcat(output_metrics.dHPC.non_member.spearman_delta) , vertcat(output_metrics.dHPC.non_member.log_likelihood)];
                     end                        
                     if not(isempty(output_metrics.dHPC.member_only))
-                        Pred_member.dHPC = [Pred_member.dHPC ; vertcat(output_metrics.dHPC.member_only.mse_delta) , vertcat(output_metrics.dHPC.member_only.pearson_delta) , vertcat(output_metrics.dHPC.member_only.spearman_delta)];
+                        Pred_member.dHPC = [Pred_member.dHPC ; vertcat(output_metrics.dHPC.member_only.mse_delta) , vertcat(output_metrics.dHPC.member_only.pearson_delta) , vertcat(output_metrics.dHPC.member_only.spearman_delta) , vertcat(output_metrics.dHPC.member_only.log_likelihood)];
                     end
                     % vHPC
                     if not(isempty(output_metrics.vHPC.shock_member))
-                        Pred_shock.vHPC = [Pred_shock.vHPC ; vertcat(output_metrics.vHPC.shock_member.mse_delta) , vertcat(output_metrics.vHPC.shock_member.pearson_delta) , vertcat(output_metrics.vHPC.shock_member.spearman_delta)];
+                        Pred_shock.vHPC = [Pred_shock.vHPC ; vertcat(output_metrics.vHPC.shock_member.mse_delta) , vertcat(output_metrics.vHPC.shock_member.pearson_delta) , vertcat(output_metrics.vHPC.shock_member.spearman_delta) , vertcat(output_metrics.vHPC.shock_member.log_likelihood)];
                     end
                     if not(isempty(output_metrics.vHPC.non_member))
-                        Pred_nomember.vHPC = [Pred_nomember.vHPC ; vertcat(output_metrics.vHPC.non_member.mse_delta) , vertcat(output_metrics.vHPC.non_member.pearson_delta) , vertcat(output_metrics.vHPC.non_member.spearman_delta)];
+                        Pred_nomember.vHPC = [Pred_nomember.vHPC ; vertcat(output_metrics.vHPC.non_member.mse_delta) , vertcat(output_metrics.vHPC.non_member.pearson_delta) , vertcat(output_metrics.vHPC.non_member.spearman_delta) , vertcat(output_metrics.vHPC.non_member.log_likelihood)];
                     end                        
                     if not(isempty(output_metrics.vHPC.member_only))
-                        Pred_member.vHPC = [Pred_member.vHPC ; vertcat(output_metrics.vHPC.member_only.mse_delta) , vertcat(output_metrics.vHPC.member_only.pearson_delta) , vertcat(output_metrics.vHPC.member_only.spearman_delta)];
+                        Pred_member.vHPC = [Pred_member.vHPC ; vertcat(output_metrics.vHPC.member_only.mse_delta) , vertcat(output_metrics.vHPC.member_only.pearson_delta) , vertcat(output_metrics.vHPC.member_only.spearman_delta) , vertcat(output_metrics.vHPC.member_only.log_likelihood)];
                     end
                 end
                 
@@ -234,55 +234,55 @@ for tt = 1:length(path)
     end
 % 
 % 
-% --- dHPC ---
-y1 = Pred_nomember.dHPC(:,2); y1 = y1(~isnan(y1));
-y2 = Pred_member.dHPC(:,2);   y2 = y2(~isnan(y2));
-y3 = Pred_shock.dHPC(:,2);    y3 = y3(~isnan(y3));
-
-% Outlier removal (IQR method)
-y1 = y1(~isoutlier(y1));
-y2 = y2(~isoutlier(y2));
-y3 = y3(~isoutlier(y3));
-
-% Determine smallest group size after outlier removal
-refs = min([length(y1), length(y2), length(y3)]);
-
-% Random downsampling
-y1 = y1(randperm(length(y1), refs));
-y2 = y2(randperm(length(y2), refs));
-y3 = y3(randperm(length(y3), refs));
-
-matrix1 = [ ...
-    [ones(refs,1), y1]; ...
-    [2*ones(refs,1), y2]; ...
-    [3*ones(refs,1), y3] ...
-    ];
-
-% --- vHPC ---
-y1 = Pred_nomember.vHPC(:,2); y1 = y1(~isnan(y1));
-y2 = Pred_member.vHPC(:,2);   y2 = y2(~isnan(y2));
-y3 = Pred_shock.vHPC(:,2);    y3 = y3(~isnan(y3));
-
-% Outlier removal
-y1 = y1(~isoutlier(y1));
-y2 = y2(~isoutlier(y2));
-y3 = y3(~isoutlier(y3));
-
-% Determine new minimum
-refs = min([length(y1), length(y2), length(y3)]);
-
-% Random downsampling
-y1 = y1(randperm(length(y1), refs));
-y2 = y2(randperm(length(y2), refs));
-y3 = y3(randperm(length(y3), refs));
-
-matrix2 = [ ...
-    [ones(refs,1), y1]; ...
-    [2*ones(refs,1), y2]; ...
-    [3*ones(refs,1), y3] ...
-    ];
-two_way_anova_with_posthoc(matrix1, matrix2)
-yline(0,'--')
+% % --- dHPC ---
+% y1 = Pred_nomember.dHPC(:,2); y1 = y1(~isnan(y1));
+% y2 = Pred_member.dHPC(:,2);   y2 = y2(~isnan(y2));
+% y3 = Pred_shock.dHPC(:,2);    y3 = y3(~isnan(y3));
+% 
+% % Outlier removal (IQR method)
+% y1 = y1(~isoutlier(y1));
+% y2 = y2(~isoutlier(y2));
+% y3 = y3(~isoutlier(y3));
+% 
+% % Determine smallest group size after outlier removal
+% refs = min([length(y1), length(y2), length(y3)]);
+% 
+% % Random downsampling
+% y1 = y1(randperm(length(y1), refs));
+% y2 = y2(randperm(length(y2), refs));
+% y3 = y3(randperm(length(y3), refs));
+% 
+% matrix1 = [ ...
+%     [ones(refs,1), y1]; ...
+%     [2*ones(refs,1), y2]; ...
+%     [3*ones(refs,1), y3] ...
+%     ];
+% 
+% % --- vHPC ---
+% y1 = Pred_nomember.vHPC(:,2); y1 = y1(~isnan(y1));
+% y2 = Pred_member.vHPC(:,2);   y2 = y2(~isnan(y2));
+% y3 = Pred_shock.vHPC(:,2);    y3 = y3(~isnan(y3));
+% 
+% % Outlier removal
+% y1 = y1(~isoutlier(y1));
+% y2 = y2(~isoutlier(y2));
+% y3 = y3(~isoutlier(y3));
+% 
+% % Determine new minimum
+% refs = min([length(y1), length(y2), length(y3)]);
+% 
+% % Random downsampling
+% y1 = y1(randperm(length(y1), refs));
+% y2 = y2(randperm(length(y2), refs));
+% y3 = y3(randperm(length(y3), refs));
+% 
+% matrix2 = [ ...
+%     [ones(refs,1), y1]; ...
+%     [2*ones(refs,1), y2]; ...
+%     [3*ones(refs,1), y3] ...
+%     ];
+% two_way_anova_with_posthoc(matrix1, matrix2)
+% yline(0,'--')
 % 
 % %% -------%%
 % y_data1 = [Pred_nomember.dHPC(:,2) ; Pred_member.dHPC(:,2) ; Pred_shock.dHPC(:,2)];

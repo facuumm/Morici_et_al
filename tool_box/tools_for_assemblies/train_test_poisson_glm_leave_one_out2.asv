@@ -89,11 +89,12 @@ function [output_metrics] = train_test_poisson_glm_leave_one_out2(spike_data, sh
                 output_metrics.(region).(group)(i) = struct( ...
                     'neuron_id', neuron_idx, ...
                     'pearson', metrics.pearson, ...
-                    'pearson_delta', (abs(metrics.pearson) - abs(output_metrics.full_model.pearson))% / (abs(metrics.pearson) + abs(output_metrics.full_model.pearson)), ...
+                    'pearson_delta', (abs(metrics.pearson) - abs(output_metrics.full_model.pearson)) / (abs(metrics.pearson) + abs(output_metrics.full_model.pearson)), ...
                     'spearman', metrics.spearman, ...
-                    'spearman_delta', (abs(metrics.spearman) - abs(output_metrics.full_model.spearman))% / (abs(metrics.spearman) + abs(output_metrics.full_model.spearman)), ...
+                    'spearman_delta', (abs(metrics.spearman) - abs(output_metrics.full_model.spearman)) / (abs(metrics.spearman) + abs(output_metrics.full_model.spearman)), ...
                     'mse', metrics.mse, ...
-                    'mse_delta', (abs(metrics.mse) - abs(output_metrics.full_model.mse));% / (abs(metrics.mse) + abs(output_metrics.full_model.mse)), ...
+                    'mse_delta', (abs(metrics.mse) - abs(output_metrics.full_model.mse)) / (abs(metrics.mse) + abs(output_metrics.full_model.mse)), ...
+                    'log_likelihood', metrics.log_likelihood, ...  % Added log-likelihood here
                     'sample_number', i);
             end
         end
@@ -101,7 +102,16 @@ function [output_metrics] = train_test_poisson_glm_leave_one_out2(spike_data, sh
 
     % ---------- Helper functions ----------
     function features = create_features(spike_matrix)
-        features = [mean(spike_matrix,2), var(spike_matrix,0,2), ones(size(spike_matrix,1),1)];
+        % Compute the mean and variance of all neurons' activity
+        mean_activity = mean(spike_matrix, 2);
+%         var_activity = var(spike_matrix, 0, 2);
+
+        % Perform PCA to get the first principal component
+        [~, score, ~] = pca(spike_matrix);
+        pca_components = score(:, 1:2);
+
+        % Combine features: mean, variance, and first PCA component
+        features = [mean_activity, pca_components];
     end
 
     function [metrics, predictions] = evaluate_model(model, X_test, y_true)
@@ -109,15 +119,20 @@ function [output_metrics] = train_test_poisson_glm_leave_one_out2(spike_data, sh
         valid = ~isnan(predictions) & ~isnan(y_true);
 
         if ~any(valid)
-            metrics = struct('pearson',nan, 'spearman',nan, 'mse',nan);
+            metrics = struct('pearson', nan, 'spearman', nan, 'mse', nan, 'log_likelihood', nan);
             return;
         end
 
+        % Pearson and Spearman correlations
         pearson_r = corr(predictions(valid), y_true(valid));
         spearman_r = corr(predictions(valid), y_true(valid), 'Type','Spearman');
         mse = mean((predictions(valid) - y_true(valid)).^2);
-
-        metrics = struct('pearson', pearson_r, 'spearman', spearman_r, 'mse', mse);
+        
+        % Calculate Log-Likelihood
+        log_likelihood = sum(y_true(valid) .* log(predictions(valid)) - predictions(valid));
+        
+        % Store the metrics
+        metrics = struct('pearson', pearson_r, 'spearman', spearman_r, 'mse', mse, 'log_likelihood', log_likelihood);
     end
 
     function normalized = normalize_assembly(assembly)
