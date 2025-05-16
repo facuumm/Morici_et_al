@@ -1,26 +1,38 @@
 # Morici_et_al
 
-for Dorsal-Ventral HPC Coordination
+**For Dorsal-Ventral HPC Coordination**
 
-These codes have been developed to study dorsal-ventral  hippocampal coordination at different levels (single units, assemblies,  LFP).
+This repository contains code developed to study dorsal-ventral hippocampal coordination at different levels, including single units, assemblies, and local field potentials (LFP).
 
-In the "toolbox" folder, you'll find both general and specific functions.
-In the main folder, various pipelines have been provided to perform the analysis.
+## Repository Structure
 
-The codebase is created using MATLAB, and comprehensive  documentation, along with line-by-line descriptions, has been provided  for each section of the code.
-The documentation of each function located in tool_box subfolder includes:
-1) Brief description of the
-2) Detailed description of each input and output
-3) List of functions that are needed.
+- **`toolbox/`**: Contains both general-purpose and specific functions.
+- **Main folder**: Includes various analysis pipelines.
 
+## Code and Documentation
 
+- Written in **MATLAB**.
+- Each section of code is accompanied by **comprehensive documentation** and **line-by-line explanations**.
+- Each function in the `toolbox/` folder includes:
+  1. A brief overview.
+  2. Detailed descriptions of inputs and outputs.
+  3. A list of required dependencies.
 
-Requiered toolboxs:
-FMA toolbox
-LopesdosSantos_AssemblyToolbox* (already provided in the main branch of this repository)
+## Required Toolboxes
 
-* Lopes-dos-Santos V, Ribeiro S, Tort AB. Detecting cell assemblies in large neuronal populations. J Neurosci Methods. 2013. doi: 10.1016/j.jneumeth.2013.04.010.
+- **FMA Toolbox**
+- **LopesdosSantos_AssemblyToolbox**  
+  *(Already included in the main branch)*
+
+**Reference**:  
+Lopes-dos-Santos V, Ribeiro S, Tort AB. Detecting cell assemblies in large neuronal populations. *J Neurosci Methods*. 2013.  
+[https://doi.org/10.1016/j.jneumeth.2013.04.010](https://doi.org/10.1016/j.jneumeth.2013.04.010)
 
 ---
-This project is a work in progress, so please feel free to contact me if you discover any bugs.
-[facundo.morici@inserm.fr](mailto:facundo.morici@inserm.fr) / [faq.morici@gmail.com](mailto:faq.morici@gmail.com)
+
+## Contact
+
+This project is a work in progress. If you encounter any issues or bugs, feel free to reach out:
+
+- `facundo.morici [at] inserm [dot] fr`  
+- `faq.morici [at] gmail [dot] com`
