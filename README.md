@@ -12,6 +12,7 @@ This repository contains code developed to study dorsal-ventral hippocampal coor
 ## Code and Documentation
 
 - Written in **MATLAB**.
+- Tested with **MATLAB R2020a**.
 - Each section of code is accompanied by **comprehensive documentation** and **line-by-line explanations**.
 - Each function in the `toolbox/` folder includes:
   1. A brief overview.
@@ -27,6 +28,15 @@ This repository contains code developed to study dorsal-ventral hippocampal coor
 **Reference**:  
 Lopes-dos-Santos V, Ribeiro S, Tort AB. Detecting cell assemblies in large neuronal populations. *J Neurosci Methods*. 2013.  
 [https://doi.org/10.1016/j.jneumeth.2013.04.010](https://doi.org/10.1016/j.jneumeth.2013.04.010)
+
+---
+
+## License
+
+This code is released under the **GNU General Public License (GPL)**.  
+You are free to use, modify, and distribute it under the terms of this license.  
+For more details, see the `LICENSE` file or visit:  
+[https://www.gnu.org/licenses/gpl-3.0.en.html](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 ---
 
