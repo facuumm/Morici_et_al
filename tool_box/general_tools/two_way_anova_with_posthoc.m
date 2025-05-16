@@ -1,6 +1,6 @@
 function two_way_anova_with_posthoc(matrix1, matrix2)
     % Input:
-    % matrix1: [n1 x 2] for dHPC -> column 1 = group (1–3), column 2 = value
+    % matrix1: [n1 x 2] for dHPC -> column 1 = group (1–2), column 2 = value
     % matrix2: [n2 x 2] for vHPC -> same format
 
     % --- Combine matrices for 2-way ANOVA ---
@@ -39,33 +39,33 @@ function two_way_anova_with_posthoc(matrix1, matrix2)
     jitter_strength = 0.15;
 
     % dHPC
-    for g = 1:3
+    for g = 1:2
         vals = matrix1(matrix1(:,1)==g, 2);
         x = g + (rand(size(vals)) - 0.5) * jitter_strength;
         scatter(x, vals, 30, 'filled', 'MarkerFaceColor', colors{1}, 'MarkerEdgeColor', 'none');
     end
-    means_d = accumarray(matrix1(:,1), matrix1(:,2), [3,1], @mean);
-    for g = 1:3
+    means_d = accumarray(matrix1(:,1), matrix1(:,2), [2,1], @mean);
+    for g = 1:2
         plot([g-0.15 g+0.15], [means_d(g) means_d(g)], 'Color', 'k', 'LineWidth', 2);
     end
 
     % vHPC
-    offset = 4;
-    for g = 1:3
+    offset = 3; % Adjust offset for 2 groups
+    for g = 1:2
         vals = matrix2(matrix2(:,1)==g, 2);
         x = offset + g - 1 + (rand(size(vals)) - 0.5) * jitter_strength;
         scatter(x, vals, 30, 'filled', 'MarkerFaceColor', colors{2}, 'MarkerEdgeColor', 'none');
     end
-    means_v = accumarray(matrix2(:,1), matrix2(:,2), [3,1], @mean);
-    for g = 1:3
+    means_v = accumarray(matrix2(:,1), matrix2(:,2), [2,1], @mean);
+    for g = 1:2
         x_pos = offset + g - 1;
         plot([x_pos-0.15 x_pos+0.15], [means_v(g) means_v(g)], 'Color', 'k', 'LineWidth', 2);
     end
 
     % Final plot tweaks
-    xlim([0.5 6.5]);
-    xticks([1 2 3 4 5 6]);
-    xticklabels({'G1-dHPC', 'G2-dHPC', 'G3-dHPC', 'G1-vHPC', 'G2-vHPC', 'G3-vHPC'});
+    xlim([0.5 5.5]);
+    xticks([1 2 4 5]);
+    xticklabels({'G1-dHPC', 'G2-dHPC', 'G1-vHPC', 'G2-vHPC'});
     ylabel('Values');
     title('Group comparison by region');
     legend({'dHPC', 'vHPC'}, 'Location', 'northwest');
@@ -80,19 +80,15 @@ function do_tukey_posthoc(matrix, region_name)
     [~, ~, stats] = anova1(values, group, 'off');
     [c, ~, ~, gnames] = multcompare(stats, 'ctype', 'tukey-kramer', 'display', 'off');
 
-    num_comparisons = size(c,1);
-    bonf_p = min(c(:,6) * num_comparisons, 1); % Bonferroni
-
-    disp(['Tukey HSD Results with Bonferroni Correction for ', region_name, ':']);
-    disp('Comparison:     Mean Diff      Raw p-value     Bonferroni p');
-    for i = 1:num_comparisons
+    disp(['Tukey HSD Results for ', region_name, ':']);
+    disp('Comparison:     Mean Diff      Adjusted p-value');
+    for i = 1:size(c,1)
         g1 = gnames{c(i,1)};
         g2 = gnames{c(i,2)};
         mean_diff = c(i,4);
-        raw_p = c(i,6);
-        corrected_p = bonf_p(i);
-        fprintf('%s vs %s:    %.3f        p = %.4f     p_bonf = %.4f\n', ...
-                g1, g2, mean_diff, raw_p, corrected_p);
+        tukey_p = c(i,6);
+        fprintf('%s vs %s:    %.3f        p_adj = %.4f\n', ...
+                g1, g2, mean_diff, tukey_p);
     end
 end
 

@@ -37,7 +37,8 @@ function [Pr, prMax] = bayesian_replay(Spks , ids , RateMap , time , dt , d)
 %       consistent with the behavior of the second output of built in function
 %       'max')
 % Morici Juan Facundo, 09/06/2023
-% placeBayes from Andres Grosmark 2015
+% 116-46
+% from Andres Grosmark 2015
 
 
 % Variables definition
@@ -52,8 +53,8 @@ for i = 1:size(time,2)-1
 end
 Cr = Cr.*dt; clear i
 
-% [Pr, prMax] = placeBayes(Cr, RateMap, dt); 
-[Pr, prMax] = placeBayesLogBuffered1(Cr, RateMap, dt); 
+[Pr, prMax] = placeBayes(Cr, RateMap, dt); 
+% [Pr, prMax] = placeBayesLogBuffered1(Cr, RateMap, dt); 
  
 end
 % 
