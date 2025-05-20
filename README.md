@@ -1,92 +1,48 @@
 # Morici_et_al
 
-for Dorsal-Ventral HPC Coordination
+**For Dorsal-Ventral HPC Coordination**
 
-These codes have been developed to study dorsal-ventral  hippocampal coordination at different levels (single units, assemblies,  LFP).
+This repository contains code developed to study dorsal-ventral hippocampal coordination at different levels, including single units, assemblies, and local field potentials (LFP).
 
-In the "toolbox" folder, you'll find both general and specific functions.
+## Repository Structure
 
-In the main folder, various pipelines have been provided to perform the analysis.
+- **`toolbox/`**: Contains both general-purpose and specific functions.
+- **Main folder**: Includes various analysis pipelines.
 
-The codebase is created using MATLAB, and comprehensive  documentation, along with line-by-line descriptions, has been provided  for each section of the code.
+## Code and Documentation
 
-This project is a work in progress, so please feel free to contact me if you discover any bugs.
+- Written in **MATLAB**.
+- Tested with **MATLAB R2020a**.
+- Each section of code is accompanied by **comprehensive documentation** and **line-by-line explanations**.
+- Each function in the `toolbox/` folder includes:
+  1. A brief overview.
+  2. Detailed descriptions of inputs and outputs.
+  3. A list of required dependencies.
 
-[facundo.morici@inserm.fr](mailto:facundo.morici@inserm.fr) / [faq.morici@gmail.com](mailto:faq.morici@gmail.com)
+## Required Toolboxes
 
+- **FMA Toolbox**
+- **LopesdosSantos_AssemblyToolbox**  
+  *(Already included in the main branch)*
 
+**Reference**:  
+Lopes-dos-Santos V, Ribeiro S, Tort AB. Detecting cell assemblies in large neuronal populations. *J Neurosci Methods*. 2013.  
+[https://doi.org/10.1016/j.jneumeth.2013.04.010](https://doi.org/10.1016/j.jneumeth.2013.04.010)
 
+---
 
+## License
 
+This code is released under the **GNU General Public License (GPL)**.  
+You are free to use, modify, and distribute it under the terms of this license.  
+For more details, see the `LICENSE` file or visit:  
+[https://www.gnu.org/licenses/gpl-3.0.en.html](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
+---
 
-**---------------------------------------------------------------**
+## Contact
 
-**List of functions**
+This project is a work in progress. If you encounter any issues or bugs, feel free to reach out:
 
-**---------------------------------------------------------------**
-
-**General**
-
-- waveform_parameters*: Extract waveform parameters for Pyr/Int classification. inside ‘tools_for_SU’
-
-- spike_train_construction*: Spike Trains matrix construction. inside ‘tools_for_SU’
-
-- ShuffleSpks: shuffle spikes 100 keeping the inter-spike intervals. inside ‘tools_for_SU’
-
-- merge_events*: merge events that occur close in time. inside ‘tools_for_LFP’
-
-- inner*: inner product of two vectors. inside ‘tools_for_assemblies’
-
-- *gaussfilt*: Gaussian filter for time series data. inside ‘tools_for_assemblies’
-
-- count_spks*: count spikes occurring within an event. inside ‘tools_for_SU’
-
-**Analysis**
-
-- *ThetaModulation*: This function determines if SUs are phase-locked to theta rhythm.
-
-- *RipplesModulation*: Is useful to determine if the SUs are modulated by ripples using a Poisson Test. inside ‘tools_for_SU’
-
-- *SU_responsivness*: Firing Rate tuning curve calculation. Locked to an event. inside ‘tools_for_SU’
-
-- *spatial_info_rate*: Spatial Information calculation based on Skaags et al 1993. inside ‘tools_for_SU’
-
-- *sparsity_info*: Sparsity information calculation based on Skaags et al 1993. inside ‘tools_for_SU’
-
-- *SimilarityIndex*: Similarity Index between assemblies patterns based on Almeida-Filho et al 2014. inside ‘tools_for_assemblies’
-
-- *reactivation_strength*: Reactivation Strength calculation based on van de ven et al (2016). inside ‘tools_for_assemblies’
-
-- *FiringMap_LinearTrack*: Firing curve tuned to space. inside ‘tools_for_SU’
-
-- assembly_patternsJFM: assemblies detection based on Lopes-dos-Santos algorithm. Modified to determine assemblies members depending on different thresholding methods. inside ‘tools_for_assemblies’
-
-  **general_for_analyses**
-
-  - *Threshold_xcorr*: Assign random positions to time2 vector and construct a ccg using the times1 vector. inside ‘general_tools’
-  - *Threshold_CCG_Random*: Similar to Threshold_xcorr.m. inside ‘general_tools’
-  - *SkaggsRandom*: 90-quantile definition from a Skaags Surrogate distribution. inside ‘tools_for_SU’
-  - *SkaggsRandomFMT*: Similar to *SkaggsRandom* but using FMAToolbox. inside ‘tools_for_SU’
-  - *SimilaritySurrogate*: This function determines the 99-th percentile from a surrogate Similarity Index distribution using different assemblies patterns. inside ‘tools_for_assemblies’
-  - *marchenko*: Marchenko Pastur distribution using SpikeTrains. inside ‘tools_for_assemblies’
-  - *assembly_recruitment*: percentage of events recruited by different assemblies. inside ‘tools_for_assemblies’
-  - *Within_pc*: Calculates Spatial correlation, Firing Rate Change, and Rate overlap within the same session, controlling the size of the sample for each group. inside ‘tools_for_SU’
-
-**Plotting**
-
-- *triggered_activity*: Reactivation Strength calculation of different assemblies surrounding an event for plotting. inside ‘tools_for_plotting’
-
-- *Ripple_PHIST*: Tuning curve of SUs to ripples. inside ‘tools_for_plotting’
-
-- PHIST*: Similar to *Ripple_PHIST*. inside ‘tools_for_plotting’
-
-- *RasterPlot*: Raster plot construction using two different time series. inside ‘tools_for_plotting’
-
-**Decoding**
-
-- *bayesian_replay*: Probability calculation of being at different positions using spiking activity based on Bayesian probability. inside ‘tools_for_decoder’
-
-  **general_for_decoding**
-
-  - *FindReplay*: Find putative-replay events using MU activity. inside ‘tools_for_decoder’
+- `facundo.morici [at] inserm [dot] fr`  
+- `faq.morici [at] gmail [dot] com`
