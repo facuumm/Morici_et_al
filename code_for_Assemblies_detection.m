@@ -20,6 +20,8 @@ percentages = [];
 Number_of_assemblies.aversive = [];
 Number_of_assemblies.reward = [];
 
+restriction = 'quiet'; % 'all' - 'quiet' - 'movement' events
+
 %% Main loop, to iterate across sessions
 for tt = 1:length(path)
     %List of folders from the path
@@ -86,6 +88,7 @@ for tt = 1:length(path)
         disp('Uploading digital imputs')
         % Load digitalin.mat
         load('digitalin.mat')
+        load('behavioral_data.mat', 'Shocks_filt','Rewards_filt')        
         
         % Behavioral calculations
         disp('Uploading DLC outputs')
@@ -253,11 +256,21 @@ for tt = 1:length(path)
                 opts.Members.method = 'Sqrt';
                 
                 limits = aversiveTS_run./1000;
-%                 events = movement.aversive;
-                events = limits;
+                
+                %check what events
+                if strcmp(restriction,'movement')
+                    events = movement.aversive;
+                elseif strcmp(restriction,'all')
+                events = [behavior.pos.aversive(1,1) behavior.pos.aversive(end,1)];
+%                 events = limits;
+                elseif strcmp(restriction,'quiet')
+                    events = behavior.quiet.aversive;
+                end
+                
+                %Spiktrain construction
                 [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize(i), limits, events, false,false);
                 [Th , pat , eig] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
-                save([cd,'\dorsalventral_assemblies_aversive_all_epochs.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')
+                save([cd,'\dorsalventral_assemblies_aversive_quiet_epochs.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')
 %             end
             
             Thresholded.aversive.all = Th;
@@ -304,12 +317,20 @@ for tt = 1:length(path)
                 opts.Members.method = 'Sqrt';
                 
                 limits = rewardTS_run./1000;
-                events = [];
-%                 events = movement.reward;
-                events = limits;
+                %check what events
+                if strcmp(restriction,'movement')
+                    events = movement.reward;
+                elseif strcmp(restriction,'all')
+                events = [behavior.pos.reward(1,1) behavior.pos.reward(end,1)];
+%                 events = limits;
+                elseif strcmp(restriction,'quiet')
+                    events = behavior.quiet.reward;
+                end
+                
+                %Spiktrain construction
                 [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize(i), limits, events, false,false);
                 [Th , pat , eig] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
-                save([cd,'\dorsalventral_assemblies_reward_all_epochs.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')
+                save([cd,'\dorsalventral_assemblies_reward_quiet_epochs.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')
 %             end
             
             Thresholded.reward.all = Th;
