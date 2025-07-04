@@ -22,6 +22,9 @@ function [p , t] = PHIST_Ripple_SU(Times1,Times2,baseline,d,b,sm,mode)
 %
 % Morci Juan Facundo 12/2023
 
+% Check to keep only ripples that are within the Times2
+x = and(Times1(:,2) > Times2(1), Times1(:,2) < Times2(end));
+Times1 = Times1(x,:);
 
 [s,ids,groups] = CCGParameters(Times1(:,2),ones(length(Times1),1),Times2,ones(length(Times2),1)*2);
 [ccg,T] = CCG(s,ids,'binSize',b,'duration',d,'smooth',sm,'mode','ccg');

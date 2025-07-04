@@ -25,7 +25,11 @@ REM_SpectrumDA = []; REM_SpectrumVA = [];
 durations_REM_B = []; durations_REM_R = []; durations_REM_A = [];
 durations_NREM_B = []; durations_NREM_R = []; durations_NREM_A = [];
 
+epochs_REM_B = []; epochs_REM_R = []; epochs_REM_A = [];
+epochs_NREM_B = []; epochs_NREM_R = []; epochs_NREM_A = [];
 
+c = 0;
+figure
 %% Main lo op, to iterate across sessions
 for tt = 1:length(path)
     %List of folders from the path
@@ -36,77 +40,49 @@ for tt = 1:length(path)
     subFolders = files(dirFlags);
     clear files dirFlags
     for t = 1 : length(subFolders)-2
+        c = c+1;
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
         
-        %load LFP
-        if isfile('lfp.mat')
-            load('lfp.mat')
-        elseif isfile('lfp1.mat')
-            load('lfp1.mat')
-        end
+%         %load LFP
+%         if isfile('lfp.mat')
+%             load('lfp.mat')
+%         elseif isfile('lfp1.mat')
+%             load('lfp1.mat')
+%         end
         
         %Loading TS of the sessions
         disp('Uploading session time stamps')
-        x = dir([cd,'\*.cat.evt']);
-        segments = readtable([cd,'\',x.name],'FileType','text');
-        clear x
-        % TimeStamps of begening and end of the sleep and awake trials
-        % Reward and Aversive trials
-        aversiveTS = [];
-        aversiveTS_run = [];
-        rewardTS = [];
-        rewardTS_run = [];
-        for y = 1 : height(segments)
-            % Baseline sleep session TS detection
-            if y == 1
-                baselineTS(1,1) = segments.Var1(y);
-            elseif y ==2
-                baselineTS(1,2) = segments.Var1(y);
-            end
-            % Aversive sleep session TS detection
-            if strcmp(segments.Var2{y},'aversive')
-                if strcmp(segments.Var3{y},'End')
-                    aversiveTS(1,1) = segments.Var1(y+1);
-                    aversiveTS(1,2) = segments.Var1(y+2);
-                    aversiveTS_run(1,1) = segments.Var1(y-1);
-                    aversiveTS_run(1,2) = segments.Var1(y);
-                    A = y;
-                end
-                % Rewarded sleep session TS detection
-            elseif strcmp(segments.Var2{y},'reward')
-                if strcmp(segments.Var3{y},'End')
-                    rewardTS(1,1) = segments.Var1(y+1);
-                    rewardTS(1,2) = segments.Var1(y+2);
-                    rewardTS_run(1,1) = segments.Var1(y-1);
-                    rewardTS_run(1,2) = segments.Var1(y);
-                    R = y;
-                end
-            end
-        end
-        clear y
+        load('session_organization.mat')
         
         %% Sleep
         disp('Uploading sleep scoring')
         x = dir([cd,'\*-states.mat']);    states = load([cd,'\',x.name]);    states = states.states;
         
         REM = ToIntervals(states==5);    NREM = ToIntervals(states==3);    WAKE = ToIntervals(states==1);
+        DROWSY = ToIntervals(states==2);
         clear x states
         
         %keep only WAKE in HomeCage
-        %         WAKE = Restrict(WAKE, [aversiveTS ; rewardTS ; baselineTS] ./1000);
+        WAKE_B = RestrictAndClip(WAKE, baselineTS./1000);
+        WAKE_A = RestrictAndClip(WAKE, aversiveTS./1000);
+        WAKE_R = RestrictAndClip(WAKE, rewardTS./1000);
         
         % NREM events restriction according conditions
-        NREM_B = NREM(NREM(:,2)<baselineTS(1,2)/1000,:);
-        NREM_A = NREM(NREM(:,2)>aversiveTS(1,1)/1000 & NREM(:,2)<aversiveTS(1,2)/1000,:);
-        NREM_R = NREM(NREM(:,2)>rewardTS(1,1)/1000 & NREM(:,2)<rewardTS(1,2)/1000,:);
-        
+        NREM_B = RestrictAndClip(NREM, baselineTS./1000);
+        NREM_A = RestrictAndClip(NREM, aversiveTS./1000);
+        NREM_R = RestrictAndClip(NREM, rewardTS./1000);
         
         % REM events restriction according conditions
-        REM_B = REM(REM(:,2)<baselineTS(1,2)/1000,:);
-        REM_A = REM(REM(:,2)>aversiveTS(1,1)/1000 & REM(:,2)<aversiveTS(1,2)/1000,:);
-        REM_R = REM(REM(:,2)>rewardTS(1,1)/1000 & REM(:,2)<rewardTS(1,2)/1000,:);
+        REM_B = RestrictAndClip(REM, baselineTS./1000);
+        REM_A = RestrictAndClip(REM, aversiveTS./1000);
+        REM_R = RestrictAndClip(REM, rewardTS./1000);
+        
+        % DROWSY events restriction according conditions
+        DROWSY_B = RestrictAndClip(DROWSY, baselineTS./1000);
+        DROWSY_A = RestrictAndClip(DROWSY, aversiveTS./1000);
+        DROWSY_R = RestrictAndClip(DROWSY, rewardTS./1000);        
         
         %Calculation of durations acorss conditions
         durations_REM_B = [durations_REM_B ; REM_B(:,2) - REM_B(:,1)];
@@ -116,6 +92,36 @@ for tt = 1:length(path)
         durations_NREM_R = [durations_NREM_R ;  NREM_R(:,2)- NREM_R(:,1)];
         durations_NREM_A = [durations_NREM_A ;  NREM_A(:,2)- NREM_A(:,1)];
         
+        epochs_REM_B = [epochs_REM_B ; size(REM_B,1)];
+        epochs_REM_R = [epochs_REM_R ; size(REM_R,1)];
+        epochs_REM_A = [epochs_REM_A ; size(REM_A,1)];
+        
+        epochs_NREM_B = [epochs_NREM_B ; size(NREM_B,1)];
+        epochs_NREM_R = [epochs_NREM_R ; size(NREM_R,1)];
+        epochs_NREM_A = [epochs_NREM_A ; size(NREM_A,1)];        
+        
+        
+%         % For plotting sleep stages of each session
+%         subplot(50,2,c)
+%         m = min([NREM_A(:,1) ; REM_A(:,1) ; WAKE_A(:,1) ; DROWSY_A(:,1)]);
+%         PlotIntervals(((NREM_A-m)./60)./60,'color' ,'b'),hold on
+%         PlotIntervals(((REM_A-m)./60)./60,'color' ,'r'),hold on
+%         PlotIntervals(((WAKE_A-m)./60)./60,'color' ,'k'),hold on
+%         PlotIntervals(((DROWSY_A-m)./60)./60,'color' ,'y'),hold on
+%         xlim([0 3])
+%         hold off
+%         c = c+1; %update of count for next subplot
+%         
+%         subplot(50,2,c)
+%         m = min([NREM_R(:,1) ; REM_R(:,1) ; WAKE_R(:,1) ; DROWSY_R(:,1)]);
+%         PlotIntervals(((NREM_R-m)./60)./60,'color' ,'b'),hold on
+%         PlotIntervals(((REM_R-m)./60)./60,'color' ,'r'),hold on
+%         PlotIntervals(((WAKE_R-m)./60)./60,'color' ,'k'),hold on
+%         PlotIntervals(((DROWSY_R-m)./60)./60,'color' ,'y'),hold on
+%         xlim([0 3])
+%         hold off
+
+
         %% Awake
         disp('Uploading digital imputs')
         % Load digitalin.mat
@@ -307,6 +313,36 @@ for tt = 1:length(path)
     disp('  ')
 end
 
+%% ---> To plot data asked by R3
+% Durations
+% REM
+figure
+x = [[durations_REM_A ; durations_REM_R] , [ones(length(durations_REM_A),1) ; ones(length(durations_REM_R),1)*2]];
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+scatter([1 2] , [nanmean(durations_REM_A) nanmean(durations_REM_R)],'filled')
+[h p] = ranksum(durations_REM_R , durations_REM_A)
+% NREM
+figure
+x = [[durations_NREM_A ; durations_NREM_R] , [ones(length(durations_NREM_A),1) ; ones(length(durations_NREM_R),1)*2]];
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+scatter([1 2] , [nanmean(durations_NREM_A) nanmean(durations_NREM_R)],'filled')
+[h p] = ranksum(durations_NREM_R , durations_NREM_A)
+
+% Epochs
+% REM
+figure
+x = [[epochs_REM_A ; epochs_REM_R] , [ones(length(epochs_REM_A),1) ; ones(length(epochs_REM_R),1)*2]];
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+scatter([1 2] , [nanmean(epochs_REM_A) nanmean(epochs_REM_R)],'filled')
+[h p] = ranksum(epochs_REM_R , epochs_REM_A)
+ylim([0 16])
+% NREM
+figure
+x = [[epochs_NREM_A ; epochs_NREM_R] , [ones(length(epochs_NREM_A),1) ; ones(length(epochs_NREM_R),1)*2]];
+scatter(x(:,2),x(:,1),"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+scatter([1 2] , [nanmean(epochs_NREM_A) nanmean(epochs_NREM_R)],'filled')
+[h p] = ranksum(epochs_NREM_R , epochs_NREM_A)
+
 %
 [N,EDGES] = histcounts(durations_NREM_B,30,'BinLimits',[20 350],'Normalization','probability');
 plot(EDGES(2:end),Smooth(N,1),'k','LineWidth',1),hold on
@@ -314,6 +350,7 @@ plot(EDGES(2:end),Smooth(N,1),'k','LineWidth',1),hold on
 plot(EDGES(2:end),Smooth(N,1),'b','LineWidth',1),hold on
 [N,EDGES] = histcounts(durations_NREM_A,30,'BinLimits',[0 350],'Normalization','probability');
 plot(EDGES(2:end),Smooth(N,1),'r','LineWidth',1)
+
 
 
 [m mm] = min(abs(f-6));

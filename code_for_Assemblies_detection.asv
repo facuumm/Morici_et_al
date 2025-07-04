@@ -253,8 +253,8 @@ for tt = 1:length(path)
                 opts.Members.method = 'Sqrt';
                 
                 limits = aversiveTS_run./1000;
-%                 events = movement.aversive;
-                events = limits;
+                events = [];
+                events = movement.aversive;
                 [SpksTrains.all.aversive , Bins.aversive , Cluster.all.aversive] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize(i), limits, events, false,false);
                 [Th , pat , eig] = assembly_patternsJFM([SpksTrains.all.aversive'],opts);
                 save([cd,'\dorsalventral_assemblies_aversive_all_epochs.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')
@@ -305,8 +305,7 @@ for tt = 1:length(path)
                 
                 limits = rewardTS_run./1000;
                 events = [];
-%                 events = movement.reward;
-                events = limits;
+                events = movement.reward;
                 [SpksTrains.all.reward , Bins.reward , Cluster.all.reward] = spike_train_construction([spks_dHPC;spks_vHPC], clusters.all, cellulartype, binSize(i), limits, events, false,false);
                 [Th , pat , eig] = assembly_patternsJFM([SpksTrains.all.reward'],opts);
                 save([cd,'\dorsalventral_assemblies_reward_all_epochs.mat'],'Th' , 'pat' , 'eig' , 'criteria_fr' , 'criteria_n')

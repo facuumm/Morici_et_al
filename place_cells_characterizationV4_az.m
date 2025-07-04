@@ -86,6 +86,7 @@ for tt = 1:length(path)
         disp('Uploading digital imputs')
         % Load digitalin.mat
         load('digitalin.mat')
+        
         %Shocks selection
         Shocks_filt = Restrict(shock,aversiveTS_run ./1000);
         % Keep only the first shock of each TTL (first from 20)
@@ -102,8 +103,10 @@ for tt = 1:length(path)
         end
         Shocks_filt = deff;
         clear count deff shock i
+        
         %Rewards selection
         Rewards_filt = Restrict([leftvalve ; rightvalve],rewardTS_run ./1000);
+        
         disp('Uploading DLC outputs')
         camara = ((camara(:,2)-camara(:,1))/2)+camara(:,1);
         % periods of movment during each condition
@@ -160,7 +163,8 @@ for tt = 1:length(path)
             behavior.quiet.aversive = QuietPeriods(behavior.speed.aversive , minimal_speed , minimal_speed_time);
             clear pos camaraA posx posy
         end
-        %Video sampling rate 
+        
+        %Video sampling rate
         dt = (mean(diff(behavior.pos.aversive(:,1)))); 
         
         % Generation of no-movements periods

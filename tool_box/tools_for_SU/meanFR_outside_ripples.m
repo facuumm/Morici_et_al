@@ -25,13 +25,13 @@ bufferedripples = Restrict(bufferedripples, periods);
 
 totalbaselinetime = sum(baseline(:,2)-baseline(:,1));
 
-% Constructing an spiketrain
-[spikes,bins]=binspikes(spks(:,1),1/binsize,[baseline(1,1) baseline(end,2)]);
-m = InIntervals(bins,baseline);
-m = nanmean(spikes(m)./binsize);
+% % Constructing an spiketrain
+% [spikes,bins]=binspikes(spks(:,1),1/0.1,[baseline(1,1) baseline(end,2)]);
+% m = InIntervals(bins,baseline);
+% m = nanmean(spikes(m)./0.1);
 
-% Counting the spikes
-% m = Restrict(spks(:,1),baseline);
-% m = size(m,1)/totalbaselinetime;
+% % Counting the spikes
+m = Restrict(spks(:,1),baseline);
+m = size(m,1)/totalbaselinetime;
 
 end

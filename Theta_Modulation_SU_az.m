@@ -1,12 +1,14 @@
-
+%% Wrapper for Theta_Modulation_SU
+%Adaptation of Theta_Modulation_SU to include place cell/shock info
 clear
 clc
 close all
+%% PARAMETERS - run this section before run any other
+path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\ready';'\\Maryjackson\e\Rat103\usable';'\\Maryjackson\e\Rat132\recordings\in_pyr'; '\\Maryjackson\e\Rat165\in_pyr'; ...
+    '\\Maryjackson\e\Rat126\Ephys\in_Pyr'};%List of folders from the path
 
-%% Parameters
-path = {'E:\Rat126\Ephys\in_Pyr';'E:\Rat103\usable';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 % for SU
-criteria_fr = 0; %criteria to include or not a SU into the analysis
+criteria_fr = 0.01; %criteria to include or not a SU into the analysis
 pval = 0.001;
 
 % for speed selection
@@ -18,11 +20,9 @@ theta_modulated.dHPC.reward = [];
 theta_modulated.vHPC.aversive = [];
 theta_modulated.vHPC.reward = [];
 Id.dHPC = [];       Id.dHPC = [];
+%% Main loop 
 
-
-% Sacar el filtro que puse del FR en el counts de neuronas
-%% Main loop, to iterate across sessions
-for tt = 1:length(path)
+for tt = 1:length(path) %rats 
     %List of folders from the path
     files = dir(path{tt});
     % Get a logical vector that tells which is a directory.
@@ -30,8 +30,7 @@ for tt = 1:length(path)
     % Extract only those that are directories.
     subFolders = files(dirFlags);
     clear files dirFlags
-    
-    for t = 1 : length(subFolders)-2
+    for t = 1 : length(subFolders)-2%sessions 
         disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
@@ -191,7 +190,7 @@ for tt = 1:length(path)
         spks_vHPC(:,2) = double(spks_vHPC(:,2))./20000;
         spks_dHPC(:,2) = double(spks_dHPC(:,2))./20000;
         spks(:,2) = double(spks(:,2))./20000;
-%         % Selection of celltype to analyze
+        % Selection of celltype to analyze
 %         if criteria_type == 0 %pyr
 %             cellulartype = [K(:,1) , K(:,4)];
 %         elseif criteria_type == 1 % int
@@ -199,7 +198,6 @@ for tt = 1:length(path)
 %         elseif criteria_type == 2 % all
 %             cellulartype = [K(:,1) , ones(length(K),1)];
 %         end
-        
         %% Counting the Number f SU
         numberD = 0;
         clusters.all = [];
@@ -237,9 +235,7 @@ for tt = 1:length(path)
         end
         clear freq limits
         clear ejeX ejeY dX dY dX_int dY_int
-
-        
-        %%
+        %% Computing theta modulation
         if not(isempty(spks_dHPC))
             lfp.raw.dHPC = dHPC;
             lfp.filtered.dHPC = FilterLFP(lfp.raw.dHPC,'passband',[6 10]);% filtering LFP
@@ -247,18 +243,53 @@ for tt = 1:length(path)
             iterator = ismember(K(:,1),clusters.dHPC); %keep logical to differentiate pyr from rest
             iterator  = K(iterator,4);
             
+            %Create logical if place cell 
+            if exist('dHPC_pc_skaggs_circular.mat', 'file')>0
+                try 
+                    pc_info=load('dHPC_pc_skaggs_circular.mat');pc_info=pc_info.dHPC;
+                catch 
+                    disp(['No valid pc matrix in ', session]); 
+                    pc_info=[];
+                end 
+                dhpc_pc = [];
+                for d=1:size(pc_info,2)
+                    pc = pc_info{d}; 
+                    dhpc_pc = [dhpc_pc;pc.id]; 
+                end
+                pc = ismember(clusters.dHPC,dhpc_pc); % keep only pc 
+            else
+                pc = nan(size(clusters.dHPC));
+            end 
+            
+            %Create locigal if shock cell
+            if exist('dHPC_responsivness.mat', 'file')>0
+                try 
+                   shock_info=load('dHPC_responsivness.mat');shock_info=shock_info.dHPC_resp; 
+                catch 
+                    disp(['No valid shock matrix in ', session]); 
+                    shock_info.id=[];shock_info.resp_ave=[];
+                end
+                shock_cell = shock_info.id(shock_info.resp_ave>0); 
+                shock = ismember(clusters.dHPC,shock_cell); % keep only shock cells 
+            else
+                shock= nan(size(clusters.dHPC));
+            end 
+            clear shock_info shock_cell pc_info dhpc_pc
+            
             Periods = SubtractIntervals(aversiveTS_run./1000,behavior.quiet.aversive);
             Periods = Restrict(Periods,[behavior.pos.aversive(1,1) behavior.pos.aversive(end,1)]);
+            
             [p,theta,rbar,delta] = ThetaModulation(spks_dHPC,clusters.dHPC,lfp.filtered.dHPC,Periods);
-            theta_modulated.dHPC.aversive = [theta_modulated.dHPC.aversive ; clusters.dHPC iterator p' theta' rbar' delta'];            
-            temp.dHPC.aversive = [clusters.dHPC iterator p' theta' rbar' delta'];
+            theta_modulated.dHPC.aversive = [theta_modulated.dHPC.aversive ; clusters.dHPC iterator p' theta' rbar' delta' pc shock];            
+            temp.dHPC.aversive = [clusters.dHPC iterator p' theta' rbar' delta' pc shock];
             clear Periods p theta rbar delta
             
             Periods = SubtractIntervals(rewardTS_run./1000,behavior.quiet.reward);
             Periods = Restrict(Periods,[behavior.pos.reward(1,1) behavior.pos.reward(end,1)]);
+            
             [p,theta,rbar,delta] = ThetaModulation(spks_dHPC,clusters.dHPC,lfp.filtered.dHPC,Periods);
-            theta_modulated.dHPC.reward = [theta_modulated.dHPC.reward ; clusters.dHPC iterator p' theta' rbar' delta'];  
-            temp.dHPC.reward = [clusters.dHPC iterator p' theta' rbar' delta'];
+            theta_modulated.dHPC.reward = [theta_modulated.dHPC.reward ; clusters.dHPC iterator p' theta' rbar' delta' pc shock];  
+            temp.dHPC.reward = [clusters.dHPC iterator p' theta' rbar' delta' pc shock];
             clear Periods p theta rbar delta iterator 
         end
         
@@ -296,18 +327,53 @@ for tt = 1:length(path)
             iterator = ismember(K(:,1),clusters.vHPC); %keep logical to differentiate pyr from rest
             iterator  = K(iterator,4);
             
+            %Create logical if place cell 
+            if exist('vHPC_pc_skaggs_circular.mat', 'file')>0
+                try 
+                    pc_info=load('vHPC_pc_skaggs_circular.mat');pc_info=pc_info.vHPC;
+                catch 
+                    disp(['No valid vhpc pc matrix in ', session]); 
+                    pc_info=[];
+                end 
+                vhpc_pc = [];
+                for d=1:size(pc_info,2)
+                    pc = pc_info{d}; 
+                    vhpc_pc = [vhpc_pc;pc.id]; 
+                end
+                pc = ismember(clusters.vHPC,vhpc_pc); % keep only pc 
+            else
+                pc = nan(size(clusters.vHPC));
+            end 
+            
+            %Create locigal if shock cell
+            if exist('vHPC_responsivness.mat', 'file')>0
+                try 
+                   shock_info=load('vHPC_responsivness.mat');shock_info=shock_info.vHPC_resp; 
+                catch 
+                    disp(['No valid vhpc shock matrix in ', session]); 
+                    shock_info.id=[];shock_info.resp_ave=[];
+                end
+                
+                shock_cell = shock_info.id(shock_info.resp_ave>0); 
+                shock = ismember(clusters.vHPC,shock_cell); % keep only shock cells 
+            else
+                shock= nan(size(clusters.vHPC));
+            end 
+            clear shock_info shock_cell pc_info dhpc_pc
+            
+            
             Periods = SubtractIntervals(aversiveTS_run./1000,behavior.quiet.aversive);
             Periods = Restrict(Periods,[behavior.pos.aversive(1,1) behavior.pos.aversive(end,1)]);
             [p,theta,rbar,delta] = ThetaModulation(spks_vHPC,clusters.vHPC,lfp.filtered.vHPC,Periods);
-            theta_modulated.vHPC.aversive = [theta_modulated.vHPC.aversive ; clusters.vHPC iterator p' theta' rbar' delta'];
-            temp.vHPC.aversive = [clusters.vHPC iterator p' theta' rbar' delta'];
+            theta_modulated.vHPC.aversive = [theta_modulated.vHPC.aversive ; clusters.vHPC iterator p' theta' rbar' delta' pc shock];
+            temp.vHPC.aversive = [clusters.vHPC iterator p' theta' rbar' delta' pc shock];
             clear Periods p theta rbar delta
             
             Periods = SubtractIntervals(rewardTS_run./1000,behavior.quiet.reward);
             Periods = Restrict(Periods,[behavior.pos.reward(1,1) behavior.pos.reward(end,1)]);
             [p,theta,rbar,delta] = ThetaModulation(spks_vHPC,clusters.vHPC,lfp.filtered.vHPC,Periods);
-            theta_modulated.vHPC.reward = [theta_modulated.vHPC.reward ; clusters.vHPC iterator p' theta' rbar' delta'];
-            temp.vHPC.reward = [clusters.vHPC iterator p' theta' rbar' delta'];
+            theta_modulated.vHPC.reward = [theta_modulated.vHPC.reward ; clusters.vHPC iterator p' theta' rbar' delta' pc shock];
+            temp.vHPC.reward = [clusters.vHPC iterator p' theta' rbar' delta' pc shock];
             clear Periods p theta rbar delta iterator
         end
         
@@ -319,106 +385,8 @@ for tt = 1:length(path)
         clear clusters coordinated coordinatedV cooridnated_event cooridnated_eventDV cooridnated_eventVD
         clear segments shock group_dHPC group_vHPC K Kinfo coordinatedV_refined
         
-    end
+        
+    end% sessions
     disp(['-- Finishing analysis from rat #',num2str(tt) , ' --'])
     disp('  ')
-end
-
-
-dHPC.pyr = theta_modulated.dHPC.aversive(:,2)==1;
-dHPC.int = theta_modulated.dHPC.aversive(:,2)==0;
-vHPC.pyr = theta_modulated.vHPC.aversive(:,2)==1;
-vHPC.int = theta_modulated.vHPC.aversive(:,2)==0;
-
-%% Percentage calculation dHPC pyr
-% aversive
-n = length(theta_modulated.dHPC.aversive(dHPC.pyr));
-i = sum(theta_modulated.dHPC.aversive(dHPC.pyr,3)<0.05);
-percentage.dHPC.pyr.aversive.modulated = (i/n)*100;
-
-i = sum(isnan(theta_modulated.dHPC.aversive(dHPC.pyr,3)));
-percentage.dHPC.pyr.aversive.nan = (i/n)*100;
-
-%Reward
-n = length(theta_modulated.dHPC.reward(dHPC.pyr));
-i = sum(theta_modulated.dHPC.reward(dHPC.pyr,3)<0.05);
-percentage.dHPC.pyr.reward.modulated = (i/n)*100;
-
-i = sum(isnan(theta_modulated.dHPC.reward(dHPC.pyr,3)));
-percentage.dHPC.pyr.reward.nan = (i/n)*100;
-
-%% Percentage calculation dHPC int
-n = length(theta_modulated.dHPC.aversive(dHPC.int));
-i = sum(theta_modulated.dHPC.aversive(dHPC.int,3)<0.05);
-percentage.dHPC.int.aversive.modulated = (i/n)*100;
-
-i = sum(isnan(theta_modulated.dHPC.aversive(dHPC.int,3)));
-percentage.dHPC.int.aversive.nan = (i/n)*100;
-
-n = length(theta_modulated.dHPC.reward(dHPC.int));
-i = sum(theta_modulated.dHPC.reward(dHPC.int,3)<0.05);
-percentage.dHPC.int.reward.modulated = (i/n)*100;
-
-i = sum(isnan(theta_modulated.dHPC.reward(dHPC.int,3)));
-percentage.dHPC.int.reward.nan = (i/n)*100;
-
-%% Percentage calculation vHPC pyr
-n = length(theta_modulated.vHPC.aversive(vHPC.pyr));
-i = sum(theta_modulated.vHPC.aversive(vHPC.pyr,3)<0.05);
-percentage.vHPC.pyr.aversive.modulated = (i/n)*100;
-
-i = sum(isnan(theta_modulated.vHPC.aversive(vHPC.pyr,3)));
-percentage.vHPC.pyr.aversive.nan = (i/n)*100;
-
-
-n = length(theta_modulated.vHPC.reward(vHPC.pyr));
-i = sum(theta_modulated.vHPC.reward(vHPC.pyr,3)<0.05);
-percentage.vHPC.pyr.reward.modulated = (i/n)*100;
-
-i = sum(isnan(theta_modulated.vHPC.reward(vHPC.pyr,3)));
-percentage.vHPC.pyr.reward.nan = (i/n)*100;
-
-%% Percentage calculation vHPC int
-n = length(theta_modulated.vHPC.aversive(vHPC.int));
-i = sum(theta_modulated.vHPC.aversive(vHPC.int,3)<0.05);
-percentage.vHPC.int.aversive.modulated = (i/n)*100;
-
-i = sum(isnan(theta_modulated.vHPC.aversive(vHPC.int,3)));
-percentage.vHPC.int.aversive.nan = (i/n)*100;
-
-n = length(theta_modulated.vHPC.reward(vHPC.int));
-i = sum(theta_modulated.vHPC.reward(vHPC.int,3)<0.05);
-percentage.vHPC.int.reward.modulated = (i/n)*100;
-
-i = sum(isnan(theta_modulated.vHPC.reward(vHPC.int,3)));
-percentage.vHPC.int.reward.nan = (i/n)*100;
-
-%% Plots
-%All
-figure,
-x = [percentage.dHPC.pyr.aversive.modulated percentage.dHPC.pyr.aversive.nan 100-percentage.dHPC.pyr.aversive.modulated-percentage.dHPC.pyr.aversive.nan];
-subplot(2,2,1),pie(x,{'modulated' , 'non-specified' , 'non-modulated'})
-
-x = [percentage.dHPC.int.aversive.modulated percentage.dHPC.int.aversive.nan 100-percentage.dHPC.int.aversive.modulated-percentage.dHPC.int.aversive.nan];
-subplot(2,2,2),pie(x,{'modulated' , 'non-specified' , 'non-modulated'})
-
-x = [percentage.dHPC.pyr.reward.modulated percentage.dHPC.pyr.reward.nan 100-percentage.dHPC.pyr.reward.modulated-percentage.dHPC.pyr.reward.nan];
-subplot(2,2,3),pie(x,{'modulated' , 'non-specified' , 'non-modulated'})
-
-x = [percentage.dHPC.int.reward.modulated percentage.dHPC.int.reward.nan 100-percentage.dHPC.int.reward.modulated-percentage.dHPC.int.reward.nan];
-subplot(2,2,4),pie(x,{'modulated' , 'non-specified' , 'non-modulated'})
-
-
-figure,
-x = [percentage.vHPC.pyr.aversive.modulated percentage.vHPC.pyr.aversive.nan 100-percentage.vHPC.pyr.aversive.modulated-percentage.vHPC.pyr.aversive.nan];
-subplot(2,2,1),pie(x,{'modulated' , 'non-specified' , 'non-modulated'})
-
-x = [percentage.vHPC.int.aversive.modulated percentage.vHPC.int.aversive.nan 100-percentage.vHPC.int.aversive.modulated-percentage.vHPC.int.aversive.nan];
-subplot(2,2,2),pie(x,{'modulated' , 'non-specified' , 'non-modulated'})
-
-x = [percentage.vHPC.pyr.reward.modulated percentage.vHPC.pyr.reward.nan 100-percentage.vHPC.pyr.reward.modulated-percentage.vHPC.pyr.reward.nan];
-subplot(2,2,3),pie(x,{'modulated' , 'non-specified' , 'non-modulated'})
-
-x = [percentage.vHPC.int.reward.modulated percentage.vHPC.int.reward.nan 100-percentage.vHPC.int.reward.modulated-percentage.vHPC.int.reward.nan];
-subplot(2,2,4),pie(x,{'modulated' , 'non-specified' , 'non-modulated'})
-
+end%rats 
