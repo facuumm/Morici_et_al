@@ -78,7 +78,7 @@ for tt = 2:length(path)
         %         REM.all(REM.all(:,2)-REM.all(:,1)<60,:) = [];
         clear x states
         
-        %         NREM.all(NREM.all(:,2)-NREM.all(:,1)<60*time_criteria,:)=[];
+        NREM.all(NREM.all(:,2)-NREM.all(:,1)<60,:)=[];
         NREM.baseline = Restrict(NREM.all,baselineTS./1000);
         NREM.aversive = Restrict(NREM.all,aversiveTS./1000);
         NREM.reward = Restrict(NREM.all,rewardTS./1000);

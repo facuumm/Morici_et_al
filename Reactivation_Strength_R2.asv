@@ -273,16 +273,16 @@ for tt = 2:length(path)
         if or(numberD > 3 , numberV > 3)
             % --- Aversive ---
             disp('Lets go for the assemblies')
-            if isfile('dorsalventral_assemblies_aversive_all_epochs.mat')
+            if isfile('dorsalventral_assemblies_aversive_quiet_epochs.mat')
                 disp('Loading Aversive template')
-                load('dorsalventral_assemblies_aversive_all_epochs.mat')
+                load('dorsalventral_assemblies_aversive_quiet_epochs.mat')
             end
             
             Thresholded.aversive.all = Th;
             patterns.all.aversive = pat;
             clear cond Th pat
             
-           patterns.all.aversive = patterns.all.aversive .* Thresholded.aversive.all;
+%            patterns.all.aversive = patterns.all.aversive .* Thresholded.aversive.all;
             
             % Detection of members
             if not(isempty(Thresholded.aversive.all))
@@ -310,15 +310,15 @@ for tt = 2:length(path)
             
             % --- Reward ---
             disp('Loading Reward template')
-            if isfile('dorsalventral_assemblies_reward_all_epochs.mat')
-                load('dorsalventral_assemblies_reward_all_epochs.mat')
+            if isfile('dorsalventral_assemblies_reward_quiet_epochs.mat')
+                load('dorsalventral_assemblies_reward_quiet_epochs.mat')
             end
             
             Thresholded.reward.all = Th;
             patterns.all.reward = pat;
             clear Th pat
             
-            patterns.all.reward = patterns.all.reward .* Thresholded.reward.all;
+%             patterns.all.reward = patterns.all.reward .* Thresholded.reward.all;
             
             % Detection of members using
             if not(isempty(Thresholded.reward.all))
