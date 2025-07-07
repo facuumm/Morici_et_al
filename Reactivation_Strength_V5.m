@@ -48,7 +48,7 @@ Number_of_assemblies.aversive = [];
 Number_of_assemblies.reward = [];
 
 %% Main loop, to iterate across sessions
-for tt = 2:length(path)
+for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
     % Get a logical vector that tells which is a directory.
@@ -69,7 +69,7 @@ for tt = 2:length(path)
         
         % Awake
         disp('Uploading Behavioral Data')
-        load('behavioral_data.mat')
+        load('behavioral_data.mat','movement','Shocks_filt','Rewards_filt')
         
         %% load sleep states
         disp('Uploading sleep scoring')
@@ -189,13 +189,13 @@ for tt = 2:length(path)
             ripples.vHPC.aversive = Restrict(ripplesV , NREM.aversive);
         end
         
-        %% Ripple bursts upload
-        load('coordinated_ripple_bursts.mat')
-        bursts.coordinated.all(or((bursts.coordinated.all(:,2)-bursts.coordinated.all(:,1))<0.08 , (bursts.coordinated.all(:,2)-bursts.coordinated.all(:,1))>1),:) = [];
-        ripple_bursts.baseline = Restrict(bursts.coordinated.all,NREM.baseline);
-        ripple_bursts.reward = Restrict(bursts.coordinated.all,NREM.reward);
-        ripple_bursts.aversive = Restrict(bursts.coordinated.all,NREM.aversive);        
-        clear B bursts
+%         %% Ripple bursts upload
+%         load('coordinated_ripple_bursts.mat')
+%         bursts.coordinated.all(or((bursts.coordinated.all(:,2)-bursts.coordinated.all(:,1))<0.08 , (bursts.coordinated.all(:,2)-bursts.coordinated.all(:,1))>1),:) = [];
+%         ripple_bursts.baseline = Restrict(bursts.coordinated.all,NREM.baseline);
+%         ripple_bursts.reward = Restrict(bursts.coordinated.all,NREM.reward);
+%         ripple_bursts.aversive = Restrict(bursts.coordinated.all,NREM.aversive);        
+%         clear B bursts
         
         %% Spikes
         % Load Units
@@ -472,8 +472,17 @@ for tt = 2:length(path)
                             templates(1:size(clusters.dHPC),2) = 0;
                             
                             [R] = reactivation_strength(patterns.all.aversive , cond.both.aversive , [bins' , Spikes] , is.sws , th , 'A' , config , normalization , []); clear templates
-                            reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R];
-                            RBA = R; clear R
+                            
+                            tmp = [];
+                            for i = 1:size(R,1)
+                                
+                                x = sum(movement.aversive(:,2)-movement.aversive(:,1));
+                                
+                                tmp = [tmp ; size(Shocks_filt,1) , x];
+                            end
+                            
+                            reactivation.aversive.dvHPC = [reactivation.aversive.dvHPC ; R , tmp];
+                            RBA = R; clear R tmp
                             
                         elseif strcmp(W,'D') % if is uncoordinated dorsal ripples
                             if length(ripples.dHPC.uncoordinated.all) > length(ripples.dHPC.coordinated.all)
@@ -689,8 +698,17 @@ for tt = 2:length(path)
                             templates(1:size(clusters.dHPC),2) = 0;
                             
                             [R] = reactivation_strength(patterns.all.reward , cond.both.reward , [bins' , Spikes] , is.sws , th , 'R' , config , normalization , []); clear templates
-                            reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R];
-                            RBR = R; clear R
+                            
+                            tmp = [];
+                            for i = 1:size(R,1)
+                                
+                                x = sum(movement.reward(:,2)-movement.reward(:,1));
+                                
+                                tmp = [tmp ; size(Rewards_filt,1) , x];
+                            end                            
+                            
+                            reactivation.reward.dvHPC = [reactivation.reward.dvHPC ; R , tmp];
+                            RBR = R; clear R tmp
                         elseif strcmp(W,'D')
                             if length(ripples.dHPC.uncoordinated.all) > length(ripples.dHPC.coordinated.all)
                                 tmp = [];
@@ -1040,6 +1058,72 @@ for tt = 2:length(path)
 end
 
 % save([cd,'\Reactivation_Strength_Data_Normalized_eliminating_withingD_5SD.mat'],'reactivation')
+%% Correlations
+%Reactivation and shocks
+% Aversive
+figure
+y = reactivation.aversive.dvHPC(:,1);
+x =  reactivation.aversive.dvHPC(:,end-1);
+fitlm(x,y)
+plot(ans),hold on
+xlim([2 14])
+ylim([-0.6 0.6])
+% Reward
+figure
+y = reactivation.reward.dvHPC(:,1);
+x =  reactivation.reward.dvHPC(:,end-1);
+fitlm(x,y)
+plot(ans)
+ylim([-0.6 0.6])
+xlim([0 90])
+
+% Scatters
+% Aversive
+figure
+y = reactivation.aversive.dvHPC(:,1);
+x =  reactivation.aversive.dvHPC(:,end-1);
+scatter(x,y,'filled')
+ylim([-0.6 0.6])
+xlim([2 14])
+% Reward
+figure
+y = reactivation.reward.dvHPC(:,1);
+x =  reactivation.reward.dvHPC(:,end-1);
+scatter(x,y,'filled')
+ylim([-0.6 0.6])
+xlim([0 90])
+
+
+%Reactivation and movment
+% Aversive
+figure
+y = reactivation.aversive.dvHPC(:,1);
+x =  reactivation.aversive.dvHPC(:,end-1);
+fitlm(x,y)
+plot(ans),hold on
+% Reward
+y = reactivation.reward.dvHPC(:,1);
+x =  reactivation.reward.dvHPC(:,end-1);
+fitlm(x,y)
+plot(ans)
+ylim([-0.6 0.6])
+xlim([100 500])
+
+% Scatters
+% Aversive
+figure
+y = reactivation.aversive.dvHPC(:,1);
+x =  reactivation.aversive.dvHPC(:,end-1);
+scatter(x,y,'filled')
+ylim([-0.6 0.6])
+xlim([100 500])
+% Reward
+figure
+y = reactivation.reward.dvHPC(:,1);
+x =  reactivation.reward.dvHPC(:,end-1);
+scatter(x,y,'filled')
+ylim([-0.6 0.6])
+xlim([100 500])
 
 %% Peaks mean for joint assemblies
 figure

@@ -282,7 +282,7 @@ for tt = 2:length(path)
             patterns.all.aversive = pat;
             clear cond Th pat
             
-%            patterns.all.aversive = patterns.all.aversive .* Thresholded.aversive.all;
+           patterns.all.aversive = patterns.all.aversive .* Thresholded.aversive.all;
             
             % Detection of members
             if not(isempty(Thresholded.aversive.all))
@@ -318,7 +318,7 @@ for tt = 2:length(path)
             patterns.all.reward = pat;
             clear Th pat
             
-%             patterns.all.reward = patterns.all.reward .* Thresholded.reward.all;
+            patterns.all.reward = patterns.all.reward .* Thresholded.reward.all;
             
             % Detection of members using
             if not(isempty(Thresholded.reward.all))
@@ -1040,9 +1040,9 @@ y = reactivation.aversive.dvHPC(:,1);
 
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y,'tail','left')  
-[h, p] = signrank(y,0,'tail','right')
-[h, p] = signrank(x,0,'tail','right')
+[h, p] = ranksum(x,y)  
+[h, p] = signrank(y,0)
+[h, p] = signrank(x,0)
 
 subplot(131),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
@@ -1055,9 +1055,9 @@ x = reactivation.reward.dHPC(:,1);
 y = reactivation.aversive.dHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y,'tail','left')  
-[h, p] = signrank(y,0,'tail','right')
-[h, p] = signrank(x,0,'tail','right')
+[h, p] = ranksum(x,y)  
+[h, p] = signrank(y,0)
+[h, p] = signrank(x,0)
 
 subplot(132),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];
@@ -1070,9 +1070,9 @@ x = reactivation.reward.vHPC(:,1);
 y = reactivation.aversive.vHPC(:,1);
 kstest(x)
 kstest(y)
-[h, p] = ranksum(x,y,'tail','left')  
-[h, p] = signrank(y,0,'tail','right')
-[h, p] = signrank(x,0,'tail','right')
+[h, p] = ranksum(x,y)  
+[h, p] = signrank(y,0)
+[h, p] = signrank(x,0)
 
 subplot(133),
 grps = [ones(size(x,1),1) ; ones(size(y,1),1)*2];

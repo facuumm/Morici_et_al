@@ -261,10 +261,11 @@ for tt = 1:length(path)
                 if strcmp(restriction,'movement')
                     events = movement.aversive;
                 elseif strcmp(restriction,'all')
-                events = [behavior.pos.aversive(1,1) behavior.pos.aversive(end,1)];
+                    events = [behavior.pos.aversive(1,1) behavior.pos.aversive(end,1)];
 %                 events = limits;
                 elseif strcmp(restriction,'quiet')
                     events = behavior.quiet.aversive;
+                    eventns = SubtractIntervals(events,[Shocks_filt(:,1) Shocks_filt(:,1)+2]);
                 end
                 
                 %Spiktrain construction

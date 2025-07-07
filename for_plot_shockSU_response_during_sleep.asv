@@ -316,7 +316,7 @@ subplot(212),bar([shockV 100])
 
 %% Decorrelation of speed and shock response
 time = [-2:0.1:2];
-[h hh] = min(abs(time-(-0.2)));
+[h hh] = min(abs(time-(-0.5)));
 decorrelated.dHPC = [];
 for i = 1 : size(curve.dHPC,1)
     id = curve.id.dHPC(i,:);
@@ -347,26 +347,26 @@ plot([-2:0.1:2],m,'g'), hold on
 ciplot(m-s , m+s , [-2:0.1:2] , 'g'),alpha 0.10
 
 [~ , iii] = min(abs([-2:0.1:2]-0));
-[~ , iiii] = min(abs([-2:0.1:2]-0.8));
+[~ , iiii] = min(abs([-2:0.1:2]-1));
 values.vHPC.decorrelated = max(decorrelated.vHPC(iii:iiii,i))';
 
 i = curve.id.vHPC(:,2) == 1;
-x = curve.vHPC - nanmean(curve.vHPC(:,1:hh)')';%normalization to baseline as R2 asked
-m = nanmean(x(i,:));
-s = nansem(x(i,:));
+x = curve.vHPC - nanmean(curve.vHPC(1:h,:))
+m = nanmean(curve.vHPC(i,:));
+s = nansem(curve.vHPC(i,:));
 plot([-2:0.1:2],m,'y'), hold on
 ciplot(m-s , m+s , [-2:0.1:2] , 'y'),alpha 0.1
 
-values.vHPC.shock = [max(x(i,iii:iiii)')'];
+values.vHPC.shock = [max(curve.vHPC(i,iii:iiii)')'];
 
 i = not(curve.id.vHPC(:,2) == 1);
-m = nanmean(x(i,:));
-s = nansem(x(i,:));
+m = nanmean(curve.vHPC(i,:));
+s = nansem(curve.vHPC(i,:));
 plot([-2:0.1:2],m,'k'), hold on
 ciplot(m-s , m+s , [-2:0.1:2] , 'k'),alpha 0.1
 ylim([-0.25 1.1])
 
-values.vHPC.no =  max(x(i,iii:iiii)')'; clear x
+values.vHPC.no =  max(curve.vHPC(i,iii:iiii)')';
 
 
 
@@ -381,23 +381,22 @@ ciplot(m-s , m+s , [-2:0.1:2] , 'g'),alpha 0.10
 values.dHPC.decorrelated =  max(decorrelated.dHPC(iii:iiii,i))';
 
 i = curve.id.dHPC(:,2) == 1;
-x = curve.dHPC - nanmean(curve.dHPC(:,1:hh)')'; %normalization to baseline as R2 asked
-m = nanmean(x(i,:));
-s = nansem(x(i,:));
+m = nanmean(curve.dHPC(i,:));
+s = nansem(curve.dHPC(i,:));
 plot([-2:0.1:2],m,'y'), hold on
 ciplot(m-s , m+s , [-2:0.1:2] , 'y'),alpha 0.1
 
-values.dHPC.shock = max(x(i,iii:iiii)')';
+values.dHPC.shock = max(curve.dHPC(i,iii:iiii)')';
 
 
 i = not(curve.id.dHPC(:,2) == 1);
-m = nanmean(x(i,:));
-s = nansem(x(i,:));
+m = nanmean(curve.dHPC(i,:));
+s = nansem(curve.dHPC(i,:));
 plot([-2:0.1:2],m,'k'), hold on
 ciplot(m-s , m+s , [-2:0.1:2] , 'k'),alpha 0.1
 ylim([-0.25 1.1])
 
-values.dHPC.no = max(x(i,iii:iiii)')'; clear c
+values.dHPC.no = max(curve.dHPC(i,iii:iiii)')';
 
 
 
