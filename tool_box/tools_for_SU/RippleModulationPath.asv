@@ -31,20 +31,9 @@ function [pInc , pDec , surp] = RippleModulationPath(path)
 %
 % Morci Juan Facundo 01/2024
 
+
+
 %% Main loop, to iterate across sessions
-pInc.dHPC = [];
-pDec.dHPC = [];
-surp.dHPC = [];
-pInc.vHPC = [];
-pDec.vHPC = [];
-surp.vHPC = [];
-pInc.dvHPC.dHPC = [];
-pDec.dvHPC.dHPC = [];
-surp.dvHPC.dHPC = [];
-pInc.dvHPC.vHPC = [];
-pDec.dvHPC.vHPC = [];
-surp.dvHPC.vHPC = [];
-            
 for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
@@ -215,6 +204,9 @@ for tt = 1:length(path)
         
         
         if condV
+            pInc.vHPC = [];
+            pDec.vHPC = [];
+            surp.vHPC = [];
             iii = Restrict(ripplesV,NREM.all);
             bufferedripples=[iii(:,1)-0.1 iii(:,3)+0.1];
             [baseline,ind]=SubtractIntervals(NREM.all,bufferedripples,'strict','on');
@@ -258,6 +250,9 @@ for tt = 1:length(path)
         
         
         if and(condD,condV)
+            pInc.dvHPC.dHPC = [];
+            pDec.dvHPC.dHPC = [];
+            surp.dvHPC.dHPC = [];
             iii = Restrict(coordinatedD,NREM.all);
             bufferedripples=[iii(:,1)-0.1 iii(:,3)+0.1];
             [baseline,ind]=SubtractIntervals(NREM.all,bufferedripples,'strict','on');
@@ -293,7 +288,9 @@ for tt = 1:length(path)
             clear bufferedripples iii
             
             % vHPC SU
-
+            pInc.dvHPC.vHPC = [];
+            pDec.dvHPC.vHPC = [];
+            surp.dvHPC.vHPC = [];
             iii = Restrict(coordinatedV,NREM.all);
             bufferedripples=[iii(:,1)-0.1 iii(:,3)+0.1];
             [baseline,ind]=SubtractIntervals(NREM.all,bufferedripples,'strict','on');
@@ -330,20 +327,20 @@ for tt = 1:length(path)
             
             
         else
-%             pInc.dvHPC.dHPC = [];
-%             pDec.dvHPC.dHPC = [];
-%             surp.dvHPC.dHPC = [];
-%             
-%             pInc.dvHPC.vHPC = [];
-%             pDec.dvHPC.vHPC = [];
-%             surp.dvHPC.vHPC = [];
+            pInc.dvHPC.dHPC = [];
+            pDec.dvHPC.dHPC = [];
+            surp.dvHPC.dHPC = [];
+            
+            pInc.dvHPC.vHPC = [];
+            pDec.dvHPC.vHPC = [];
+            surp.dvHPC.vHPC = [];
             
             clear totalrippletime ripplespikes ncellbaselinespikes ncellripplespikes
             clear baselinespikes totalbaselinetime bufferedripples iii
         end
         
 %         save([cd,'\RippleModulatedSU_coordinated.mat'], 'pInc', 'pDec' , 'surp');
-        clear Spks ripplesD ripplesV cellulartype Cellulartype
+        clear pInc pDec surp Spks ripplesD ripplesV cellulartype Cellulartype
         clear condV condD group_dHPC group_vHPC K Kinfo NREM WAKE REM
         clear spks_dHPC spks_vHPC ii i Cell_type_classification clusters segments spks
     end
