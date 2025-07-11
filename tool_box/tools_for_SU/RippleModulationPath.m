@@ -1,4 +1,4 @@
-function [pInc , pDec , surp] = RippleModulationPath(path)
+function [pInc , pDec] = RippleModulationPath(path)
 % This function determine if a SU is modulated by the ripples.
 %
 % syntax = RippleModulationPath(path)
@@ -24,7 +24,7 @@ function [pInc , pDec , surp] = RippleModulationPath(path)
 % The first column contains the cluster ID
 % The second define the cellulartype (1: Pyr, 0: Int)
 % The third column, in pInc or pDec if is 1, then is up or down-modulated.
-%                 , in surp it contains surprise value  
+%                 , in surp it contains surprise value
 %
 % other functions: poissonTest (Eran Stark)
 %                  Restrict and SubsSubtractIntervals (FMAtoolbox)
@@ -34,17 +34,20 @@ function [pInc , pDec , surp] = RippleModulationPath(path)
 %% Main loop, to iterate across sessions
 pInc.dHPC = [];
 pDec.dHPC = [];
-surp.dHPC = [];
+
 pInc.vHPC = [];
 pDec.vHPC = [];
-surp.vHPC = [];
-pInc.dvHPC.dHPC = [];
-pDec.dvHPC.dHPC = [];
-surp.dvHPC.dHPC = [];
-pInc.dvHPC.vHPC = [];
-pDec.dvHPC.vHPC = [];
-surp.dvHPC.vHPC = [];
-            
+
+pInc.dvHPC.Coor.dHPC = [];
+pDec.dvHPC.Coor.dHPC = [];
+pInc.dvHPC.Coor.vHPC = [];
+pDec.dvHPC.Coor.vHPC = [];
+
+pInc.dvHPC.Uncoor.dHPC = [];
+pDec.dvHPC.Uncoor.dHPC = [];
+pInc.dvHPC.Uncoor.vHPC = [];
+pDec.dvHPC.Uncoor.vHPC = [];
+
 for tt = 1:length(path)
     %List of folders from the path
     files = dir(path{tt});
@@ -150,8 +153,8 @@ for tt = 1:length(path)
             Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
             if Cellulartype
                 clusters.dHPC = [clusters.dHPC ; cluster , true];
-            else
-                clusters.dHPC = [clusters.dHPC ; cluster , false];
+                %             else
+                %                 clusters.dHPC = [clusters.dHPC ; cluster , false];
             end
             clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
         end
@@ -162,8 +165,8 @@ for tt = 1:length(path)
             Cellulartype = logical(cellulartype(cellulartype(:,1) == cluster,2));
             if Cellulartype
                 clusters.vHPC = [clusters.vHPC ; cluster , true];
-            else
-                clusters.vHPC = [clusters.vHPC ; cluster , false];
+                %             else
+                %                 clusters.vHPC = [clusters.vHPC ; cluster , false];
             end
             clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
         end
@@ -190,15 +193,13 @@ for tt = 1:length(path)
                 
                 if ncellbaselinespikes~=0 & ncellripplespikes~=0
                     [Inc Dec sur] = poissonTest(ncellbaselinespikes/totalbaselinetime,ncellripplespikes,totalrippletime);
-                    pInc.dHPC = [pInc.dHPC ; cluster , Inc<0.01/2];
-                    pDec.dHPC = [pDec.dHPC ; cluster , Dec<0.01/2];
-                    surp.dHPC = [surp.dHPC ; cluster , sur];
+                    pInc.dHPC = [pInc.dHPC ; cluster , Inc];
+                    pDec.dHPC = [pDec.dHPC ; cluster , Dec];
                     clear cluster Inc Dec sur
                 else
                     [Inc Dec sur] = poissonTest(ncellbaselinespikes/totalbaselinetime,ncellripplespikes,totalrippletime);
                     pInc.dHPC = [pInc.dHPC ; cluster , NaN];
                     pDec.dHPC = [pDec.dHPC ; cluster , NaN];
-                    surp.dHPC = [surp.dHPC ; cluster , NaN];
                     clear cluster Inc Dec sur
                 end
                 clear totalrippletime ripplespikes ncellbaselinespikes ncellripplespikes
@@ -206,9 +207,9 @@ for tt = 1:length(path)
             end
             clear bufferedripples iii
         else
-%             pInc.dHPC = [];
-%             pDec.dHPC = [];
-%             surp.dHPC = [];
+            %             pInc.dHPC = [];
+            %             pDec.dHPC = [];
+            %             surp.dHPC = [];
             clear totalrippletime ripplespikes ncellbaselinespikes ncellripplespikes
             clear baselinespikes totalbaselinetime bufferedripples iii
         end
@@ -233,15 +234,13 @@ for tt = 1:length(path)
                 
                 if ncellbaselinespikes~=0 & ncellripplespikes~=0
                     [Inc Dec sur] = poissonTest(ncellbaselinespikes/totalbaselinetime,ncellripplespikes,totalrippletime);
-                    pInc.vHPC = [pInc.vHPC ; cluster , Inc<0.01/2];
-                    pDec.vHPC = [pDec.vHPC ; cluster , Dec<0.01/2];
-                    surp.vHPC = [surp.vHPC ; cluster , sur];
+                    pInc.vHPC = [pInc.vHPC ; cluster , Inc];
+                    pDec.vHPC = [pDec.vHPC ; cluster , Dec];
                     clear cluster Inc Dec sur
                 else
                     [Inc Dec sur] = poissonTest(ncellbaselinespikes/totalbaselinetime,ncellripplespikes,totalrippletime);
                     pInc.vHPC = [pInc.vHPC ; cluster , NaN];
                     pDec.vHPC = [pDec.vHPC ; cluster , NaN];
-                    surp.vHPC = [surp.vHPC ; cluster , NaN];
                     clear cluster Inc Dec sur
                 end
                 clear totalrippletime ripplespikes ncellbaselinespikes ncellripplespikes
@@ -249,9 +248,9 @@ for tt = 1:length(path)
             end
             clear bufferedripples iii
         else
-%             pInc.vHPC = [];
-%             pDec.vHPC = [];
-%             surp.vHPC = [];
+            %             pInc.vHPC = [];
+            %             pDec.vHPC = [];
+            %             surp.vHPC = [];
             clear totalrippletime ripplespikes ncellbaselinespikes ncellripplespikes
             clear baselinespikes totalbaselinetime bufferedripples iii
         end
@@ -259,6 +258,80 @@ for tt = 1:length(path)
         
         if and(condD,condV)
             iii = Restrict(coordinatedD,NREM.all);
+            bufferedripples=[iii(:,1)-0.05 iii(:,3)+0.05];
+            [baseline,ind]=SubtractIntervals(NREM.all,bufferedripples,'strict','on');
+            for i = 1: size(clusters.dHPC,1)
+                cluster = clusters.dHPC(i,:);
+                spks=Restrict(Spks(Spks(:,1)==cluster(1),2),NREM.all);
+                
+                totalbaselinetime=sum(baseline(:,2)-baseline(:,1));
+                baselinespikes=Restrict(spks(:,1),baseline);
+                
+                % Restrict further to the third of ripples with the highest amplitude
+                totalrippletime=sum(iii(:,3)-iii(:,1));
+                ripplespikes=Restrict(spks(:,1),[iii(:,1) iii(:,3)]);
+                ncellbaselinespikes=length(baselinespikes);
+                ncellripplespikes=length(ripplespikes);
+                
+                if ncellbaselinespikes~=0 & ncellripplespikes~=0
+                    [Inc Dec sur] = poissonTest(ncellbaselinespikes/totalbaselinetime,ncellripplespikes,totalrippletime);
+                    pInc.dvHPC.Coor.dHPC = [pInc.dvHPC.Coor.dHPC ; cluster , Inc];
+                    pDec.dvHPC.Coor.dHPC = [pDec.dvHPC.Coor.dHPC ; cluster , Dec];
+                    clear cluster Inc Dec sur
+                else
+                    [Inc Dec sur] = poissonTest(ncellbaselinespikes/totalbaselinetime,ncellripplespikes,totalrippletime);
+                    pInc.dvHPC.Coor.dHPC = [pInc.dvHPC.Coor.dHPC ; cluster , NaN];
+                    pDec.dvHPC.Coor.dHPC = [pDec.dvHPC.Coor.dHPC ; cluster , NaN];
+                    clear cluster Inc Dec sur
+                end
+                clear totalrippletime ripplespikes ncellbaselinespikes ncellripplespikes
+                clear baselinespikes totalbaselinetime
+            end
+            clear bufferedripples iii
+            
+            % vHPC SU
+            iii = Restrict(coordinatedV,NREM.all);
+            bufferedripples=[iii(:,1)-0.05 iii(:,3)+0.05];
+            [baseline,ind]=SubtractIntervals(NREM.all,bufferedripples,'strict','on');
+            for i = 1: size(clusters.vHPC,1)
+                cluster = clusters.vHPC(i,:);
+                spks=Restrict(Spks(Spks(:,1)==cluster(1),2),NREM.all);
+                
+                totalbaselinetime=sum(baseline(:,2)-baseline(:,1));
+                baselinespikes=Restrict(spks(:,1),baseline);
+                
+                % Restrict further to the third of ripples with the highest amplitude
+                totalrippletime=sum(iii(:,3)-iii(:,1));
+                ripplespikes=Restrict(spks(:,1),[iii(:,1) iii(:,3)]);
+                ncellbaselinespikes=length(baselinespikes);
+                ncellripplespikes=length(ripplespikes);
+                
+                if ncellbaselinespikes~=0 & ncellripplespikes~=0
+                    [Inc Dec sur] = poissonTest(ncellbaselinespikes/totalbaselinetime,ncellripplespikes,totalrippletime);
+                    pInc.dvHPC.Coor.vHPC = [pInc.dvHPC.Coor.vHPC ; cluster , Inc];
+                    pDec.dvHPC.Coor.vHPC = [pDec.dvHPC.Coor.vHPC ; cluster , Dec];
+                    clear cluster Inc Dec sur
+                else
+                    [Inc Dec sur] = poissonTest(ncellbaselinespikes/totalbaselinetime,ncellripplespikes,totalrippletime);
+                    pInc.dvHPC.Coor.vHPC = [pInc.dvHPC.Coor.vHPC ; cluster , NaN];
+                    pDec.dvHPC.Coor.vHPC = [pDec.dvHPC.Coor.vHPC ; cluster , NaN];
+                    clear cluster Inc Dec sur
+                end
+                clear totalrippletime ripplespikes ncellbaselinespikes ncellripplespikes
+                clear baselinespikes totalbaselinetime
+            end
+            clear bufferedripples iii
+            
+            % Uncoordinated
+            iii = Restrict(uncoordinatedD,NREM.all);
+            
+            if length(iii) > length(coordinatedD)
+                iii = iii(randperm(length(iii)),:);
+                iii = iii(1:length(coordinatedD),:);
+                [x y] = sort(iii(:,2));
+                iii = iii(y,:);                
+            end
+            
             bufferedripples=[iii(:,1)-0.1 iii(:,3)+0.1];
             [baseline,ind]=SubtractIntervals(NREM.all,bufferedripples,'strict','on');
             for i = 1: size(clusters.dHPC,1)
@@ -276,15 +349,13 @@ for tt = 1:length(path)
                 
                 if ncellbaselinespikes~=0 & ncellripplespikes~=0
                     [Inc Dec sur] = poissonTest(ncellbaselinespikes/totalbaselinetime,ncellripplespikes,totalrippletime);
-                    pInc.dvHPC.dHPC = [pInc.dvHPC.dHPC ; cluster , Inc<0.01/2];
-                    pDec.dvHPC.dHPC = [pDec.dvHPC.dHPC ; cluster , Dec<0.01/2];
-                    surp.dvHPC.dHPC = [surp.dvHPC.dHPC ; cluster , sur];
+                    pInc.dvHPC.Uncoor.dHPC = [pInc.dvHPC.Uncoor.dHPC ; cluster , Inc];
+                    pDec.dvHPC.Uncoor.dHPC = [pDec.dvHPC.Uncoor.dHPC ; cluster , Dec];
                     clear cluster Inc Dec sur
                 else
                     [Inc Dec sur] = poissonTest(ncellbaselinespikes/totalbaselinetime,ncellripplespikes,totalrippletime);
-                    pInc.dvHPC.dHPC = [pInc.dvHPC.dHPC ; cluster , NaN];
-                    pDec.dvHPC.dHPC = [pDec.dvHPC.dHPC ; cluster , NaN];
-                    surp.dvHPC.dHPC = [surp.dvHPC.dHPC ; cluster , NaN];
+                    pInc.dvHPC.Uncoor.dHPC = [pInc.dvHPC.Uncoor.dHPC ; cluster , NaN];
+                    pDec.dvHPC.Uncoor.dHPC = [pDec.dvHPC.Uncoor.dHPC ; cluster , NaN];
                     clear cluster Inc Dec sur
                 end
                 clear totalrippletime ripplespikes ncellbaselinespikes ncellripplespikes
@@ -293,8 +364,15 @@ for tt = 1:length(path)
             clear bufferedripples iii
             
             % vHPC SU
-
-            iii = Restrict(coordinatedV,NREM.all);
+            iii = Restrict(uncoordinatedV,NREM.all);
+            
+            if length(iii) > length(coordinatedV)
+                iii = iii(randperm(length(iii)),:);
+                iii = iii(1:length(coordinatedV),:);
+                [x y] = sort(iii(:,2));
+                iii = iii(y,:);
+            end
+            
             bufferedripples=[iii(:,1)-0.1 iii(:,3)+0.1];
             [baseline,ind]=SubtractIntervals(NREM.all,bufferedripples,'strict','on');
             for i = 1: size(clusters.vHPC,1)
@@ -312,37 +390,24 @@ for tt = 1:length(path)
                 
                 if ncellbaselinespikes~=0 & ncellripplespikes~=0
                     [Inc Dec sur] = poissonTest(ncellbaselinespikes/totalbaselinetime,ncellripplespikes,totalrippletime);
-                    pInc.dvHPC.vHPC = [pInc.dvHPC.vHPC ; cluster , Inc<0.01/2];
-                    pDec.dvHPC.vHPC = [pDec.dvHPC.vHPC ; cluster , Dec<0.01/2];
-                    surp.dvHPC.vHPC = [surp.dvHPC.vHPC ; cluster , sur];
+                    pInc.dvHPC.Uncoor.vHPC = [pInc.dvHPC.Uncoor.vHPC ; cluster , Inc];
+                    pDec.dvHPC.Uncoor.vHPC = [pDec.dvHPC.Uncoor.vHPC ; cluster , Dec];
                     clear cluster Inc Dec sur
                 else
                     [Inc Dec sur] = poissonTest(ncellbaselinespikes/totalbaselinetime,ncellripplespikes,totalrippletime);
-                    pInc.dvHPC.vHPC = [pInc.dvHPC.vHPC ; cluster , NaN];
-                    pDec.dvHPC.vHPC = [pDec.dvHPC.vHPC ; cluster , NaN];
-                    surp.dvHPC.vHPC = [surp.dvHPC.vHPC ; cluster , NaN];
+                    pInc.dvHPC.Uncoor.vHPC = [pInc.dvHPC.Uncoor.vHPC ; cluster , NaN];
+                    pDec.dvHPC.Uncoor.vHPC = [pDec.dvHPC.Uncoor.vHPC ; cluster , NaN];
                     clear cluster Inc Dec sur
                 end
                 clear totalrippletime ripplespikes ncellbaselinespikes ncellripplespikes
                 clear baselinespikes totalbaselinetime
             end
             clear bufferedripples iii
-            
-            
-        else
-%             pInc.dvHPC.dHPC = [];
-%             pDec.dvHPC.dHPC = [];
-%             surp.dvHPC.dHPC = [];
-%             
-%             pInc.dvHPC.vHPC = [];
-%             pDec.dvHPC.vHPC = [];
-%             surp.dvHPC.vHPC = [];
-            
             clear totalrippletime ripplespikes ncellbaselinespikes ncellripplespikes
             clear baselinespikes totalbaselinetime bufferedripples iii
         end
         
-%         save([cd,'\RippleModulatedSU_coordinated.mat'], 'pInc', 'pDec' , 'surp');
+        %         save([cd,'\RippleModulatedSU_coordinated.mat'], 'pInc', 'pDec' , 'surp');
         clear Spks ripplesD ripplesV cellulartype Cellulartype
         clear condV condD group_dHPC group_vHPC K Kinfo NREM WAKE REM
         clear spks_dHPC spks_vHPC ii i Cell_type_classification clusters segments spks

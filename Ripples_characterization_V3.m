@@ -69,6 +69,50 @@ bursts_durations.dHPC = [];   bursts_durations.vHPC = [];
 Cross.t2vst1 = [];
 BurstOverlapping = [];
 
+
+%% For revisions
+% dHPC
+Amplitude.dHPC.aversive.pre.mean = [];
+Amplitude.dHPC.aversive.post.mean = [];
+Amplitude.dHPC.reward.pre.mean = [];
+Amplitude.dHPC.reward.post.mean = [];
+
+Amplitude.dHPC.aversive.pre.all = [];
+Amplitude.dHPC.aversive.post.all = [];
+Amplitude.dHPC.reward.pre.all = [];
+Amplitude.dHPC.reward.post.all = [];
+
+Duration.dHPC.aversive.pre.mean = [];
+Duration.dHPC.aversive.post.mean = [];
+Duration.dHPC.reward.pre.mean = [];
+Duration.dHPC.reward.post.mean = [];
+
+Duration.dHPC.aversive.pre.all = [];
+Duration.dHPC.aversive.post.all = [];
+Duration.dHPC.reward.pre.all = [];
+Duration.dHPC.reward.post.all = [];
+
+% vHPC
+Amplitude.vHPC.aversive.pre.mean = [];
+Amplitude.vHPC.aversive.post.mean = [];
+Amplitude.vHPC.reward.pre.mean = [];
+Amplitude.vHPC.reward.post.mean = [];
+
+Amplitude.vHPC.aversive.pre.all = [];
+Amplitude.vHPC.aversive.post.all = [];
+Amplitude.vHPC.reward.pre.all = [];
+Amplitude.vHPC.reward.post.all = [];
+
+Duration.vHPC.aversive.pre.mean = [];
+Duration.vHPC.aversive.post.mean = [];
+Duration.vHPC.reward.pre.mean = [];
+Duration.vHPC.reward.post.mean = [];
+
+Duration.vHPC.aversive.pre.all = [];
+Duration.vHPC.aversive.post.all = [];
+Duration.vHPC.reward.pre.all = [];
+Duration.vHPC.reward.post.all = [];
+
 %% Main tloop to iterate across sessions
 for tt = 1:length(path)
     %List of folders from the path
@@ -288,6 +332,58 @@ for tt = 1:length(path)
             BurstIndex.D.all = [BurstIndex.D.all ; count/length(x)];
             clear ccg time x y count
             
+            
+            
+            
+            if aversiveTS(1) < rewardTS(1)
+                x = Restrict(ripplesD,NREM.B);
+                y = Restrict(ripplesD,NREM.A);
+                Amplitude.dHPC.aversive.pre.mean = [Amplitude.dHPC.aversive.pre.mean ; nanmean(x(:,2))];
+                Amplitude.dHPC.aversive.post.mean = [Amplitude.dHPC.aversive.post.mean ; nanmean(y(:,2))];
+                Amplitude.dHPC.aversive.pre.all = [Amplitude.dHPC.aversive.pre.all ; x(:,2)];
+                Amplitude.dHPC.aversive.post.all = [Amplitude.dHPC.aversive.post.all ; y(:,2)];
+                Duration.dHPC.aversive.pre.mean = [Duration.dHPC.aversive.pre.mean ; nanmean([x(:,3) - x(:,1)])];
+                Duration.dHPC.aversive.post.mean = [Duration.dHPC.aversive.post.mean ; nanmean([y(:,3) - y(:,1)])];
+                Duration.dHPC.aversive.pre.all = [Duration.dHPC.aversive.pre.all ; [x(:,3) - x(:,1)]];
+                Duration.dHPC.aversive.post.all = [Duration.dHPC.aversive.post.all ; [y(:,3) - y(:,1)]];
+                clear x y
+                
+                x = Restrict(ripplesD,NREM.A);
+                y = Restrict(ripplesD,NREM.R);
+                Amplitude.dHPC.reward.pre.mean = [Amplitude.dHPC.reward.pre.mean ; nanmean(x(:,2))];
+                Amplitude.dHPC.reward.post.mean = [Amplitude.dHPC.reward.post.mean ; nanmean(y(:,2))];
+                Amplitude.dHPC.reward.pre.all = [Amplitude.dHPC.reward.pre.all ; x(:,2)];
+                Amplitude.dHPC.reward.post.all = [Amplitude.dHPC.reward.post.all ; y(:,2)];
+                Duration.dHPC.reward.pre.mean = [Duration.dHPC.reward.pre.mean ; nanmean([x(:,3) - x(:,1)])];
+                Duration.dHPC.reward.post.mean = [Duration.dHPC.reward.post.mean ; nanmean([y(:,3) - y(:,1)])];
+                Duration.dHPC.reward.pre.all = [Duration.dHPC.reward.pre.all ; [x(:,3) - x(:,1)]];
+                Duration.dHPC.reward.post.all = [Duration.dHPC.reward.post.all ; [y(:,3) - y(:,1)]];
+                clear x y
+            else
+                x = Restrict(ripplesD,NREM.R);
+                y = Restrict(ripplesD,NREM.A);
+                Amplitude.dHPC.aversive.pre.mean = [Amplitude.dHPC.aversive.pre.mean ; nanmean(x(:,2))];
+                Amplitude.dHPC.aversive.post.mean = [Amplitude.dHPC.aversive.post.mean ; nanmean(y(:,2))];
+                Amplitude.dHPC.aversive.pre.all = [Amplitude.dHPC.aversive.pre.all ; x(:,2)];
+                Amplitude.dHPC.aversive.post.all = [Amplitude.dHPC.aversive.post.all ; y(:,2)];
+                Duration.dHPC.aversive.pre.mean = [Duration.dHPC.aversive.pre.mean ; nanmean([x(:,3) - x(:,1)])];
+                Duration.dHPC.aversive.post.mean = [Duration.dHPC.aversive.post.mean ; nanmean([y(:,3) - y(:,1)])];
+                Duration.dHPC.aversive.pre.all = [Duration.dHPC.aversive.pre.all ; [x(:,3) - x(:,1)]];
+                Duration.dHPC.aversive.post.all = [Duration.dHPC.aversive.post.all ; [y(:,3) - y(:,1)]];
+                clear x y
+                
+                x = Restrict(ripplesD,NREM.B);
+                y = Restrict(ripplesD,NREM.R);
+                Amplitude.dHPC.reward.pre.mean = [Amplitude.dHPC.reward.pre.mean ; nanmean(x(:,2))];
+                Amplitude.dHPC.reward.post.mean = [Amplitude.dHPC.reward.post.mean ; nanmean(y(:,2))];
+                Amplitude.dHPC.reward.pre.all = [Amplitude.dHPC.reward.pre.all ; x(:,2)];
+                Amplitude.dHPC.reward.post.all = [Amplitude.dHPC.reward.post.all ; y(:,2)];
+                Duration.dHPC.reward.pre.mean = [Duration.dHPC.reward.pre.mean ; nanmean([x(:,3) - x(:,1)])];
+                Duration.dHPC.reward.post.mean = [Duration.dHPC.reward.post.mean ; nanmean([y(:,3) - y(:,1)])];
+                Duration.dHPC.reward.pre.all = [Duration.dHPC.reward.pre.all ; [x(:,3) - x(:,1)]];
+                Duration.dHPC.reward.post.all = [Duration.dHPC.reward.post.all ; [y(:,3) - y(:,1)]];
+                clear x y
+            end
         end
         
         %% ---- vRipples ----
@@ -415,6 +511,58 @@ for tt = 1:length(path)
             end
             BurstIndex.V.all = [BurstIndex.V.all ; count/length(x)];
             clear ccg time x y count
+            
+            if aversiveTS(1) < rewardTS(1)
+                x = Restrict(ripplesV,NREM.B);
+                y = Restrict(ripplesV,NREM.A);
+                Amplitude.vHPC.aversive.pre.mean = [Amplitude.vHPC.aversive.pre.mean ; nanmean(x(:,2))];
+                Amplitude.vHPC.aversive.post.mean = [Amplitude.vHPC.aversive.post.mean ; nanmean(y(:,2))];
+                Amplitude.vHPC.aversive.pre.all = [Amplitude.vHPC.aversive.pre.all ; x(:,2)];
+                Amplitude.vHPC.aversive.post.all = [Amplitude.vHPC.aversive.post.all ; y(:,2)];
+                Duration.vHPC.aversive.pre.mean = [Duration.vHPC.aversive.pre.mean ; nanmean([x(:,3) - x(:,1)])];
+                Duration.vHPC.aversive.post.mean = [Duration.vHPC.aversive.post.mean ; nanmean([y(:,3) - y(:,1)])];
+                Duration.vHPC.aversive.pre.all = [Duration.vHPC.aversive.pre.all ; [x(:,3) - x(:,1)]];
+                Duration.vHPC.aversive.post.all = [Duration.vHPC.aversive.post.all ; [y(:,3) - y(:,1)]];
+                clear x y
+                
+                x = Restrict(ripplesV,NREM.A);
+                y = Restrict(ripplesV,NREM.R);
+                Amplitude.vHPC.reward.pre.mean = [Amplitude.vHPC.reward.pre.mean ; nanmean(x(:,2))];
+                Amplitude.vHPC.reward.post.mean = [Amplitude.vHPC.reward.post.mean ; nanmean(y(:,2))];
+                Amplitude.vHPC.reward.pre.all = [Amplitude.vHPC.reward.pre.all ; x(:,2)];
+                Amplitude.vHPC.reward.post.all = [Amplitude.vHPC.reward.post.all ; y(:,2)];
+                Duration.vHPC.reward.pre.mean = [Duration.vHPC.reward.pre.mean ; nanmean([x(:,3) - x(:,1)])];
+                Duration.vHPC.reward.post.mean = [Duration.vHPC.reward.post.mean ; nanmean([y(:,3) - y(:,1)])];
+                Duration.vHPC.reward.pre.all = [Duration.vHPC.reward.pre.all ; [x(:,3) - x(:,1)]];
+                Duration.vHPC.reward.post.all = [Duration.vHPC.reward.post.all ; [y(:,3) - y(:,1)]];
+                clear x y
+            else
+                x = Restrict(ripplesV,NREM.R);
+                y = Restrict(ripplesV,NREM.A);
+                Amplitude.vHPC.aversive.pre.mean = [Amplitude.vHPC.aversive.pre.mean ; nanmean(x(:,2))];
+                Amplitude.vHPC.aversive.post.mean = [Amplitude.vHPC.aversive.post.mean ; nanmean(y(:,2))];
+                Amplitude.vHPC.aversive.pre.all = [Amplitude.vHPC.aversive.pre.all ; x(:,2)];
+                Amplitude.vHPC.aversive.post.all = [Amplitude.vHPC.aversive.post.all ; y(:,2)];
+                Duration.vHPC.aversive.pre.mean = [Duration.vHPC.aversive.pre.mean ; nanmean([x(:,3) - x(:,1)])];
+                Duration.vHPC.aversive.post.mean = [Duration.vHPC.aversive.post.mean ; nanmean([y(:,3) - y(:,1)])];
+                Duration.vHPC.aversive.pre.all = [Duration.vHPC.aversive.pre.all ; [x(:,3) - x(:,1)]];
+                Duration.vHPC.aversive.post.all = [Duration.vHPC.aversive.post.all ; [y(:,3) - y(:,1)]];
+                clear x y
+                
+                x = Restrict(ripplesV,NREM.B);
+                y = Restrict(ripplesV,NREM.R);
+                Amplitude.vHPC.reward.pre.mean = [Amplitude.vHPC.reward.pre.mean ; nanmean(x(:,2))];
+                Amplitude.vHPC.reward.post.mean = [Amplitude.vHPC.reward.post.mean ; nanmean(y(:,2))];
+                Amplitude.vHPC.reward.pre.all = [Amplitude.vHPC.reward.pre.all ; x(:,2)];
+                Amplitude.vHPC.reward.post.all = [Amplitude.vHPC.reward.post.all ; y(:,2)];
+                Duration.vHPC.reward.pre.mean = [Duration.vHPC.reward.pre.mean ; nanmean([x(:,3) - x(:,1)])];
+                Duration.vHPC.reward.post.mean = [Duration.vHPC.reward.post.mean ; nanmean([y(:,3) - y(:,1)])];
+                Duration.vHPC.reward.pre.all = [Duration.vHPC.reward.pre.all ; [x(:,3) - x(:,1)]];
+                Duration.vHPC.reward.post.all = [Duration.vHPC.reward.post.all ; [y(:,3) - y(:,1)]];
+                clear x y
+            end            
+            
+            
         end
         
         %% Coordinated dHPC ripples

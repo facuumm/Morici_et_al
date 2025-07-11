@@ -4,14 +4,14 @@ i = I.dHPC;
 tmp = [];
 response.shock.dHPC = [];
 for ii = 1:size(i,1)
-    [~ , iii] = min(abs([-2 : 0.1 : 2]-0));
-    [~ , iiii] = min(abs([-2 : 0.1 : 2]-1));
+    [~ , iii] = min(abs([-5 : 0.1 : 5]-0));
+    [~ , iiii] = min(abs([-5 : 0.1 : 5]-1));
     
     t = i(ii,:);
     tt = and(c(:,1) == t(2) , and(c(:,4) == t(3) , c(:,3) == t(4)));
     tmp = [tmp ; c(tt,:)]; 
     
-    C = curve.dHPC(tt,:);
+    C = curve.dHPC(:,tt);
     
     if not(isempty(C))
         response.shock.dHPC = [response.shock.dHPC ; max(C(iii:iiii))];

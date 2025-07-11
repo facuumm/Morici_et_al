@@ -1,38 +1,33 @@
-function [dHPC vHPC Joint] = members_count(path)
-% This function counts the number of members detected in each type of
-% assemblies.
+function [Aversive Reward] = members_in_common(path)
+% This function count the nomber of Joint members in both regions and check
+% howmany are also members in other atype of assemblies.
 %
-% Syntax: [dHPC vHPC Joint] = members_count(path)
+% Syntax: [Aversive Reward] = members_in_common(path)
 %
 % INPUTS
 % path: cell, inside each cell you should put the path of each session you
 %       want to analyze
 %
 % OUTPUT
-% dHPC, vHPC, Joint: Structure, it store the number of detected members.
+% Aversive, Reward: struct,contain the total number of members and the
+%                   number of shared with other assemblies.
 %
-%               Architecture of each output:
-%                   dHPC.aversive
-%                       .reward
-%
-%                   vHPC.aversive
-%                       .reward
-%
-%                   Joint.aversive.dHPC/vHPC
-%                        .reward.dHPC/vHPC
-%
-%
-% Morci Juan Facundo 05/2024
+% Morci Juan Facundo 07/2025
 
 % variables to use in the script
 criteria_fr = 0;
 criteria_type = 0; % criteria for celltype (0:pyr, 1:int, 2:all)
 
 % Storage
-dHPC.aversive = [];         dHPC.reward = [];   
-vHPC.aversive = [];         vHPC.reward = [];   
-Joint.aversive.dHPC = [];   Joint.reward.dHPC = [];   
-Joint.aversive.vHPC = [];   Joint.reward.vHPC = [];    
+Aversive.dHPC.shared = 0;
+Aversive.dHPC.all = 0;
+Aversive.vHPC.shared = 0;
+Aversive.vHPC.all = 0;
+
+Reward.dHPC.shared = 0;
+Reward.dHPC.all = 0;
+Reward.vHPC.shared = 0;
+Reward.vHPC.all = 0;
 
 
 %% Main loop, to iterate across sessions
@@ -54,28 +49,7 @@ for tt = 1:length(path)
         disp('Uploading session time stamps')
         load('session_organization.mat')
         load('behavioral_data.mat', 'movement')
-        
-        %% load sleep states
-        disp('Uploading sleep scoring')
-        x = dir([cd,'\*-states.mat']);    states = load([cd,'\',x.name]);    states = states.states;
-        REM.all = ToIntervals(states==5);    NREM.all = ToIntervals(states==3);
-        clear x states
-        
-        baselineTS = baselineTS./1000;
-        aversiveTS = aversiveTS./1000;
-        rewardTS = rewardTS./1000;
-        aversiveTS_run = aversiveTS_run./1000;
-        rewardTS_run = rewardTS_run./1000;
-        
-        NREM.baseline = Restrict(NREM.all,baselineTS);
-        NREM.aversive = Restrict(NREM.all,aversiveTS);
-        NREM.reward = Restrict(NREM.all,rewardTS);
-        
-        REM.baseline = Restrict(REM.all,baselineTS);
-        REM.aversive = Restrict(REM.all,aversiveTS);
-        REM.reward = Restrict(REM.all,rewardTS);
 
-        
         %% Spikes
         % Load Units
         disp('Uploading Spiking activity')
@@ -115,6 +89,8 @@ for tt = 1:length(path)
         end
         
         %% Counting the Number f SU
+        aversiveTS_run = aversiveTS_run./1000;
+        rewardTS_run = rewardTS_run./1000;
         numberD = 0;
         clusters.all = [];
         clusters.dHPC = [];
@@ -191,26 +167,23 @@ for tt = 1:length(path)
                 
                 if sum(cond.both)>0
                     tmp = Thresholded.aversive(:,cond.both);
-                    tmpD = [sum(tmp(1:numberD,:))];
-                    tmpV = [sum(tmp(numberD+1:end,:))];
-                    Joint.aversive.dHPC = [Joint.aversive.dHPC ; tmpD'];
-                    Joint.aversive.vHPC = [Joint.aversive.vHPC ; tmpV'];
-                    clear tmp tmpD tmpV 
+                    tmp = sum(tmp,2)>=1;
+                    
+                    Aversive.dHPC.all = Aversive.dHPC.all + sum(sum(tmp(1:numberD,:)));
+                    Aversive.vHPC.all = Aversive.vHPC.all + sum(sum(tmp(numberD+1:end,:)));
+                    
+                    tmp = Thresholded.aversive(:,not(cond.both));
+                    tmp = sum(tmp,2);
+                    
+                    tmp1 = sum(Thresholded.aversive(:,cond.both),2);
+                    
+                    tmp2 = sum([tmp>=1, tmp1>=1],2)>1;
+                    
+                    Aversive.dHPC.shared = Aversive.dHPC.shared + sum(sum(tmp2(1:numberD,:)));
+                    Aversive.vHPC.shared = Aversive.vHPC.shared + sum(sum(tmp2(numberD+1:end,:)));
+                    
+                    clear tmp   
                 end
-                
-                if sum(cond.dHPC)>0
-                    tmp = Thresholded.aversive(:,cond.dHPC);
-                    tmpD = [sum(tmp(1:numberD,:))];
-                    dHPC.aversive = [dHPC.aversive ; tmpD'];
-                    clear tmp tmpD tmpV 
-                end
-                
-                if sum(cond.vHPC)>0
-                    tmp = Thresholded.aversive(:,cond.vHPC);
-                    tmpV = [sum(tmp(numberD+1:end,:))];
-                    vHPC.aversive = [vHPC.aversive ; tmpV'];
-                    clear tmp tmpD tmpV 
-                end    
                 
                 clear cond Thresholded patterns
                 
@@ -250,26 +223,23 @@ for tt = 1:length(path)
                 
                 if sum(cond.both)>0
                     tmp = Thresholded.reward(:,cond.both);
-                    tmpD = [sum(tmp(1:numberD,:))];
-                    tmpV = [sum(tmp(numberD+1:end,:))];
-                    Joint.reward.dHPC = [Joint.reward.dHPC ; tmpD'];
-                    Joint.reward.vHPC = [Joint.reward.vHPC ; tmpV'];
-                    clear tmp tmpD tmpV 
+                    tmp = sum(tmp,2)>=1;
+                    
+                    Reward.dHPC.all = Reward.dHPC.all + sum(sum(tmp(1:numberD,:)));
+                    Reward.vHPC.all = Reward.vHPC.all + sum(sum(tmp(numberD+1:end,:)));
+                    
+                    tmp = Thresholded.reward(:,not(cond.both));
+                    tmp = sum(tmp,2);
+                    
+                    tmp1 = sum(Thresholded.reward(:,cond.both),2);
+                    
+                    tmp2 = sum([tmp>=1, tmp1>=1],2)>1;
+                    
+                    Reward.dHPC.shared = Reward.dHPC.shared + sum(sum(tmp2(1:numberD,:)));
+                    Reward.vHPC.shared = Reward.vHPC.shared + sum(sum(tmp2(numberD+1:end,:)));
+                    
+                    clear tmp
                 end
-                
-                if sum(cond.dHPC)>0
-                    tmp = Thresholded.reward(:,cond.dHPC);
-                    tmpD = [sum(tmp(1:numberD,:))];
-                    dHPC.reward = [dHPC.reward ; tmpD'];
-                    clear tmp tmpD tmpV 
-                end
-                
-                if sum(cond.vHPC)>0
-                    tmp = Thresholded.reward(:,cond.vHPC);
-                    tmpV = [sum(tmp(numberD+1:end,:))];
-                    vHPC.reward = [vHPC.reward ; tmpV'];
-                    clear tmp tmpD tmpV 
-                end    
                 
                 clear cond Thresholded patterns                
  
@@ -296,34 +266,25 @@ for tt = 1:length(path)
 end
 
 figure
-subplot(221)
-grps = [ones(length(dHPC.reward),1) ; ones(length(dHPC.aversive),1)*2];
-x = [dHPC.reward ; dHPC.aversive];
-scatter(grps,x,'filled','Jitter',0.1), hold on
-scatter([1 2] , [nanmedian(dHPC.reward) , nanmedian(dHPC.aversive)],'filled'),xlim([0 3])%,ylim([0 1])
-[h p] = ranksum(dHPC.reward , dHPC.aversive)
+subplot(221),
+p1 = (Aversive.dHPC.shared / Aversive.dHPC.all)*100;
+p2 = 100 - p1;
+pie([p1 , p2] , {'Shared' , 'Rest'})
 
-subplot(222)
-grps = [ones(length(vHPC.reward),1) ; ones(length(vHPC.aversive),1)*2];
-x = [vHPC.reward ; vHPC.aversive];
-scatter(grps,x,'filled','Jitter',0.1), hold on
-scatter([1 2] , [nanmedian(vHPC.reward) , nanmedian(vHPC.aversive)],'filled'),xlim([0 3])%,ylim([0 1])
-[h p] = ranksum(vHPC.reward , vHPC.aversive)
+subplot(222),
+p3 = (Aversive.vHPC.shared / Aversive.vHPC.all)*100;
+p4 = 100 - p3;
+pie([p3 , p4] , {'Shared' , 'Rest'})
 
+subplot(223),
+p5 = (Reward.dHPC.shared / Reward.dHPC.all)*100;
+p6 = 100 - p5;
+pie([p5 , p6] , {'Shared' , 'Rest'})
 
-subplot(223)
-grps = [ones(length(Joint.reward.dHPC),1) ; ones(length(Joint.aversive.dHPC),1)*2];
-x = [Joint.reward.dHPC ; Joint.aversive.dHPC];
-scatter(grps,x,'filled','Jitter',0.1), hold on
-scatter([1 2] , [nanmedian(Joint.reward.dHPC) , nanmedian(Joint.aversive.dHPC)],'filled'),xlim([0 3])%,ylim([0 1])
-[h p] = ranksum(Joint.reward.dHPC , Joint.aversive.dHPC)
+subplot(224),
+p7 = (Reward.vHPC.shared / Reward.vHPC.all)*100;
+p8 = 100 - p7;
+pie([p7 , p8] , {'Shared' , 'Rest'})
 
-
-subplot(224)
-grps = [ones(length(Joint.reward.vHPC),1) ; ones(length(Joint.aversive.vHPC),1)*2];
-x = [Joint.reward.vHPC ; Joint.aversive.vHPC];
-scatter(grps,x,'filled','Jitter',0.1), hold on
-scatter([1 2] , [nanmedian(Joint.reward.vHPC) , nanmedian(Joint.aversive.vHPC)],'filled'),xlim([0 3])%,ylim([0 1])
-[h p] = ranksum(Joint.reward.vHPC , Joint.aversive.vHPC)
 
 end

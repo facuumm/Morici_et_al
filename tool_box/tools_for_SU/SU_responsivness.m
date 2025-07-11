@@ -129,7 +129,6 @@ for i = 1 : size(clusters,1)
             
         elseif mean(final(start:stop)) <= std(threshold)*th*-1
             responsive = [responsive , -1];
-            
         else
             responsive = [responsive , 0];
         end
