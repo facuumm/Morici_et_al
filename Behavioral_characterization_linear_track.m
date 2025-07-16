@@ -260,6 +260,8 @@ for tt = 1:length(path)
         
         meanSpeed = [meanSpeed ; m mm m1 mm1 m2 mm2];
         
+        save([cd,'\behavioral_dataVF.mat'],'Rewards_filt','Shocks_filt','behavior')
+
         
         disp(' ')
         clear A aversiveTS aversiveTS_run baselineTS rewardTS rewardTS_run m mm m1 mm1 m2 mm2

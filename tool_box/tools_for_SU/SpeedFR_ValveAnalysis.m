@@ -1,0 +1,317 @@
+function [dHPC , vHPC] = SpeedFR_ValveAnalysis(path)
+% This function correlates speed and Firing Rate, save the R2 of that
+% linear regression. Also save the Response after the valve.
+%
+% Syntax: [dHPC , vHPC] = SpeedFR_ShockAnalysis(path)
+%
+% --- INPUTS ---
+% path: structure, it contains the path where is located each session to
+%       analyze.
+%
+% --- OUTPUT ----
+% dHPC and vHPC: structur, they contain a matrix where I saved the R2 of
+%                the linear regression between speed and firing Rate. Each
+%                row is a neuron.
+%                Rsquared / Pearson_Coeff / Shock_Response
+%
+% Morici Juan Facundo 10/2024
+
+criteria_fr = 0;
+criteria_type = 0; % criteria for celltype (0:pyr, 1:int, 2:all)
+win = 1;
+
+%Storage
+Speed = [];
+dHPC.valve = [];     dHPC.no = [];
+vHPC.valve = [];     vHPC.no = [];
+
+%% Main loop, to iterate across sessions
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+    
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd(session)
+        
+        %Loading TS of the sessions
+        disp('Uploading session time stamps')
+        load('session_organization.mat')
+        load('behavioral_dataVF.mat')
+        baselineTS = baselineTS./1000;                  aversiveTS = aversiveTS./1000;                    rewardTS = rewardTS./1000;
+        aversiveTS_run = aversiveTS_run./1000;          rewardTS_run = rewardTS_run./1000;
+        
+        s = [];
+        for i = 1 : size(Rewards_filt,1)
+            tmp = Restrict(behavior.speed.reward,[Rewards_filt(i)-5 Rewards_filt(i)+5]);
+            if length(tmp) >= 300
+                s = [s , tmp(1:300,2)];
+            end
+        end
+        speed = nanmean(s'); clear s
+        
+        sub = [];
+        count = 0;
+        for i = 1 : 100
+            if i == 1
+                sub = speed(i);
+                tmp =3;
+            else
+                sub = [sub , nanmean(speed(tmp : tmp+3))];
+                tmp = tmp+3;
+            end
+        end
+        
+%         behavior.speed.aversive(InIntervals(behavior.speed.aversive(:,1),[Shocks_filt Shocks_filt+1]),2) = nan;
+        
+        T = [behavior.pos.reward(1,1) : win : behavior.pos.reward(end,1)+win];
+        meanSpeed = [];
+        for i = 1 : length(T)-1
+            tmp = Restrict(behavior.speed.reward,[T(i) T(i+1)]);
+            meanSpeed = [meanSpeed ; nanmean(tmp(:,2))];
+        end
+        
+        
+        %% Spikes
+        % Load Units
+        disp('Uploading Spiking activity')
+        cd 'Spikesorting'
+        [clusters , numberD , numberV , spks , spks_dHPC , spks_vHPC , cellulartype] = load_SU_FM(cd,criteria_type,criteria_fr,aversiveTS_run,rewardTS_run);
+        
+        if exist('dHPC_valve.mat')
+            load('dHPC_valve.mat')
+            clu = dHPC_valve.id;%(dHPC_resp.resp_ave==1);
+            if size(clu,1)>=1
+                freq=1/win;
+                spiketrains = [];
+                speedCorrelation = [];
+                for i=1:size(clu,1)
+                    [~ , m] = min(abs([-5:0.1:5]-0));
+                    [~ , mm] = min(abs([-5:0.1:5]-1));
+                    
+                    [resp , x] = max(dHPC_valve.curve(m:mm,i));
+                    s = sub(x+m);
+                    
+                    [spiketrain,bins]=binspikes(spks(spks(:,1)==clu(i),2),freq,[behavior.pos.reward(1,1) behavior.pos.reward(end,1)]);
+                    spiketrain = spiketrain(1:size(meanSpeed,1),:);
+                    f = fitlm(meanSpeed,spiketrain);
+                    p = coefTest(f);
+                    z = dHPC_valve.responssiveness(i);
+                    
+                    dHPC.valve = [dHPC.valve ; f.Rsquared.Ordinary coefTest(f) resp s z p]; clear m mm resp s
+                end
+            end
+        end
+        
+        if exist('vHPC_valve.mat')
+            load('vHPC_valve.mat')
+            clu = vHPC_valve.id;%(dHPC_resp.resp_ave==1);
+            if size(clu,1)>=1
+                freq=1/win;
+                spiketrains = [];
+                speedCorrelation = [];
+                for i=1:size(clu,1)
+                    [~ , m] = min(abs([-5:0.1:5]-0));
+                    [~ , mm] = min(abs([-5:0.1:5]-1));
+                    
+                    [resp , x] = max(vHPC_valve.curve(m:mm,i));
+                    s = sub(x+m);
+                    
+                    [spiketrain,bins]=binspikes(spks(spks(:,1)==clu(i),2),freq,[behavior.pos.reward(1,1) behavior.pos.reward(end,1)]);
+                    spiketrain = spiketrain(1:size(meanSpeed,1),:);
+                    f = fitlm(meanSpeed,spiketrain);
+                    p = coefTest(f);
+                    z =vHPC_valve.responssiveness(i);
+                    
+                    vHPC.valve = [vHPC.valve ; f.Rsquared.Ordinary coefTest(f) resp s z p]; clear m mm resp s
+                end
+            end
+        end
+    end
+end
+%  
+% figure
+% subplot(121)
+% v = vHPC.shock;
+% v(90,:) = [];
+% fitlm(v(:,4) , v(:,3))
+% plot(ans) , ylim([-0.5 4.5]) , xlim([0 70])
+% subplot(122)
+% scatter(v(:,4) , v(:,3),'filled') , ylim([-0.5 4.5]) , xlim([0 70])
+% 
+% 
+% figure
+% subplot(121)
+% d = dHPC.shock;
+% d(220,:) = [];
+% fitlm(d(:,4) , d(:,3))
+% plot(ans) , ylim([-0.5 4.5]) , xlim([0 70])
+% subplot(122)
+% scatter(d(:,4) , d(:,3),'filled') , ylim([-0.5 4.5]) , xlim([0 70])
+% 
+% y = [dHPC.shock(:,1) ; vHPC.shock(:,1)];
+% x = [ones(length(dHPC.shock(:,1)),1) ; ones(length(vHPC.shock(:,1)),1)*2];
+% figure
+% boxplot(y,x)
+% 
+% figure,
+% scatter(x,y,[],"filled",'jitter','on', 'jitterAmount',0.1),xlim([0 3]),hold on
+% scatter([1 2] , [nanmean(dHPC.shock(:,1)) ; nanmean(vHPC.shock(:,1))],'filled')
+% 
+% [h p] = kstest2(dHPC.shock(:,1) , vHPC.shock(:,1))
+% 
+% figure
+% cdfplot(dHPC.shock(:,1)),hold on
+% cdfplot(vHPC.shock(:,1)),hold on
+% % xlim([0 0.4])
+% set(gca, 'XScale', 'log')
+% 
+% 
+% 
+% subsampling
+R = [];
+for j = 1 : 1000
+i = vHPC.valve(:,6)<0.05;
+ii = vHPC.valve(:,5)==1;
+iii = and(i,ii);
+x = vHPC.valve(iii==1,1);
+y = vHPC.valve(iii,3); y = y-min(y); y = y/max(y);
+% x(y==1) = [];
+% y(y==1)=[];  y = y-min(y); y = y/max(y);
+% x(y==1) = [];
+% y(y==1)=[];  y = y-min(y); y = y/max(y);
+x = vHPC.valve(iii,1);
+y = vHPC.valve(iii,3); y = y-min(y); y = y/max(y);
+x = x(not(isoutlier(y,"percentiles",[0 95]))); 
+y = y(not(isoutlier(y,"percentiles",[0 95]))); y = y-min(y); y = y/max(y);
+n = length(y);
+
+i = dHPC.valve(:,6)<0.05;
+ii = dHPC.valve(:,5)==1;
+iii = and(i,ii);
+x = dHPC.valve(iii,1);
+y = dHPC.valve(iii,3); y = y-min(y); y = y/max(y);
+x = x(not(isoutlier(y,"percentiles",[0 95]))); 
+y = y(not(isoutlier(y,"percentiles",[0 95]))); y = y-min(y); y = y/max(y);
+nn = randperm(length(x));
+x = x(nn,:);    y = y(nn,:);
+x = x(1:n);     y = y(1:n);
+
+mdl3 = fitlm(x,y);
+p = coefTest(mdl3);
+R = [R ; mdl3.Rsquared.Ordinary p];
+end
+
+figure
+[h hh] = kstest2(R(:,1),mdl3.Rsquared.Ordinary)
+histogram(R(:,1),20,'Normalization','probability')
+hold on,xline(mdl3.Rsquared.Ordinary)
+
+% figure
+% [h hh] = kstest2(R(:,2),coefTest(mdl1))
+% histogram(R(:,2),50,'Normalization','probability')
+% hold on,xline(coefTest(mdl1))
+% cdfplot(R(:,2)),hold on,xline(0.05)
+
+
+
+figure,
+i = dHPC.valve(:,6)<0.05;
+ii = dHPC.valve(:,5)==1;
+iii = and(i,ii);
+x = dHPC.valve(iii,1);
+y = dHPC.valve(iii,3); y = y-min(y); y = y/max(y);
+x = x(not(isoutlier(y,"percentiles",[0 95]))); 
+y = y(not(isoutlier(y,"percentiles",[0 95]))); y = y-min(y); y = y/max(y);
+% x(y==1) = [];
+% y(y==1)=[];  y = y-min(y); y = y/max(y);
+subplot(121),scatter(x,y,'filled'),xlim([0 0.6])
+mdl1 = fitlm(x,y);
+
+
+i = vHPC.valve(:,6)<0.05;
+ii = vHPC.valve(:,5)==1;
+iii = and(i,ii);
+x = vHPC.valve(iii==1,1);
+y = vHPC.valve(iii,3); y = y-min(y); y = y/max(y);
+% x(y==1) = [];
+% y(y==1)=[];  y = y-min(y); y = y/max(y);
+% x(y==1) = [];
+% y(y==1)=[];  y = y-min(y); y = y/max(y);
+x = vHPC.valve(iii,1);
+y = vHPC.valve(iii,3); y = y-min(y); y = y/max(y);
+x = x(not(isoutlier(y,"percentiles",[0 95]))); 
+y = y(not(isoutlier(y,"percentiles",[0 95]))); y = y-min(y); y = y/max(y); mdl2= fitlm(x,y);
+subplot(122),scatter(x,y,'filled'),xlim([0 0.15])
+
+figure
+subplot(121),
+h = plot(mdl1);
+delete(h(1))
+xlim([0 0.6]), ylim([0 1])
+
+subplot(122),
+h = plot(mdl2);
+delete(h(1))
+xlim([0 0.15]), ylim([0 1])
+
+
+%% Percentages
+% dHPC
+%Valve-responsive
+p1 = and(dHPC.valve(:,5) == 1 , dHPC.valve(:,2) < 0.001); %speed-modulated
+p2 = and(dHPC.valve(:,5) == 1 , not(dHPC.valve(:,2) < 0.001)); %non-modulated
+
+p1 = sum(p1)/ sum(dHPC.valve(:,5) == 1);
+p2 = sum(p2)/ sum(dHPC.valve(:,5) == 1);
+
+%Non alve-responsive
+p3 = and(not(dHPC.valve(:,5) == 1) , dHPC.valve(:,2) < 0.001); %speed-modulated
+p4 = and(not(dHPC.valve(:,5) == 1) , not(dHPC.valve(:,2) < 0.001)); %non-modulated
+
+p3 = sum(p3)/ sum(not(dHPC.valve(:,5) == 1));
+p4 = sum(p4)/ sum(not(dHPC.valve(:,5) == 1));
+
+
+% vHPC
+%Valve-responsive
+p5 = and(vHPC.valve(:,5) == 1 , vHPC.valve(:,2) < 0.001); %speed-modulated
+p6 = and(vHPC.valve(:,5) == 1 , not(vHPC.valve(:,2) < 0.001)); %non-modulated
+
+p5 = sum(p5)/ sum(vHPC.valve(:,5) == 1);
+p6 = sum(p6)/ sum(vHPC.valve(:,5) == 1);
+
+%Non alve-responsive
+p7 = and(not(vHPC.valve(:,5) == 1) , vHPC.valve(:,2) < 0.001); %speed-modulated
+p8 = and(not(vHPC.valve(:,5) == 1) , not(vHPC.valve(:,2) < 0.001)); %non-modulated
+
+p7 = sum(p7)/ sum(not(vHPC.valve(:,5) == 1));
+p8 = sum(p8)/ sum(not(vHPC.valve(:,5) == 1));
+
+figure,
+subplot(221)
+bar([1 2] , [p1 p2].*100),ylim([0 100])
+subplot(222)
+bar([1 2] , [p3 p4].*100),ylim([0 100])
+
+subplot(223)
+bar([1 2] , [p5 p6].*100),ylim([0 100])
+subplot(224)
+bar([1 2] , [p7 p8].*100),ylim([0 100])
+
+
+%% Global percentages
+m  = sum(vHPC.valve(:,5) == 1)/length(vHPC.valve(:,5));
+m1 = 1 - m;
+subplot(121),pie([m1 m].*100 , {'non' , 'valve'})
+
+m  = sum(dHPC.valve(:,5) == 1)/length(dHPC.valve(:,5));
+m1 = 1 - m;
+subplot(122),pie([m1 m].*100 , {'non' , 'valve'})
+end

@@ -57,11 +57,11 @@ for tt = 1:length(path)
         %Loading TS of the sessions
         disp('Uploading session time stamps')
         load('session_organization.mat')
-%         load('behavioral_data.mat')
+        load('behavioral_dataVF.mat')
 
         %% speed sourrounding the shocks
-        means = meanInGroups(behavior.speed.aversive(:,2), 3);
-        downsampled_t = downsampleTimeVector(behavior.speed.aversive(:,1), 1/30, 0.1);
+        means = meanInGroups(behavior.speed.reward(:,2), 3);
+        downsampled_t = downsampleTimeVector(behavior.speed.reward(:,1), 1/30, 0.1);
         
         if size(means,2) < size(downsampled_t,2)
             means = [downsampled_t(1:size(means,2))' , means']; clear downsampled_t
@@ -72,15 +72,15 @@ for tt = 1:length(path)
         end
         
         tmp = [];
-        for i = 1 : length(Shocks_filt)
-            [~ , ii] = min(abs(means(:,1)-Shocks_filt(i)));
-            if ii+20 < length(means)
-                tmp = [tmp , means(ii-20 : ii+20 , 2)];
+        for i = 1 : length(Rewards_filt)
+            [~ , ii] = min(abs(means(:,1)-Rewards_filt(i,1)));
+            if and(ii+50 < length(means) , ii>50)
+                tmp = [tmp , means(ii-50 : ii+50 , 2)];
             end
         end
         Mean = nanmean(tmp'); clear tmp means
         curve.speed.data = [curve.speed.data , Mean']; clear Mean
-        curve.speed.id = [curve.speed.id ; tt t length(Shocks_filt)];
+        curve.speed.id = [curve.speed.id ; tt t length(Rewards_filt)];
         
         
         %% load sleep states

@@ -47,8 +47,8 @@ group2 = ["dHPC_decorr", "vHPC_decorr", "vHPC_decorr"];
 pvals = zeros(3,1);
 
 % Perform unpaired t-tests for post-hoc comparisons
-[~, pvals(1)] = ttest2(dHPC_shock, dHPC_decorr);
-[~, pvals(2)] = ttest2(vHPC_shock, vHPC_decorr);
+[~, pvals(1)] = ttest(dHPC_shock, dHPC_decorr);
+[~, pvals(2)] = ttest(vHPC_shock, vHPC_decorr);
 [~, pvals(3)] = ttest2(dHPC_decorr, vHPC_decorr);
 
 % Bonferroni correction for 3 tests
