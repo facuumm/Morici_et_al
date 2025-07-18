@@ -249,6 +249,7 @@ figure,fitlm(x,y)
 subplot(121),scatter(x,y,'filled'), ylim([-1.5 2]) , xlim([-0.5 5])
 subplot(122),plot(ans), ylim([-1.5 2]) , xlim([-0.5 5])
 
+
 %% Comparison members vs no-members
 xD = response.shock.dHPC(and((I.dHPC(:,1) == 1) , I.dHPC(:,5)==1));
 yD = response.shock.dHPC(and((I.dHPC(:,1) == 1) , I.dHPC(:,5)==0));
@@ -397,3 +398,10 @@ condition = [ones(size(values.dHPC.shock,1),1) ; 2*ones(size(values.dHPC.decorre
              ones(size(values.vHPC.shock,1),1) ; 2*ones(size(values.vHPC.decorrelated,1),1)];
 
 perform2WayUnpairedANOVA(y, structure, condition)
+
+
+
+
+
+
+

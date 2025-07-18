@@ -199,8 +199,8 @@ for tt = 1:length(path)
             th = zeros(size(clusters.all,1),1);
         end
         
-        if exist('dHPC_responsivness_all.mat')
-            load('dHPC_responsivness_all.mat')
+        if exist('dHPC_responsivness_all_VF.mat')
+            load('dHPC_responsivness_all_VF.mat')
             curve.dHPC = [curve.dHPC ; dHPC_resp.curve_ave];
             x = ones(size(dHPC_resp.id,1),1);
             curve.id.dHPC = [curve.id.dHPC ; dHPC_resp.id , dHPC_resp.resp_ave x*tt x*t dHPC_resp.Speedcorrelation.all(:,2)];
@@ -269,8 +269,8 @@ for tt = 1:length(path)
             end
         end
         
-        if exist('vHPC_responsivness_all.mat')
-            load('vHPC_responsivness_all.mat')
+        if exist('vHPC_responsivness_all_VF.mat')
+            load('vHPC_responsivness_all_VF.mat')
             curve.vHPC = [curve.vHPC ; vHPC_resp.curve_ave];
             x = ones(size(vHPC_resp.id,1),1);
             curve.id.vHPC = [curve.id.vHPC ; vHPC_resp.id , vHPC_resp.resp_ave x*tt x*t vHPC_resp.Speedcorrelation.all(:,2)];

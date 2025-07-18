@@ -4,7 +4,7 @@ close all
 %% PARAMETERS - run this section before run any other
 path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\ready';'\\Maryjackson\e\Rat103\usable';'\\Maryjackson\e\Rat132\recordings\in_pyr'; '\\Maryjackson\e\Rat165\in_pyr'; ...
     '\\Maryjackson\e\Rat126\Ephys\in_Pyr'};%List of folders from the path
-% path = {'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat103\usable';'E:\Rat132\recordings\in_pyr'};%List of folders from the path
+% path = {'E:\Rat103\usable';'E:\Rat126\Ephys\in_Pyr';'E:\Rat127\Ephys\pyr';'E:\Rat128\Ephys\in_pyr\ready';'E:\Rat132\recordings\in_pyr';'E:\Rat165\in_pyr\'};%List of folders from the path
 % for SU
 criteria_fr = 0.01; %criteria to include or not a SU into the analysis
 criteria_n = 6; % minimal number of neurons from each structure
@@ -2114,3 +2114,227 @@ win_ave = nanmean(tempA(:, 60-w_size:60+w_size), 2);
 win_rew = nanmean(tempR(:, 60-w_size:60+w_size), 2); 
 p = signrank(win_ave,win_rew)
 
+%% % OF PLACE CELLS IN SHOCK/VALVE NEURONS  
+shock_pc_ave_dhpc=[];shock_pc_ave_vhpc=[];
+valve_pc_rew_dhpc=[]; valve_pc_rew_vhpc=[];
+
+skaggs_ave_shock_dhpc=[]; %
+skaggs_ave_pc_dhpc=[];
+
+skaggs_ave_shock_vhpc=[]; %
+skaggs_ave_pc_vhpc=[];
+%%%%%%Main loop%%%%%%%
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+    
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd(session)
+        cd 'Spikesorting'
+        
+        %% Shock computations 
+        %%%%% dHPC %%%%%%%
+        if isfile('dHPC_pc_by_condition.mat')
+            load('dHPC_pc_by_condition.mat');
+            id_ave = dhpc_pc.ave;
+        end
+        
+        if isfile('dHPC_responsivness_all.mat')
+            load ('dHPC_responsivness_all.mat');
+            filter = dHPC_resp.resp_ave>0;
+            shock_cells = dHPC_resp.id(filter);
+        end
+        
+        if and(isfile('dHPC_pc_by_condition.mat'),isfile('dHPC_responsivness_all.mat'))
+            %shock/pc_ave
+            shock_pc_ave_dhpc = [shock_pc_ave_dhpc;ismember(shock_cells, id_ave)];
+
+            id_shockandpc = shock_cells(ismember(shock_cells, id_ave)); 
+
+            % Skaggs pc ave vs skaggs 
+            if isfile('dHPC_pc_skaggs_circular.mat')
+                load ('dHPC_pc_skaggs_circular.mat');
+                for i=1:size(dHPC,2)
+                    if ismember(dHPC{i}.id,id_shockandpc)  % pc aversive 
+                        skaggs_ave_shock_dhpc= [skaggs_ave_shock_dhpc; dHPC{i}.stats_ave.specificity]; 
+                    elseif  ismember(dHPC{i}.id, id_ave)
+                        skaggs_ave_pc_dhpc = [skaggs_ave_pc_dhpc; dHPC{i}.stats_ave.specificity];  
+                    end     
+
+                end 
+            end
+        end 
+        
+        clear id_shockandpc i dHPC dhpc_pc dHPC_resp id_ave id_rew filter shock_cells
+        
+        %%%%% vHPC %%%%%%%
+       
+        if isfile('vHPC_pc_by_condition.mat')
+            load('vHPC_pc_by_condition.mat');
+            id_ave = vhpc_pc.ave;
+        end
+        
+        if isfile('vHPC_responsivness_all.mat')
+            load ('vHPC_responsivness_all.mat');
+            filter = vHPC_resp.resp_ave>0;
+            shock_cells = vHPC_resp.id(filter);
+        end
+        
+        if and(isfile('vHPC_pc_by_condition.mat'),isfile('vHPC_responsivness_all.mat'))
+            %shock/pc_ave 
+            shock_pc_ave_vhpc = [shock_pc_ave_vhpc;ismember(shock_cells, id_ave)];
+
+            id_shockanvpc = shock_cells(ismember(shock_cells, id_ave)); 
+
+            % Skaggs pc ave vs skaggs 
+            if isfile('vHPC_pc_skaggs_circular.mat')
+                load ('vHPC_pc_skaggs_circular.mat');
+                for i=1:size(vHPC,2)
+                    if ismember(vHPC{i}.id,id_shockanvpc)  % pc aversive 
+                        skaggs_ave_shock_vhpc= [skaggs_ave_shock_vhpc; vHPC{i}.stats_ave.specificity]; 
+                    elseif  ismember(vHPC{i}.id, id_ave)
+                        skaggs_ave_pc_vhpc = [skaggs_ave_pc_vhpc; vHPC{i}.stats_ave.specificity];  
+                    end     
+
+                end 
+            end
+        end 
+        
+        clear id_shockanvpc i vHPC vhpc_pc vHPC_resp id_ave id_rew filter shock_cells
+        %% Valve computations 
+        %%%%% dHPC %%%%%%%
+        if isfile('dHPC_pc_by_condition.mat')
+            load('dHPC_pc_by_condition.mat');
+            id_rew = dhpc_pc.rew;
+        end
+        
+        if isfile('dHPC_valve.mat')
+            load ('dHPC_valve.mat');
+            filter = dHPC_valve.responssiveness>0;
+            valve_cells = dHPC_valve.id(filter);
+        end
+        
+        if and(isfile('dHPC_pc_by_condition.mat'),isfile('dHPC_valve.mat'))
+            %shock/pc_ave
+            valve_pc_rew_dhpc = [valve_pc_rew_dhpc;ismember(valve_cells, id_rew)];
+        end 
+        clear dhpc_pc id_rew dHPC_valve filter valve_cells
+        
+        %%%%% vHPC %%%%%%%
+        if isfile('vHPC_pc_by_condition.mat')
+            load('vHPC_pc_by_condition.mat');
+            id_rew = vhpc_pc.rew;
+        end
+        
+        if isfile('vHPC_valve.mat')
+            load ('vHPC_valve.mat');
+            filter = vHPC_valve.responssiveness>0;
+            valve_cells = vHPC_valve.id(filter);
+        end
+        
+        if and(isfile('vHPC_pc_by_condition.mat'),isfile('vHPC_valve.mat'))
+            %shock/pc_ave
+            valve_pc_rew_vhpc = [valve_pc_rew_vhpc;ismember(valve_cells, id_rew)];
+        end 
+        clear vhpc_pc id_rew vHPC_valve filter valve_cells
+        
+        %%
+        disp(['-- Finished folder #' , num2str(t) , ' from rat #' , num2str(tt) , ' ---'])
+        disp('  ')
+    end
+    disp(['-------- Finished rat#' , num2str(tt) , ' --------'])
+    disp(' ')
+end
+%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%% Plots %%%%%%%%
+%----Pie chart ------
+%----Shock ------
+shock_pc = sum(shock_pc_ave_dhpc)/size(shock_pc_ave_dhpc,1);
+shock_no_pc= sum(shock_pc_ave_dhpc==0)/size(shock_pc_ave_dhpc,1);
+labels = {'PC ave','No PC'};
+figure(); hold on; subplot(1,2,1);pie([shock_pc; shock_no_pc], labels)
+title('dHPC Shock cells');
+
+
+shock_pc = sum(shock_pc_ave_vhpc)/size(shock_pc_ave_vhpc,1);
+shock_no_pc = sum(shock_pc_ave_vhpc==0)/size(shock_pc_ave_vhpc,1);
+hold on; subplot(1,2,2);pie([shock_pc; shock_no_pc], labels)
+title('vHPC Shock cells');
+
+%---- Valve ------
+valve_pc = sum(valve_pc_rew_dhpc)/size(valve_pc_rew_dhpc,1);
+valve_no_pc= sum(valve_pc_rew_dhpc==0)/size(valve_pc_rew_dhpc,1);
+labels = {'PC rew','No PC'};
+figure(); hold on; subplot(1,2,1);pie([valve_pc; valve_no_pc], labels)
+title('dHPC Valve cells');
+
+
+valve_pc = sum(valve_pc_rew_vhpc)/size(valve_pc_rew_vhpc,1);
+valve_no_pc= sum(valve_pc_rew_vhpc==0)/size(valve_pc_rew_vhpc,1);
+hold on; subplot(1,2,2);pie([valve_pc; valve_no_pc], labels)
+title('vHPC Valve cells');
+
+%-----Skaggs------
+% op 1
+figure();clf;hold on, 
+subplot(1,2,1); 
+a = [skaggs_ave_shock_dhpc, ones(size(skaggs_ave_shock_dhpc))];
+b = [skaggs_ave_pc_dhpc, ones(size(skaggs_ave_pc_dhpc))*2];
+data = [a;b];
+c = [.3,.3,.3];
+scatter(data(:,2),data(:,1),[],c,"filled",'jitter','on', 'jitterAmount',0.1); xlim([0 3]);
+ylabel('skaggs');
+xticks([1 2])
+xticklabels({'Shock and PC', 'PC ave'});
+ylim([0 2.5])
+hold on
+s1=scatter(1,nanmedian(skaggs_ave_shock_dhpc), "filled");s1.MarkerFaceColor = [1 0 0];
+s2=scatter(2,nanmedian(skaggs_ave_pc_dhpc), "filled");s2.MarkerFaceColor = [0 0.1 0.2];
+title('dHPC')
+
+subplot(1,2,2); 
+a = [skaggs_ave_shock_vhpc, ones(size(skaggs_ave_shock_vhpc))];
+b = [skaggs_ave_pc_vhpc, ones(size(skaggs_ave_pc_vhpc))*2];
+data = [a;b];
+c = [.3,.3,.3];
+scatter(data(:,2),data(:,1),[],c,"filled",'jitter','on', 'jitterAmount',0.1); xlim([0 3]);
+ylabel('skaggs');
+xticks([1 2])
+xticklabels({'Shock and PC', 'PC ave'});
+ylim([0 2.5])
+hold on
+s1=scatter(1,nanmedian(skaggs_ave_shock_vhpc), "filled");s1.MarkerFaceColor = [1 0 0];
+s2=scatter(2,nanmedian(skaggs_ave_pc_vhpc), "filled");s2.MarkerFaceColor = [0 0.1 0.2];
+title('vHPC')   
+
+%op 2:BOX PLOT
+
+figure();clf;hold on, 
+subplot(1,2,1); 
+a = [skaggs_ave_shock_dhpc, ones(size(skaggs_ave_shock_dhpc))];
+b = [skaggs_ave_pc_dhpc, ones(size(skaggs_ave_pc_dhpc))*2];
+data = [a;b];
+boxplot(data); title('dHPC'); 
+ylabel('skaggs');xticks([1 2]);xticklabels({'Shock and PC', 'PC ave'});
+
+subplot(1,2,2); 
+a = [skaggs_ave_shock_vhpc, ones(size(skaggs_ave_shock_vhpc))];
+b = [skaggs_ave_pc_vhpc, ones(size(skaggs_ave_pc_vhpc))*2];
+data = [a;b];
+boxplot(data); title('vHPC'); 
+ylabel('skaggs');xticks([1 2]);xticklabels({'Shock and PC', 'PC ave'});
+
+%%%%%% Stats 
+[h,p] = kstest([skaggs_ave_shock_dhpc;skaggs_ave_pc_dhpc])
+[h,p] = kstest([skaggs_ave_shock_vhpc;skaggs_ave_pc_vhpc])
+
+[p,h] = ranksum(skaggs_ave_shock_dhpc,skaggs_ave_pc_dhpc)
+[p,h] = ranksum(skaggs_ave_shock_vhpc,skaggs_ave_pc_vhpc)
