@@ -1,4 +1,4 @@
-function [Pre Post T I curve] = Shock_responsive_ripples(path) 
+function [Pre , Post , T , I , curve] = Shock_responsive_ripples(path) 
 % This function calculates the Pre and Post sleep assemblies rate.
 %
 % INPUTS
@@ -57,7 +57,7 @@ for tt = 1:length(path)
         %Loading TS of the sessions
         disp('Uploading session time stamps')
         load('session_organization.mat')
-        load('behavioral_data.mat')
+        load('behavioral_dataVF.mat')
         
         %% speed sourrounding the shocks
         means = meanInGroups(behavior.speed.aversive(:,2), 3);
@@ -203,7 +203,9 @@ for tt = 1:length(path)
             load('dHPC_responsivness_all_VF.mat')
             curve.dHPC = [curve.dHPC ; dHPC_resp.curve_ave];
             x = ones(size(dHPC_resp.id,1),1);
-            curve.id.dHPC = [curve.id.dHPC ; dHPC_resp.id , dHPC_resp.resp_ave x*tt x*t dHPC_resp.Speedcorrelation.all(:,2)];
+%             curve.id.dHPC = [curve.id.dHPC ; dHPC_resp.id , dHPC_resp.resp_ave x*tt x*t dHPC_resp.Speedcorrelation.all(:,2)];
+            curve.id.dHPC = [curve.id.dHPC ; dHPC_resp.id , dHPC_resp.resp_ave x*tt x*t];
+
             if RB
                 for i = 1 : 2
                     if i == 1
@@ -227,9 +229,8 @@ for tt = 1:length(path)
 %                         x = Restrict(ripplesD(:,1:3),TS.pre);
                         
                         if and(size(x,1)>5 , size(y,1)>5)
-%                             [m] = meanFR_outside_ripples(ripplesD(:,1:3) , TS.pre , y , bin);
-%                             [m] = meanFR_outside_ripples(ripplesD(:,1:3) , NREM.all , y);
-                            [s,ids,groups] = CCGParameters(x(:,2),ones(length(x(:,2)),1),y,ones(length(y),1)*2);
+                            x = Restrict(x(:,2),[y(1,1) y(end,1)]);
+                            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
                             [ccg1,T] = CCG(s,ids,'binSize',bin,'duration',dur,'smooth',sm,'mode','ccg');
                             ccg1 = ccg1(:,1,2)./size(x,1);    ccg1 = ccg1./bin; %ccg1 = ccg1./m;
                         else
@@ -242,9 +243,10 @@ for tt = 1:length(path)
                         x = Restrict(ripples.dHPC.uncoordinated.all(:,1:3),TS.post);
 
                         if and(size(x,1)>5 , size(y,1)>5)
-                            [s,ids,groups] = CCGParameters(x(:,2),ones(length(x(:,2)),1),y,ones(length(y),1)*2);
+                            x = Restrict(x(:,2),[y(1,1) y(end,1)]);
+                            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
                             [ccg2,T] = CCG(s,ids,'binSize',bin,'duration',dur,'smooth',sm,'mode','ccg');
-                            ccg2 = ccg2(:,1,2)./size(x,1);    ccg2 = ccg2./bin; %ccg2 = ccg2./m;
+                            ccg2 = ccg2(:,1,2)./size(x,1);    ccg2 = ccg2./bin; %ccg1 = ccg1./m;
                         else
                             ccg2 = [];
                         end
@@ -273,7 +275,9 @@ for tt = 1:length(path)
             load('vHPC_responsivness_all_VF.mat')
             curve.vHPC = [curve.vHPC ; vHPC_resp.curve_ave];
             x = ones(size(vHPC_resp.id,1),1);
-            curve.id.vHPC = [curve.id.vHPC ; vHPC_resp.id , vHPC_resp.resp_ave x*tt x*t vHPC_resp.Speedcorrelation.all(:,2)];
+%             curve.id.vHPC = [curve.id.vHPC ; vHPC_resp.id , vHPC_resp.resp_ave x*tt x*t vHPC_resp.Speedcorrelation.all(:,2)];
+            curve.id.vHPC = [curve.id.vHPC ; vHPC_resp.id , vHPC_resp.resp_ave x*tt x*t];
+
             if RB
                 for i = 1 : 2
                     if i == 1
@@ -296,7 +300,8 @@ for tt = 1:length(path)
                         x = Restrict(ripples.vHPC.uncoordinated.all(:,1:3),TS.pre);
 
                         if and(size(x,1)>5 , size(y,1)>5)
-                            [s,ids,groups] = CCGParameters(x(:,2),ones(length(x(:,2)),1),y,ones(length(y),1)*2);
+                            x = Restrict(x(:,2),[y(1,1) y(end,1)]);
+                            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
                             [ccg1,T] = CCG(s,ids,'binSize',bin,'duration',dur,'smooth',sm,'mode','ccg');
                             ccg1 = ccg1(:,1,2)./size(x,1);    ccg1 = ccg1./bin; %ccg1 = ccg1./m;
                         else
@@ -309,9 +314,10 @@ for tt = 1:length(path)
                         x = Restrict(ripples.vHPC.uncoordinated.all(:,1:3),TS.post);
                         
                         if and(size(x,1)>5 , size(y,1)>5)
-                            [s,ids,groups] = CCGParameters(x(:,2),ones(length(x(:,2)),1),y,ones(length(y),1)*2);
+                            x = Restrict(x(:,2),[y(1,1) y(end,1)]);
+                            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
                             [ccg2,T] = CCG(s,ids,'binSize',bin,'duration',dur,'smooth',sm,'mode','ccg');
-                            ccg2 = ccg2(:,1,2)./size(x,1);    ccg2 = ccg2./bin; %ccg2 = ccg2./m;
+                            ccg2 = ccg2(:,1,2)./size(x,1);    ccg2 = ccg2./bin; %ccg1 = ccg1./m;
                         else
                             ccg2 = [];
                         end

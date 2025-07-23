@@ -1,25 +1,4 @@
 %% dHPS SUs
-c = curve.id.dHPC;
-i = I.dHPC;
-tmp = [];
-response.shock.dHPC = [];
-for ii = 1:size(i,1)
-    [~ , iii] = min(abs([-2 : 0.1 : 2]-0));
-    [~ , iiii] = min(abs([-2 : 0.1 : 2]-1));
-    
-    t = i(ii,:);
-    tt = and(c(:,1) == t(2) , and(c(:,4) == t(3) , c(:,3) == t(4)));
-    tmp = [tmp ; c(tt,:)]; 
-    
-    C = curve.dHPC(tt,:);
-    
-    if not(isempty(C))
-        response.shock.dHPC = [response.shock.dHPC ; max(C(iii:iiii))];
-    end
-    
-    clear t tt
-end
-
 tmp1 = [];
 response.pre.dHPC = [];
 for i = 1 : size(Pre.reward.dHPC,2)
@@ -145,29 +124,6 @@ for i = 1 : size(Post.aversive.vHPC,2)
     
 end
 
-c = curve.id.vHPC;
-i = I.vHPC;
-tmp = [];
-response.shock.vHPC = [];
-for ii = 1:size(i,1)
-    [~ , iii] = min(abs([-2 : 0.1 : 2]-0));
-    [~ , iiii] = min(abs([-2 : 0.1 : 2]-1));
-    
-    t = i(ii,:);
-    tt = and(c(:,1) == t(2) , and(c(:,4) == t(3) , c(:,3) == t(4)));
-    tmp = [tmp ; c(tt,:)]; 
-    
-    C = curve.vHPC(tt,:);
-    
-    if not(isempty(C))
-        response.shock.vHPC = [response.shock.vHPC ; max(C(iii:iiii))];
-    end
-    
-    clear t tt
-end
-
-
-
 i = and(I.vHPC(:,1) == 1 , I.vHPC(:,5)==1);
 subplot(223),
 m = nanmean((tmp1(:,i))');
@@ -277,6 +233,7 @@ end
 fitlm(C(:,1),C(:,2))
 figure,plot(ans),ylim([0 10]),xlim([-0.6 1.2])
 figure,scatter(C(:,1),C(:,2),'filled'),ylim([0 10]),xlim([-0.6 1.2])
+
 %% Comparison members vs no-members
 xD = response.shock.dHPC(and((I.dHPC(:,1) == 1) , I.dHPC(:,5)==1));
 yD = response.shock.dHPC(and((I.dHPC(:,1) == 1) , I.dHPC(:,5)==0));
@@ -315,8 +272,8 @@ subplot(211),bar([shockD 100])
 subplot(212),bar([shockV 100])
 
 %% Decorrelation of speed and shock response
-time = [-2:0.1:2];
-[h hh] = min(abs(time-(-0)));
+time = [-5:0.1:5];
+[h hh] = min(abs(time-(1)));
 decorrelated.dHPC = [];
 for i = 1 : size(curve.dHPC,1)
     id = curve.id.dHPC(i,:);
@@ -324,7 +281,7 @@ for i = 1 : size(curve.dHPC,1)
     template = and(id(3)==template(:,1) , id(4)==template(:,2));
     [deco] = decorr(curve.dHPC(i,:)',curve.speed.data(:,template));
     n = nanmean(deco(1:hh));
-    decorrelated.dHPC = [decorrelated.dHPC , deco-n]; clear deco n
+    decorrelated.dHPC = [decorrelated.dHPC , deco]; clear deco n
 end
 
 decorrelated.vHPC = [];
@@ -334,71 +291,75 @@ for i = 1 : size(curve.vHPC,1)
     template = and(id(3)==template(:,1) , id(4)==template(:,2));
     [deco] = decorr(curve.vHPC(i,:)',curve.speed.data(:,template));
     n = nanmean(deco(1:hh));
-    decorrelated.vHPC = [decorrelated.vHPC , deco-n]; clear deco n
+    decorrelated.vHPC = [decorrelated.vHPC , deco]; clear deco n
 end
 
 %% Plot
 % vHPC
-subplot(122)
+% subplot(122)
 i = curve.id.vHPC(:,2) == 1;
-m = nanmean(decorrelated.vHPC(:,i)');
-s = nansem(decorrelated.vHPC(:,i)');
-plot([-2:0.1:2],m,'g'), hold on
-ciplot(m-s , m+s , [-2:0.1:2] , 'g'),alpha 0.10
+% m = nanmean(decorrelated.vHPC(:,i)');
+% s = nansem(decorrelated.vHPC(:,i)');
+% plot([-5:0.1:5],m,'g'), hold on
+% ciplot(m-s , m+s , [-5:0.1:5] , 'g'),alpha 0.10
+% xline(0),
+% xline(1)
 
-[~ , iii] = min(abs([-2:0.1:2]-0.2));
-[~ , iiii] = min(abs([-2:0.1:2]-0.8));
+[~ , iii] = min(abs(time-0.1));
+[~ , iiii] = min(abs(time-1));
 values.vHPC.decorrelated = max(decorrelated.vHPC(iii:iiii,i))';
 
 i = curve.id.vHPC(:,2) == 1;
-x = curve.vHPC - nanmean(curve.vHPC(:,1:hh)')';%normalization to baseline as R2 asked
-m = nanmean(x(i,:));
-s = nansem(x(i,:));
-plot([-2:0.1:2],m,'y'), hold on
-ciplot(m-s , m+s , [-2:0.1:2] , 'y'),alpha 0.1
+x = curve.vHPC';% - nanmean(curve.vHPC(:,1:hh)');%normalization to baseline as R2 asked
+% m = nanmean(x(i,:));
+% s = nansem(x(i,:));
+% plot([-5:0.1:5],m,'y'), hold on
+% ciplot(m-s , m+s , [-5:0.1:5] , 'y'),alpha 0.1
 
-values.vHPC.shock = [max(x(i,iii:iiii)')'];
-values.vHPC.all = [max(x(:,iii:iiii)')'];
-
-i = not(curve.id.vHPC(:,2) == 1);
-m = nanmean(x(i,:));
-s = nansem(x(i,:));
-plot([-2:0.1:2],m,'k'), hold on
-ciplot(m-s , m+s , [-2:0.1:2] , 'k'),alpha 0.1
-ylim([-0.25 1.1])
-
-values.vHPC.no =  max(x(i,iii:iiii)')'; clear x
+values.vHPC.shock = [max(x(iii:iiii,i))'];
+values.vHPC.all = [max(x(iii:iiii,:))'];
+% 
+% i = not(curve.id.vHPC(:,2) == 1);
+% m = nanmean(x(i,:));
+% s = nansem(x(i,:));
+% plot([-5:0.1:5],m,'k'), hold on
+% ciplot(m-s , m+s , [-5:0.1:5] , 'k'),alpha 0.1
+% ylim([-0.25 1.1])
+% 
+% values.vHPC.no =  max(x(i,iii:iiii)')'; clear x
 
 
 
 % dHPC
-subplot(121)
+% subplot(121)
 i = curve.id.dHPC(:,2) == 1;
-m = nanmean(decorrelated.dHPC(:,i)');
-s = nansem(decorrelated.dHPC(:,i)');
-plot([-2:0.1:2],m,'g'), hold on
-ciplot(m-s , m+s , [-2:0.1:2] , 'g'),alpha 0.10
+% m = nanmean(decorrelated.dHPC(:,i)');
+% s = nansem(decorrelated.dHPC(:,i)');
+% plot(time,m,'g'), hold on
+% ciplot(m-s , m+s , time , 'g'),alpha 0.10
 
 values.dHPC.decorrelated =  max(decorrelated.dHPC(iii:iiii,i))';
 
 i = curve.id.dHPC(:,2) == 1;
-x = curve.dHPC - nanmean(curve.dHPC(:,1:hh)')'; %normalization to baseline as R2 asked
-m = nanmean(x(i,:));
-s = nansem(x(i,:));
-plot([-2:0.1:2],m,'y'), hold on
-ciplot(m-s , m+s , [-2:0.1:2] , 'y'),alpha 0.1
+x = curve.dHPC';% - nanmean(curve.dHPC(:,1:hh)'); %normalization to baseline as R2 asked
+% m = nanmean(x(i,:));
+% s = nansem(x(i,:));
+% plot(time,m,'y'), hold on
+% ciplot(m-s , m+s , time , 'y'),alpha 0.1
 
-values.dHPC.shock = max(x(i,iii:iiii)')';
-values.dHPC.all = [max(x(:,iii:iiii)')'];
+values.dHPC.shock = max(x(iii:iiii,i))';
+values.dHPC.all = max(x(iii:iiii,:))';
 
-i = not(curve.id.dHPC(:,2) == 1);
-m = nanmean(x(i,:));
-s = nansem(x(i,:));
-plot([-2:0.1:2],m,'k'), hold on
-ciplot(m-s , m+s , [-2:0.1:2] , 'k'),alpha 0.1
-ylim([-0.25 1.1])
+% i = not(curve.id.dHPC(:,2) == 1);
+% m = nanmean(x(i,:));
+% s = nansem(x(i,:));
+% plot(time,m,'k'), hold on
+% ciplot(m-s , m+s , time , 'k'),alpha 0.1
+% ylim([-0.25 1.1])
+% xline(0),
+% xline(1)
 
-values.dHPC.no = max(x(i,iii:iiii)')'; clear c
+% values.dHPC.no = max(x(i,iii:iiii)')'; clear c
 
 
 %% Plot and Analyse

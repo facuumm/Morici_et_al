@@ -1,4 +1,4 @@
-function [Pre Post T I curve] = Valve_responsive_ripples(path) 
+function [Pre , Post , T , I , curve] = Shock_responsive_ripples_for_R2(path) 
 % This function calculates the Pre and Post sleep assemblies rate.
 %
 % INPUTS
@@ -57,8 +57,30 @@ for tt = 1:length(path)
         %Loading TS of the sessions
         disp('Uploading session time stamps')
         load('session_organization.mat')
-%         load('behavioral_data.mat')
+        load('behavioral_dataVF.mat')
         
+        %% speed sourrounding the shocks
+        means = meanInGroups(behavior.speed.aversive(:,2), 3);
+        downsampled_t = downsampleTimeVector(behavior.speed.aversive(:,1), 1/30, 0.1);
+        
+        if size(means,2) < size(downsampled_t,2)
+            means = [downsampled_t(1:size(means,2))' , means']; clear downsampled_t
+        elseif size(means,2) > size(downsampled_t,2)
+            means = [downsampled_t' , means(1:size(downsampled_t,2))']; clear downsampled_t
+        else
+            means = [downsampled_t' , means']; clear downsampled_t
+        end
+        
+        tmp = [];
+        for i = 1 : length(Shocks_filt)
+            [~ , ii] = min(abs(means(:,1)-Shocks_filt(i)));
+            if ii+50 < length(means)
+                tmp = [tmp , means(ii-50 : ii+50 , 2)];
+            end
+        end
+        Mean = nanmean(tmp'); clear tmp means
+        curve.speed.data = [curve.speed.data , Mean']; clear Mean
+        curve.speed.id = [curve.speed.id ; tt t length(Shocks_filt)];
         
         %% load sleep states
         disp('Uploading sleep scoring')
@@ -102,6 +124,12 @@ for tt = 1:length(path)
                     [p,indice] = min(abs(r(2)-z(:,2)));
                     coordinated = [coordinated ; r];
                     
+%                     if r(2)<z(2) % keep only when dorsal happen first
+% %                         cooridnated_event = [cooridnated_event ; r];
+%                         coordinated = [coordinated ; r];
+%                         coordinatedV = [coordinatedV ; z];
+%                     end
+                    
                     peak = min(min(z(indice,2),r(2)))+abs(z(indice,2)-r(2))/2;
                     low = min([r(1) , z(indice,1)]);
                     up = max([r(3) , z(indice,3)]);
@@ -117,13 +145,42 @@ for tt = 1:length(path)
             coordinatedV  = coordinatedV(IA,:); clear C IA IC
             
             % Store events time stamps
+            % dRipples
+            ripples.dHPC.baseline = Restrict(ripplesD , NREM.baseline);
+            ripples.dHPC.reward = Restrict(ripplesD , NREM.reward);
+            ripples.dHPC.aversive = Restrict(ripplesD , NREM.aversive);
+            % vRipples
+            ripples.vHPC.baseline = Restrict(ripplesV , NREM.baseline);
+            ripples.vHPC.reward = Restrict(ripplesV , NREM.reward);
+            ripples.vHPC.aversive = Restrict(ripplesV , NREM.aversive);
             % coordinated dRipples
             ripples.dHPC.coordinated.all = coordinated;
             ripples.dHPC.uncoordinated.all = ripplesD(not(ismember(ripplesD(:,2) , coordinated(:,2))),:);
+            ripples.dHPC.coordinated.baseline = Restrict(coordinated , NREM.baseline);
+            ripples.dHPC.coordinated.reward = Restrict(coordinated , NREM.reward);
+            ripples.dHPC.coordinated.aversive = Restrict(coordinated , NREM.aversive);
             % coordinated vRipples
             ripples.vHPC.coordinated.all = coordinatedV;
             ripples.vHPC.uncoordinated.all = ripplesV(not(ismember(ripplesV(:,2) , coordinatedV(:,2))),:);
-
+            ripples.vHPC.coordinated.baseline = Restrict(coordinatedV , NREM.baseline);
+            ripples.vHPC.coordinated.reward = Restrict(coordinatedV , NREM.reward);
+            ripples.vHPC.coordinated.aversive = Restrict(coordinatedV , NREM.aversive);
+            %coordinated event
+            cooridnated_event((cooridnated_event(:,3)-cooridnated_event(:,1)<0.04),:) = [];
+            ripple_event.baseline = Restrict(cooridnated_event,baselineTS);
+            ripple_event.reward = Restrict(cooridnated_event,rewardTS);
+            ripple_event.aversive = Restrict(cooridnated_event,aversiveTS);
+            ripple_event.all = cooridnated_event;
+            
+            load([cd , '\coordinated_ripple_bursts.mat'])
+            
+            % Separation of bursts across emotional condition
+            bursts.coordinated.DV(bursts.coordinated.DV(:,2)-bursts.coordinated.DV(:,1)<0.06, : ) = [];
+            %             bursts.coordinated.DV(bursts.coordinated.DV(:,2)-bursts.coordinated.DV(:,1)>0.3, : ) = [];
+            
+            bursts.baseline = Restrict(bursts.coordinated.DV,NREM.baseline);
+            bursts.aversive = Restrict(bursts.coordinated.DV,NREM.aversive);
+            bursts.reward = Restrict(bursts.coordinated.DV,NREM.reward);
         else
             RB = false;
         end
@@ -134,19 +191,21 @@ for tt = 1:length(path)
         cd 'Spikesorting'
         [clusters , numberD , numberV , spks , spks_dHPC , spks_vHPC , cellulartype] = load_SU_FM(cd,criteria_type,criteria_fr,aversiveTS_run,rewardTS_run);
         
-        if isfile('dorsalventral_assemblies_rewardVF.mat')
-            disp('Loading Reward template')
-            [patterns , cond , Thresholded] = load_assemblies(cd , 'dorsalventral_assemblies_rewardVF.mat', clusters, numberD , 'reward');
-            th = sum(Thresholded.reward(:,cond.both),2)>=1;
+        if isfile('dorsalventral_assemblies_aversiveVF.mat')
+            disp('Loading Aversive template')
+            [patterns , cond , Thresholded] = load_assemblies(cd , 'dorsalventral_assemblies_aversiveVF.mat', clusters, numberD , 'aversive');
+            th = sum(Thresholded.aversive(:,cond.both),2)>=1;
         else
             th = zeros(size(clusters.all,1),1);
         end
         
-        if exist('dHPC_valve.mat')
-            load('dHPC_valve.mat')
-            curve.dHPC = [curve.dHPC , dHPC_valve.curve];
-            x = ones(size(dHPC_valve.id,1),1);
-            curve.id.dHPC = [curve.id.dHPC ; dHPC_valve.id , dHPC_valve.responssiveness' x*tt x*t];
+        if exist('dHPC_responsivness_all_VF.mat')
+            load('dHPC_responsivness_all_VF.mat')
+            curve.dHPC = [curve.dHPC ; dHPC_resp.curve_ave];
+            x = ones(size(dHPC_resp.id,1),1);
+%             curve.id.dHPC = [curve.id.dHPC ; dHPC_resp.id , dHPC_resp.resp_ave x*tt x*t dHPC_resp.Speedcorrelation.all(:,2)];
+            curve.id.dHPC = [curve.id.dHPC ; dHPC_resp.id , dHPC_resp.resp_ave x*tt x*t];
+
             if RB
                 for i = 1 : 2
                     if i == 1
@@ -166,13 +225,12 @@ for tt = 1:length(path)
                     for ii = 1 : numberD
                         % Pre
                         y = Restrict(spks(spks(:,1)==clusters.dHPC(ii),2),TS.pre);
-                        x = Restrict(ripples.dHPC.coordinated.all(:,1:3),TS.pre);
+                        x = Restrict(ripples.dHPC.uncoordinated.all(:,1:3),TS.pre);
 %                         x = Restrict(ripplesD(:,1:3),TS.pre);
                         
                         if and(size(x,1)>5 , size(y,1)>5)
-%                             [m] = meanFR_outside_ripples(ripplesD(:,1:3) , TS.pre , y , bin);
-%                             [m] = meanFR_outside_ripples(ripplesD(:,1:3) , NREM.all , y);
-                            [s,ids,groups] = CCGParameters(x(:,2),ones(length(x(:,2)),1),y,ones(length(y),1)*2);
+                            x = Restrict(x(:,2),[y(1,1) y(end,1)]);
+                            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
                             [ccg1,T] = CCG(s,ids,'binSize',bin,'duration',dur,'smooth',sm,'mode','ccg');
                             ccg1 = ccg1(:,1,2)./size(x,1);    ccg1 = ccg1./bin; %ccg1 = ccg1./m;
                         else
@@ -182,12 +240,13 @@ for tt = 1:length(path)
                         
                         % Post
                         y = Restrict(spks(spks(:,1)==clusters.dHPC(ii),2),TS.post);
-                        x = Restrict(ripples.dHPC.coordinated.all(:,1:3),TS.post);
+                        x = Restrict(ripples.dHPC.uncoordinated.all(:,1:3),TS.post);
 
                         if and(size(x,1)>5 , size(y,1)>5)
-                            [s,ids,groups] = CCGParameters(x(:,2),ones(length(x(:,2)),1),y,ones(length(y),1)*2);
+                            x = Restrict(x(:,2),[y(1,1) y(end,1)]);
+                            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
                             [ccg2,T] = CCG(s,ids,'binSize',bin,'duration',dur,'smooth',sm,'mode','ccg');
-                            ccg2 = ccg2(:,1,2)./size(x,1);    ccg2 = ccg2./bin; %ccg2 = ccg2./m;
+                            ccg2 = ccg2(:,1,2)./size(x,1);    ccg2 = ccg2./bin; %ccg1 = ccg1./m;
                         else
                             ccg2 = [];
                         end
@@ -198,7 +257,7 @@ for tt = 1:length(path)
                                 Pre.aversive.dHPC = [Pre.aversive.dHPC , ccg1];
                                 Post.aversive.dHPC = [Post.aversive.dHPC , ccg2];
                                 
-                                I.dHPC = [I.dHPC ; dHPC_valve.responssiveness(dHPC_valve.id == clusters.dHPC(ii)) clusters.dHPC(ii) t tt th(ii)]; clear p
+                                I.dHPC = [I.dHPC ; dHPC_resp.resp_ave(dHPC_resp.id == clusters.dHPC(ii)) clusters.dHPC(ii) t tt th(ii)]; clear p
                             else
                                 Pre.reward.dHPC = [Pre.reward.dHPC , ccg1];
                                 Post.reward.dHPC = [Post.reward.dHPC , ccg2];
@@ -212,11 +271,13 @@ for tt = 1:length(path)
             end
         end
         
-        if exist('vHPC_valve.mat')
-            load('vHPC_valve.mat')
-            curve.vHPC = [curve.vHPC , vHPC_valve.curve];
-            x = ones(size(vHPC_valve.id,1),1);
-            curve.id.vHPC = [curve.id.vHPC ; vHPC_valve.id , vHPC_valve.responssiveness' x*tt x*t];
+        if exist('vHPC_responsivness_all_VF.mat')
+            load('vHPC_responsivness_all_VF.mat')
+            curve.vHPC = [curve.vHPC ; vHPC_resp.curve_ave];
+            x = ones(size(vHPC_resp.id,1),1);
+%             curve.id.vHPC = [curve.id.vHPC ; vHPC_resp.id , vHPC_resp.resp_ave x*tt x*t vHPC_resp.Speedcorrelation.all(:,2)];
+            curve.id.vHPC = [curve.id.vHPC ; vHPC_resp.id , vHPC_resp.resp_ave x*tt x*t];
+
             if RB
                 for i = 1 : 2
                     if i == 1
@@ -236,10 +297,11 @@ for tt = 1:length(path)
                     for ii = 1 : numberV
                         % Pre
                         y = Restrict(spks(spks(:,1)==clusters.vHPC(ii),2),TS.pre);
-                        x = Restrict(ripples.vHPC.coordinated.all(:,1:3),TS.pre);
+                        x = Restrict(ripples.vHPC.uncoordinated.all(:,1:3),TS.pre);
 
                         if and(size(x,1)>5 , size(y,1)>5)
-                            [s,ids,groups] = CCGParameters(x(:,2),ones(length(x(:,2)),1),y,ones(length(y),1)*2);
+                            x = Restrict(x(:,2),[y(1,1) y(end,1)]);
+                            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
                             [ccg1,T] = CCG(s,ids,'binSize',bin,'duration',dur,'smooth',sm,'mode','ccg');
                             ccg1 = ccg1(:,1,2)./size(x,1);    ccg1 = ccg1./bin; %ccg1 = ccg1./m;
                         else
@@ -252,9 +314,10 @@ for tt = 1:length(path)
                         x = Restrict(ripples.vHPC.uncoordinated.all(:,1:3),TS.post);
                         
                         if and(size(x,1)>5 , size(y,1)>5)
-                            [s,ids,groups] = CCGParameters(x(:,2),ones(length(x(:,2)),1),y,ones(length(y),1)*2);
+                            x = Restrict(x(:,2),[y(1,1) y(end,1)]);
+                            [s,ids,groups] = CCGParameters(x,ones(length(x),1),y,ones(length(y),1)*2);
                             [ccg2,T] = CCG(s,ids,'binSize',bin,'duration',dur,'smooth',sm,'mode','ccg');
-                            ccg2 = ccg2(:,1,2)./size(x,1);    ccg2 = ccg2./bin; %ccg2 = ccg2./m;
+                            ccg2 = ccg2(:,1,2)./size(x,1);    ccg2 = ccg2./bin; %ccg1 = ccg1./m;
                         else
                             ccg2 = [];
                         end
@@ -265,7 +328,7 @@ for tt = 1:length(path)
                                 Pre.aversive.vHPC = [Pre.aversive.vHPC , ccg1];
                                 Post.aversive.vHPC = [Post.aversive.vHPC , ccg2];
                                 
-                                I.vHPC = [I.vHPC ; vHPC_valve.responssiveness(vHPC_valve.id == clusters.vHPC(ii)) clusters.vHPC(ii) t tt th(ii)]; clear p
+                                I.vHPC = [I.vHPC ; vHPC_resp.resp_ave(vHPC_resp.id == clusters.vHPC(ii)) clusters.vHPC(ii) t tt th(ii+numberD)]; clear p
                             else
                                 Pre.reward.vHPC = [Pre.reward.vHPC , ccg1];
                                 Post.reward.vHPC = [Post.reward.vHPC , ccg2];

@@ -4048,7 +4048,7 @@ s2=scatter(2,nanmedian(corr_rew_vhpc(:,1)), "filled");s2.MarkerFaceColor = [0 0.
 %c1 = spatial c2= fr_change c3=  overlap c4: pf shift c5:  1 = between 2 = within aversive 3= within reward 
 clear
 clc
-close all
+
 % Parameters
 path = {'\\Maryjackson\e\Rat127\Ephys\pyr';'\\Maryjackson\e\Rat128\Ephys\in_pyr\ready';'\\Maryjackson\e\Rat103\usable';'\\Maryjackson\e\Rat132\recordings\in_pyr'; '\\Maryjackson\e\Rat165\in_pyr'; ...
     '\\Maryjackson\e\Rat126\Ephys\in_Pyr'};%List of folders from the path
@@ -4135,7 +4135,7 @@ end
 ylabels ={'Spatial correlation', 'Overlap', 'Pf shift'};
 idx = [1,3,4]; 
 xlabels = {'Between', 'Within Ave', 'Within Rew'}; 
-figure(1);clf;hold on, 
+figure();clf;hold on, 
 sgtitle('dHPC')
 for a=1:size(ylabels,2)
     p = idx(a);
@@ -4198,7 +4198,7 @@ end
 ylabels ={'Spatial correlation', 'Overlap', 'Pf shift'};
 idx = [1,3,4]; 
 xlabels = {'Between', 'Within Ave', 'Within Rew'}; 
-figure(1);clf;hold on, 
+figure();clf;hold on, 
 sgtitle('vHPC')
 for a=1:size(ylabels,2)
     p = idx(a);
