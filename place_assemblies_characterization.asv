@@ -604,10 +604,8 @@ y = y./max(y,[],2);
 [c i] = max(x,[],2);
 [c i] = sort(i);
 
-% subplot(121),
-imagesc(x(i,:))
-% subplot(122),
-% imagesc(y(i,:))
+subplot(121),imagesc(x(i,:))
+subplot(122),imagesc(y(i,:))
 
 
 figure
@@ -620,10 +618,8 @@ y = y./max(y,[],2);
 [c i] = max(y,[],2);
 [c i] = sort(i);
 
-% subplot(121),
-% imagesc(x(i,:))
-% subplot(122),
-imagesc(y(i,:))
+subplot(121),imagesc(x(i,:))
+subplot(122),imagesc(y(i,:))
 
 %% dHPC
 figure
@@ -636,10 +632,8 @@ y = y./max(y,[],2);
 [c i] = max(x,[],2);
 [c i] = sort(i);
 
-% subplot(121),
-imagesc(x(i,:))
-% subplot(122),
-% imagesc(y(i,:))
+subplot(121),imagesc(x(i,:))
+subplot(122),imagesc(y(i,:))
 
 
 figure
@@ -652,10 +646,8 @@ y = y./max(y,[],2);
 [c i] = max(y,[],2);
 [c i] = sort(i);
 
-% subplot(121),
-% imagesc(x(i,:))
-% subplot(122),
-imagesc(y(i,:))
+subplot(121),imagesc(x(i,:))
+subplot(122),imagesc(y(i,:))
 
 %% vHPC
 figure
@@ -668,10 +660,8 @@ y = y./max(y,[],2);
 [c i] = max(x,[],2);
 [c i] = sort(i);
 
-% subplot(121),
-imagesc(x(i,:))
-% subplot(122),
-% imagesc(y(i,:))
+subplot(121),imagesc(x(i,:))
+subplot(122),imagesc(y(i,:))
 
 
 figure
@@ -684,43 +674,26 @@ y = y./max(y,[],2);
 [c i] = max(y,[],2);
 [c i] = sort(i);
 
-% subplot(121),
-% imagesc(x(i,:))
-% subplot(122),
-imagesc(y(i,:))
+subplot(121),imagesc(x(i,:))
+subplot(122),imagesc(y(i,:))
 
 figure
-x = [ones(size(Specificity.bothA(logical(Iterator.bothA)))) ; ones(size(Specificity.bothR(logical(Iterator.bothR))))*2];
-y = [Specificity.bothA(logical(Iterator.bothA)) ; Specificity.bothR(logical(Iterator.bothR))];
+x = [ones(size(Specificity.bothA(logical(Iterator.)))) ; ones(size(Specificity.bothR))*2];
+y = [Specificity.bothA ; Specificity.bothR];
 scatter(x,y,'filled','jitter',0.1), xlim([0 3]),ylim([0 3]),hold on
-
-x = [ones(size(Specificity.bothA(not(logical(Iterator.bothA))))) ; ones(size(Specificity.bothR(not(logical(Iterator.bothR)))))*2];
-y = [Specificity.bothA(not(logical(Iterator.bothA))) ; Specificity.bothR(not(logical(Iterator.bothR)))];
-scatter(x,y,'filled','jitter',0.1), xlim([0 3]),ylim([0 3]),hold on
-
-scatter([1 2] , [nanmean(Specificity.bothA) nanmean(Specificity.bothR)],'filled','k')
+scatter([1 2] , [nanmean(Specificity.bothA) nanmean(Specificity.bothR)],'filled')
 
 figure
-x = [ones(size(Specificity.dHPCA(logical(Iterator.dHPCA)))) ; ones(size(Specificity.dHPCR(logical(Iterator.dHPCR))))*2];
-y = [Specificity.dHPCA(logical(Iterator.dHPCA)) ; Specificity.dHPCR(logical(Iterator.dHPCR))];
+x = [ones(size(Specificity.dHPCA)) ; ones(size(Specificity.dHPCR))*2];
+y = [Specificity.dHPCA ; Specificity.dHPCR];
 scatter(x,y,'filled','jitter',0.1), xlim([0 3]),ylim([0 3]),hold on
-
-x = [ones(size(Specificity.dHPCA(not(logical(Iterator.dHPCA))))) ; ones(size(Specificity.dHPCR(not(logical(Iterator.dHPCR)))))*2];
-y = [Specificity.dHPCA(not(logical(Iterator.dHPCA))) ; Specificity.dHPCR(not(logical(Iterator.dHPCR)))];
-scatter(x,y,'filled','jitter',0.1), xlim([0 3]),ylim([0 3]),hold on
-
-scatter([1 2] , [nanmean(Specificity.dHPCA) nanmean(Specificity.dHPCR)],'filled','k')
+scatter([1 2] , [nanmean(Specificity.dHPCA) nanmean(Specificity.dHPCR)],'filled')
 
 figure
-x = [ones(size(Specificity.vHPCA(logical(Iterator.vHPCA)))) ; ones(size(Specificity.vHPCR(logical(Iterator.vHPCR))))*2];
-y = [Specificity.vHPCA(logical(Iterator.vHPCA)) ; Specificity.vHPCR(logical(Iterator.vHPCR))];
+x = [ones(size(Specificity.vHPCA)) ; ones(size(Specificity.vHPCR))*2];
+y = [Specificity.vHPCA ; Specificity.vHPCR];
 scatter(x,y,'filled','jitter',0.1), xlim([0 3]),ylim([0 3]),hold on
-
-x = [ones(size(Specificity.vHPCA(not(logical(Iterator.vHPCA))))) ; ones(size(Specificity.vHPCR(not(logical(Iterator.vHPCR)))))*2];
-y = [Specificity.vHPCA(not(logical(Iterator.vHPCA))) ; Specificity.vHPCR(not(logical(Iterator.vHPCR)))];
-scatter(x,y,'filled','jitter',0.1), xlim([0 3]),ylim([0 3]),hold on
-
-scatter([1 2] , [nanmean(Specificity.vHPCA) nanmean(Specificity.vHPCR)],'filled','k')
+scatter([1 2] , [nanmean(Specificity.vHPCA) nanmean(Specificity.vHPCR)],'filled')
 
 
 

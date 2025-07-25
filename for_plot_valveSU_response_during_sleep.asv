@@ -33,7 +33,7 @@ for i = 1 : size(Pre.reward.dHPC,2)
     t = (t./M);
     t = Smooth(t,2);
     
-    [~ , ii] = min(abs(T-(-0.2)));    [~ , iii] = min(abs(T-(0.2)));
+    [~ , ii] = min(abs(T-(-0.15)));    [~ , iii] = min(abs(T-(0.15)));
     response.pre.dHPC = [response.pre.dHPC ; max(t(ii:iii))];
     
     tmp1 = [tmp1 , t]; clear M S
@@ -53,7 +53,7 @@ for i = 1 : size(Post.reward.dHPC,2)
     t = (t./M);
     t = Smooth(t,2);
     
-    [~ , ii] = min(abs(T-(-0.2)));    [~ , iii] = min(abs(T-(0.2)));
+    [~ , ii] = min(abs(T-(-0.15)));    [~ , iii] = min(abs(T-(0.15)));
     response.post.dHPC = [response.post.dHPC ; max(t(ii:iii))];
     
     tmp2 = [tmp2 , t]; clear M S
@@ -78,7 +78,7 @@ ciplot(m-s , m+s , T , 'r'),alpha 0.5
 xlim([-0.3 0.3])
 ylim([0 6])
 
-[h p] = ranksum(response.pre.dHPC(i) , response.post.dHPC(i),'tail','left')
+[h p] = signrank(response.pre.dHPC(i) , response.post.dHPC(i),'tail','left')
 
 
 subplot(222),
@@ -88,7 +88,7 @@ x = [1:length(i)];
 i = and(not(I.dHPC(:,1) == 1) , I.dHPC(:,5)==1);
 x = x((i));
 ii = randperm(length(x));
-x = x(ii(1:sum(and(I.dHPC(:,1) == 1 , I.dHPC(:,5)==1))));
+x = x(ii(1:sum(i)));
 
 m = nanmean((tmp1(:,x))');
 s = nansem((tmp1(:,(i)))');
@@ -102,13 +102,13 @@ ciplot(m-s , m+s , T , 'r'),alpha 0.5
 xlim([-0.3 0.3])
 ylim([0 6])
 
-[h p] = ranksum(response.pre.dHPC(i) , response.post.dHPC(i),'tail','left')
+[h p] = signrank(response.pre.dHPC(i) , response.post.dHPC(i),'tail','left')
 
 %% vHPS SUs
 tmp1 = [];
 response.pre.vHPC = [];
 for i = 1 : size(Pre.reward.vHPC,2)
-    [~ , ii] = min(abs(T-(-0.2)));    [~ , iii] = min(abs(T-(0.2)));
+    [~ , ii] = min(abs(T-(-0.1)));    [~ , iii] = min(abs(T-(0.1)));
     
     t = Pre.reward.vHPC(:,i);
     
@@ -128,7 +128,7 @@ end
 tmp2 = [];
 response.post.vHPC = [];
 for i = 1 : size(Post.reward.vHPC,2)
-    [~ , ii] = min(abs(T-(-0.2)));    [~ , iii] = min(abs(T-(0.2)));
+    [~ , ii] = min(abs(T-(-0.1)));    [~ , iii] = min(abs(T-(0.1)));
     
     t = Post.reward.vHPC(:,i);
     
@@ -138,7 +138,7 @@ for i = 1 : size(Post.reward.vHPC,2)
     t = (t./M);
     t = Smooth(t,2);
     
-    [~ , ii] = min(abs(T-(-0.2)));    [~ , iii] = min(abs(T-(0.2)));
+    [~ , ii] = min(abs(T-(-0.15)));    [~ , iii] = min(abs(T-(0.15)));
     response.post.vHPC = [response.post.vHPC ; max(t(ii:iii))];
     
     tmp2 = [tmp2 , t]; clear M S
@@ -182,14 +182,14 @@ ciplot(m-s , m+s , T , 'r'),alpha 0.5
 xlim([-0.3 0.3])
 ylim([0 6])
 
-[h p] = ranksum(response.pre.vHPC(i) , response.post.vHPC(i))
+[h p] = signrank(response.pre.vHPC(i) , response.post.vHPC(i),'tail','left')
 
 % Downsampling the data of non-shock responssivness
 x = [1:length(i)];
 i = and(not(I.vHPC(:,1) == 1) , I.vHPC(:,5)==1);
 x = x((i));
 ii = randperm(length(x));
-x = x(ii(1:sum(and(I.vHPC(:,1) == 1 , I.vHPC(:,5)==1))));
+x = x(ii(1:sum(i)));
 
 subplot(224),
 m = nanmean((tmp1(:,x))');
@@ -203,7 +203,7 @@ plot(T,m','r'),hold on
 ciplot(m-s , m+s , T , 'r'),alpha 0.5
 xlim([-0.3 0.3])
 ylim([0 6])
-[h p] = ranksum(response.pre.vHPC(i) , response.post.vHPC(i))
+[h p] = signrank(response.pre.vHPC(i) , response.post.vHPC(i),'tail','left')
 
 %% Decorrelation of speed and shock response
 time = [-5:0.1:5];

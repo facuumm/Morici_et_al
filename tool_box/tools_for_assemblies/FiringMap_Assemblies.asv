@@ -113,27 +113,27 @@ for i = 1:size(a,1)
             if not(isempty(stats.field))
                 if and(sum(stats.field(:,:,1))>= 4 , stats.specificity >= q)
                     pc.cond1 = [pc.cond1 ; true];
-                    pc.specificity.cond1 = [pc.specificity.cond1 ; stats.specificity];
+                    pc.cond1.specificity = [pc.cond1.specificity ; stats.specificity];
                 else
                     pc.cond1 = [pc.cond1 ; false];
-                    pc.specificity.cond1 = [pc.specificity.cond1 ; stats.specificity];
+                    pc.cond1.specificity = [pc.cond1.specificity ; stats.specificity];
                 end
             else
                 pc.cond1 = [pc.cond1 ; false];
-                pc.specificity.cond1 = [pc.specificity.cond1 ; nan];
+                pc.cond1.specificity = [pc.cond1.specificity ; nan];
             end
         else
             if not(isempty(stats.field))
                 if and(sum(stats.field(:,:,1))>= 4 , stats.specificity >= q)
                     pc.cond2 = [pc.cond2 ; true];
-                    pc.specificity.cond2 = [pc.specificity.cond2 ; stats.specificity];
+                    pc.cond2.specificity = [pc.cond2.specificity ; stats.specificity];
                 else
                     pc.cond2 = [pc.cond2 ; false];
-                    pc.specificity.cond2 = [pc.specificity.cond2 ; stats.specificity];
+                    pc.cond2.specificity = [pc.cond2.specificity ; stats.specificity];
                 end
             else
                 pc.cond2 = [pc.cond2 ; false];
-                pc.specificity.cond2 = [pc.specificity.cond2 ; nan];
+                pc.cond2.specificity = [pc.cond2.specificity ; nan];
             end
         end
         
