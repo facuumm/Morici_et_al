@@ -29,41 +29,6 @@ for t = 3:length(files)
     load([template,'\Session_Structure.mat'])
     
     %% Aversive
-    % --- All ---
-    % Check replay within Pre-sleep
-    if TimeStamps.Sleep.Aversive(1) < TimeStamps.Sleep.Reward(1)
-        p = TimeStamps.Sleep.Baseline;
-    else
-        p = TimeStamps.Sleep.Reward;
-    end
-    
-    y = [replay.coordinated.dHPC.timestamps(:,2) ; replay.uncoordinated.dHPC.timestamps(:,2)];
-    total = and(y > p(1) , y < p(2));
-    
-    % Check Replay with more than 3 neurons active
-    y = [replay.coordinated.dHPC.ave.rankOrder.nCells , replay.uncoordinated.dHPC.ave.rankOrder.nCells] >= 3;
-    x = and(total , y');
-    % Check Replay higher than shuffle
-    y = [replay.coordinated.dHPC.ave.rankOrder.rankOrd_shuf , replay.uncoordinated.dHPC.ave.rankOrder.rankOrd_shuf] < [replay.coordinated.dHPC.ave.rankOrder.rankOrd , replay.uncoordinated.dHPC.ave.rankOrder.rankOrd];
-    x = and(x , y'); 
-    %store
-    Pre = sum(x);
-    Pre = Pre/sum(total); clear total
-    
-    % Check replay within post-sleep
-    y = [replay.coordinated.dHPC.timestamps(:,2) ; replay.uncoordinated.dHPC.timestamps(:,2)];
-    total = and(y > TimeStamps.Sleep.Aversive(1) , y < TimeStamps.Sleep.Aversive(2));
-    % Check Replay with more than 3 neurons active
-    y = [replay.coordinated.dHPC.ave.rankOrder.nCells , replay.uncoordinated.dHPC.ave.rankOrder.nCells] >= 3;
-    x = and(total , y');
-    % Check Replay higher than shuffle
-    y = [replay.coordinated.dHPC.ave.rankOrder.rankOrd_shuf , replay.uncoordinated.dHPC.ave.rankOrder.rankOrd_shuf] < [replay.coordinated.dHPC.ave.rankOrder.rankOrd , replay.uncoordinated.dHPC.ave.rankOrder.rankOrd];
-    x = and(x , y'); 
-    %store
-    Post = sum(x);
-    Post = Post/sum(total); clear total
-    Replay.aversive.dHPC.all = [Replay.aversive.dHPC.all ; Pre Post]; clear Pre Post
-
     % --- Coordinated ---
     % Pre-sleep
     if TimeStamps.Sleep.Aversive(1) < TimeStamps.Sleep.Reward(1)
@@ -83,7 +48,7 @@ for t = 3:length(files)
     x = and(total , y'); 
     
     %store
-    Pre = sum(not(isnan(replay.coordinated.dHPC.ave.rankOrder.rankOrd(x))));
+    Pre = sum(x);
     Pre = Pre/sum(total); clear total
 
     
@@ -97,7 +62,7 @@ for t = 3:length(files)
     y = replay.coordinated.dHPC.ave.rankOrder.rankOrd_shuf < replay.coordinated.dHPC.ave.rankOrder.rankOrd;
     x = and(total , y');    
     %store
-    Post = sum(not(isnan(replay.coordinated.dHPC.ave.rankOrder.rankOrd(x))));
+    Post = sum(x);
     Post = Post /sum(total);
     
     Replay.aversive.dHPC.cooridnated = [Replay.aversive.dHPC.cooridnated ; Pre Post]; clear Pre Post total
@@ -120,7 +85,7 @@ for t = 3:length(files)
     y = replay.uncoordinated.dHPC.ave.rankOrder.rankOrd_shuf < replay.uncoordinated.dHPC.ave.rankOrder.rankOrd;
     x = and(total , y');    
     %store
-    Pre = sum(not(isnan(replay.uncoordinated.dHPC.ave.rankOrder.rankOrd(x))));
+    Pre = sum(x);
     Pre = Pre /sum(total); clear total
     
     % Post-sleep
@@ -133,48 +98,12 @@ for t = 3:length(files)
     y = replay.uncoordinated.dHPC.ave.rankOrder.rankOrd_shuf < replay.uncoordinated.dHPC.ave.rankOrder.rankOrd;
     x = and(total , y');    
     %store
-    Post = sum(not(isnan(replay.uncoordinated.dHPC.ave.rankOrder.rankOrd(x))));
+    Post = sum(x);
     Post = Post /sum(total);    
     
     Replay.aversive.dHPC.uncooridnated = [Replay.aversive.dHPC.uncooridnated ; Pre Post]; clear Pre Post total
     
     %% Reward
-    % --- All ---
-    % Check replay within Pre-sleep
-    if TimeStamps.Sleep.Aversive(1) < TimeStamps.Sleep.Reward(1)
-        p = TimeStamps.Sleep.Aversive;
-    else
-        p = TimeStamps.Sleep.Baseline;
-    end
-    
-    y = [replay.coordinated.dHPC.timestamps(:,2) ; replay.uncoordinated.dHPC.timestamps(:,2)];
-    total = and(y > p(1) , y < p(2));
-    
-    % Check Replay with more than 3 neurons active
-    y = [replay.coordinated.dHPC.rew.rankOrder.nCells , replay.uncoordinated.dHPC.rew.rankOrder.nCells] >= 3;
-    x = and(total , y');
-    % Check Replay higher than shuffle
-    y = [replay.coordinated.dHPC.rew.rankOrder.rankOrd_shuf , replay.uncoordinated.dHPC.rew.rankOrder.rankOrd_shuf] < [replay.coordinated.dHPC.rew.rankOrder.rankOrd , replay.uncoordinated.dHPC.rew.rankOrder.rankOrd];
-    x = and(x , y'); 
-    %store
-    Pre = sum(x);
-    Pre = Pre/sum(total); clear total
-    
-    % Check replay within post-sleep
-    y = [replay.coordinated.dHPC.timestamps(:,2) ; replay.uncoordinated.dHPC.timestamps(:,2)];
-    total = and(y > TimeStamps.Sleep.Reward(1) , y < TimeStamps.Sleep.Reward(2));
-    % Check Replay with more than 3 neurons active
-    y = [replay.coordinated.dHPC.rew.rankOrder.nCells , replay.uncoordinated.dHPC.rew.rankOrder.nCells] >= 3;
-    x = and(total , y');
-    % Check Replay higher than shuffle
-    y = [replay.coordinated.dHPC.rew.rankOrder.rankOrd_shuf , replay.uncoordinated.dHPC.rew.rankOrder.rankOrd_shuf] < [replay.coordinated.dHPC.rew.rankOrder.rankOrd , replay.uncoordinated.dHPC.rew.rankOrder.rankOrd];
-    x = and(x , y'); 
-    %store
-    Post = sum(x);
-    Post = Post/sum(total); clear total
-    Replay.reward.dHPC.all = [Replay.reward.dHPC.all ; Pre Post]; clear Pre Post    
-    
-    
     % --- Coordinated ---
     % Check replay within Pre-sleep
     if TimeStamps.Sleep.Aversive(1) < TimeStamps.Sleep.Reward(1)
@@ -194,7 +123,7 @@ for t = 3:length(files)
     x = and(total , y');    
     %store
 %     Pre = nanmean(replay.coordinated.dHPC.ave.rankOrder.rankOrd(x));
-    Pre = sum(not(isnan(replay.coordinated.dHPC.rew.rankOrder.rankOrd(x))));
+    Pre = sum(x);
     Pre = Pre /sum(total); clear total
     
     % Check replay within post-sleep
@@ -207,7 +136,7 @@ for t = 3:length(files)
     y = replay.coordinated.dHPC.rew.rankOrder.rankOrd_shuf < replay.coordinated.dHPC.rew.rankOrder.rankOrd;
     x = and(total , y');    
     %store
-    Post = sum(not(isnan(replay.coordinated.dHPC.rew.rankOrder.rankOrd(x))));
+    Post = sum(x);
     Post = Post/sum(total);    
     
     Replay.reward.dHPC.cooridnated = [Replay.reward.dHPC.cooridnated ; Pre Post]; clear Pre Post total
@@ -230,7 +159,7 @@ for t = 3:length(files)
     y = replay.uncoordinated.dHPC.rew.rankOrder.rankOrd_shuf < replay.uncoordinated.dHPC.rew.rankOrder.rankOrd;
     x = and(total , y');    
     %store
-    Pre = sum(not(isnan(replay.uncoordinated.dHPC.rew.rankOrder.rankOrd(x))));
+    Pre = sum(x);
     Pre = Pre /sum(total); clear total    
 
     % Check replay within post-sleep
@@ -243,7 +172,7 @@ for t = 3:length(files)
     y = replay.uncoordinated.dHPC.rew.rankOrder.rankOrd_shuf < replay.uncoordinated.dHPC.rew.rankOrder.rankOrd;
     x = and(total , y');    
     %store
-    Post = sum(not(isnan(replay.uncoordinated.dHPC.rew.rankOrder.rankOrd(x))));
+    Post = sum(x);
     Post = Post /sum(total);        
     
     Replay.reward.dHPC.uncooridnated = [Replay.reward.dHPC.uncooridnated ; Pre Post]; clear Pre Post total
@@ -251,8 +180,8 @@ for t = 3:length(files)
 end
 
 %% Calcular relaciones Aversive
-R1 = Replay.aversive.dHPC.uncooridnated(:,2) ./ Replay.aversive.dHPC.uncooridnated(:,1);
-R2 = Replay.aversive.dHPC.cooridnated(:,2) ./ Replay.aversive.dHPC.cooridnated(:,1);
+R1 = Replay.aversive.dHPC.uncooridnated(:,1) ./ Replay.aversive.dHPC.uncooridnated(:,1);
+R2 = Replay.aversive.dHPC.cooridnated(:,1) ./ Replay.aversive.dHPC.cooridnated(:,1);
 
 % Generar valores con jitter manual
 n = numel(R1);
