@@ -1,0 +1,205 @@
+%% With RankOrder
+clear
+clc
+close all
+
+% Parameters
+path = 'E:\output_replay';%List of folders from the path
+files = dir(path);
+
+path2 = 'Z:\Facundo\light_dataset_FM';
+template = dir(path2);
+
+folders = []; for x = 3 : length(template), folders = [folders ; template(x).name]; end
+
+Curve.aversive.post.si = [];
+Curve.aversive.post.no = [];
+Curve.aversive.pre.si = [];
+Curve.aversive.pre.no = [];
+
+for t = 3:length(files)
+    f = [files(t).folder,'\',files(t).name];
+    load(f)
+    
+    template = [path2,'\',files(t).name(1:6),'\',files(t).name(1:end-4)];
+    load([template,'\Session_Structure.mat'])
+    load([template,'\Spiking_Activity.mat'])
+    load([template,'\ShockCells.mat'])
+    load([template,'\Sleep_Scoring.mat'])
+    load([template,'\Ripples.mat'])
+    load([template,'\PlaceCells.mat'])
+    
+    % Storing Place Cells info
+    dHPC.fr.ave = [];
+    dHPC.fr.rew = [];
+    dHPC.id = [];
+    for i = 1:size(PlaceCells.dHPC.dHPC,2)
+        x = PlaceCells.dHPC.dHPC{i};
+        dHPC.fr.ave = [dHPC.fr.ave ; x.frMap_ave];
+        dHPC.fr.rew = [dHPC.fr.rew ; x.frMap_rew];
+        dHPC.id = [dHPC.id ; x.id];
+        clear x
+    end
+    
+    %% Aversive
+    % --- Coordinated ---
+    q = quantile(abs(replay.coordinated.dHPC.ave.rankOrder.rankOrd_shuf),0.94);
+    % Pre-sleep
+    if TimeStamps.Sleep.Aversive(1) < TimeStamps.Sleep.Reward(1)
+        p = TimeStamps.Sleep.Baseline;
+    else
+        p = TimeStamps.Sleep.Reward;
+    end
+    
+    y = replay.coordinated.dHPC.timestamps(:,2);
+    x = and(y > p(1) , y < p(2));
+    
+    % Check Replay with more than 3 neurons active
+    y = replay.coordinated.dHPC.ave.rankOrder.nCells > 2;
+    total = and(x , y');
+    CoordPre = sum(total);
+    % Check Replay higher than shuffle
+    y = abs(replay.coordinated.dHPC.ave.rankOrder.rankOrd)>=q;
+    x1 = and(total , y'); 
+    x2 = and(total , not(y'));
+    
+    
+    % Post-sleep
+    y = replay.coordinated.dHPC.timestamps(:,2);
+    x = and(y > TimeStamps.Sleep.Aversive(1) , y < TimeStamps.Sleep.Aversive(2));
+    % Check Replay with more than 3 neurons active
+    y = replay.coordinated.dHPC.ave.rankOrder.nCells > 2;
+    total = and(x , y');
+    CoordPost = sum(total);
+    % Check Replay higher than shuffle
+    y = abs(replay.coordinated.dHPC.ave.rankOrder.rankOrd)>=q;
+    x3 = and(total , y'); 
+    x4 = and(total , not(y'));
+    N = abs(replay.coordinated.dHPC.ave.rankOrder.rankOrd(x3));
+    
+%     Pre.si = replay.uncoordinated.dHPC.timestamps(x1,:);
+%     Pre.no = replay.uncoordinated.dHPC.timestamps(x2,:);
+%     Post.si = replay.uncoordinated.dHPC.timestamps(x3,:);
+%     Post.no = replay.uncoordinated.dHPC.timestamps(x4,:);
+%     
+%     % Subsample
+%     if sum(x1)>20
+%         Pre.si = Pre.si(randperm(sum(x1)),:);
+%         Pre.si = Pre.si(1:20,:);
+%     end
+%     if sum(x2)>20
+%         Pre.no = Pre.no(randperm(sum(x2)),:);
+%         Pre.no = Pre.no(1:20,:);
+%     end
+%     if sum(x3)>20
+%         Post.si = Post.si(randperm(sum(x3)),:);
+%         Post.si = Post.si(1:20,:);
+%     end
+%     if sum(x4)>20
+%         Post.no = Post.no(randperm(sum(x4)),:);
+%         Post.no = Post.no(1:20,:);
+%     end
+%     
+%     
+%     for i = 1:size(Post.si,1)
+%         [Pr, prMax] = bayesian_replay(spks , dHPC.id , dHPC.fr.ave , [Post.si(i,1)-0.04 Post.si(i,3)+0.04] , 0.02 , 0);
+%         figure,imagesc(Pr')
+%         clear Pr prMax
+%     end
+    
+    if isfield(replay.coordinated,'dHPC')
+        Pre.si = replay.coordinated.dHPC.timestamps(x1,:);
+        Pre.no = replay.coordinated.dHPC.timestamps(x2,:);
+        Post.si = replay.coordinated.dHPC.timestamps(x3,:);
+        Post.no = replay.coordinated.dHPC.timestamps(x4,:);
+        
+        if and(size(Post.si,1)>3 , size(Pre.si,1)>3)% Curve Shock cells
+            % Pre
+            for i = 1: length(ShockCells.vHPC.vHPC_resp.id)
+                if ShockCells.vHPC.vHPC_resp.resp_ave(i) == 1
+                    % Modulated
+                    cluster = ShockCells.vHPC.vHPC_resp.id(i);
+                    [p , time] = PHIST_Ripple_SU(Pre.si,spks(spks(:,1)==cluster,2),[],4,0.01,2,[]);
+                    Curve.aversive.pre.si = [Curve.aversive.pre.si , p];
+                    
+                    % No-Modulated
+                    if length(Pre.no) > length(Pre.si)
+                        p = [];
+                        for ii = 1 : 100
+                            x = randperm(length(Pre.no));
+                            x = Pre.no(x,:);
+                            x = x(1:length(Pre.si),:);
+                            
+                            [p(:,ii) , time] = PHIST_Ripple_SU(x,spks(spks(:,1)==cluster,2),[],4,0.01,1,[]);
+                        end
+                        p = nanmean(p');
+                        p = p';
+                    else
+                        [p , time] = PHIST_Ripple_SU(Pre.no,spks(spks(:,1)==cluster,2),[],4,0.01,1,[]);
+                    end
+                    Curve.aversive.pre.no = [Curve.aversive.pre.no , p]; clear x
+                end
+            end            
+            
+            % Post
+            for i = 1: length(ShockCells.vHPC.vHPC_resp.id)
+                if ShockCells.vHPC.vHPC_resp.resp_ave(i) == 1
+                    % Modulated
+                    cluster = ShockCells.vHPC.vHPC_resp.id(i);
+                    [p , time] = PHIST_Ripple_SU(Post.si,spks(spks(:,1)==cluster,2),[],4,0.01,2,[]);
+                    Curve.aversive.post.si = [Curve.aversive.post.si , p];
+                    
+                    % No-Modulated
+                    if length(Post.no) > length(Post.si)
+                        p = [];
+                        for ii = 1 : 100
+                            x = randperm(length(Post.no));
+                            x = Post.no(x,:);
+                            x = x(1:length(Post.si),:);
+                            
+                            [p(:,ii) , time] = PHIST_Ripple_SU(x,spks(spks(:,1)==cluster,2),[],4,0.01,1,[]);
+                        end
+                        p = nanmean(p');
+                        p = p';
+                    else
+                        [p , time] = PHIST_Ripple_SU(Post.no,spks(spks(:,1)==cluster,2),[],4,0.01,1,[]);
+                    end
+                    Curve.aversive.post.no = [Curve.aversive.post.no , p]; clear x
+                end
+            end
+        end
+    end
+
+    clear replay spks spks_dHPC spks_vHPC TimeStamps numberD numberV cellulartype clusters
+    clear NREM REM Wake ripples
+end
+
+figure,
+x = Curve.aversive.pre.si;
+m = nanmean(x');
+s = nansem(x');
+plot(time,m,'r'), hold on
+ciplot(m-s , m+s , time, 'r'), alpha 0.2
+
+x = Curve.aversive.pre.no;
+m = nanmean(x');
+s = nansem(x');
+plot(time,m,'k'), hold on
+ciplot(m-s , m+s , time, 'k'), alpha 0.2
+
+xlim([-1 1])
+
+
+figure,
+x = Curve.aversive.post.si;
+m = nanmean(x');
+s = nansem(x');
+plot(time,m,'r'), hold on
+ciplot(m-s , m+s , time, 'r'), alpha 0.2
+
+x = Curve.aversive.post.no;
+m = nanmean(x');
+s = nansem(x');
+plot(time,m,'k'), hold on
+ciplot(m-s , m+s , time, 'k'), alpha 0.2
+xlim([-1 1])

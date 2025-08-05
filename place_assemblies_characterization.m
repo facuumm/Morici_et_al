@@ -539,7 +539,7 @@ for tt = 1:length(path)
             
             if sum(cond.vHPC.reward)>=1
                 pos = [behavior.pos.aversive(:,1:2) ; behavior.pos.reward(:,1:2)];
-                [x xx] = sort(pos(:,1));
+                [x, xx] = sort(pos(:,1));
                 pos = pos(xx,:);
                 events = cell(2,1);
                 events{1} = movement.reward;
@@ -593,220 +593,144 @@ end
 % Please, be sure that you undersand the structure of the matrix you are
 % intending to plot.
 
-%% Both
+% Plot example of assemblies locked and non-locked
 figure
-x = map.bothA.aversive - min(map.bothA.aversive,[],2);
-x = x./max(x,[],2);
+% Both
+subplot(3,2,1),
+x = (map.bothA.aversive);
+plot(x(33,:),'k'),hold on
+plot(x(5,:),'r')
 
-y = map.bothA.reward - min(map.bothA.reward,[],2);
-y = y./max(y,[],2);
+subplot(3,2,2),
+y = map.bothR.reward;
+plot(y(23,:),'k'),hold on
+plot(y(18,:),'b')
 
-[c i] = max(x,[],2);
-[c i] = sort(i);
+%dHPC
+subplot(3,2,3),
+x = (map.dHPCA.aversive);
+plot(x(130,:),'k'),hold on
+plot(x(129,:),'r')
 
-% subplot(121),
-imagesc(x(i,:))
-% subplot(122),
-% imagesc(y(i,:))
+subplot(3,2,4),
+x = (map.dHPCR.reward);
+plot(x(145,:),'k'),hold on
+plot(x(146,:),'b')
 
+%vHPC
+subplot(3,2,5),
+x = (map.vHPCA.aversive);
+plot(x(2,:),'k'),hold on
+plot(x(11,:),'r')
 
+subplot(3,2,6),
+x = (map.vHPCR.reward);
+plot(x(2,:),'k'),hold on
+plot(x(25,:),'b')
+
+% for plot Spatial Information
 figure
-x = map.bothR.aversive - min(map.bothR.aversive,[],2);
-x = x./max(x,[],2);
-
-y = map.bothR.reward - min(map.bothR.reward,[],2);
-y = y./max(y,[],2);
-
-[c i] = max(y,[],2);
-[c i] = sort(i);
-
-% subplot(121),
-% imagesc(x(i,:))
-% subplot(122),
-imagesc(y(i,:))
-
-%% dHPC
-figure
-x = map.dHPCA.aversive - min(map.dHPCA.aversive,[],2);
-x = x./max(x,[],2);
-
-y = map.dHPCA.reward - min(map.dHPCA.reward,[],2);
-y = y./max(y,[],2);
-
-[c i] = max(x,[],2);
-[c i] = sort(i);
-
-% subplot(121),
-imagesc(x(i,:))
-% subplot(122),
-% imagesc(y(i,:))
-
-
-figure
-x = map.dHPCR.aversive - min(map.dHPCR.aversive,[],2);
-x = x./max(x,[],2);
-
-y = map.dHPCR.reward - min(map.dHPCR.reward,[],2);
-y = y./max(y,[],2);
-
-[c i] = max(y,[],2);
-[c i] = sort(i);
-
-% subplot(121),
-% imagesc(x(i,:))
-% subplot(122),
-imagesc(y(i,:))
-
-%% vHPC
-figure
-x = map.vHPCA.aversive - min(map.vHPCA.aversive,[],2);
-x = x./max(x,[],2);
-
-y = map.vHPCA.reward - min(map.vHPCA.reward,[],2);
-y = y./max(y,[],2);
-
-[c i] = max(x,[],2);
-[c i] = sort(i);
-
-% subplot(121),
-imagesc(x(i,:))
-% subplot(122),
-% imagesc(y(i,:))
-
-
-figure
-x = map.vHPCR.aversive - min(map.vHPCR.aversive,[],2);
-x = x./max(x,[],2);
-
-y = map.vHPCR.reward - min(map.vHPCR.reward,[],2);
-y = y./max(y,[],2);
-
-[c i] = max(y,[],2);
-[c i] = sort(i);
-
-% subplot(121),
-% imagesc(x(i,:))
-% subplot(122),
-imagesc(y(i,:))
-
-figure
-x = [ones(size(Specificity.bothA(logical(Iterator.bothA)))) ; ones(size(Specificity.bothR(logical(Iterator.bothR))))*2];
-y = [Specificity.bothA(logical(Iterator.bothA)) ; Specificity.bothR(logical(Iterator.bothR))];
+subplot(131)
+x = [ones(size(Specificity.bothA)) ; ones(size(Specificity.bothR))*2];
+y = [Specificity.bothA ; Specificity.bothR];
 scatter(x,y,'filled','jitter',0.1), xlim([0 3]),ylim([0 3]),hold on
+scatter([1 2] , [nanmean(Specificity.bothA) nanmean(Specificity.bothR)],'filled')
 
-x = [ones(size(Specificity.bothA(not(logical(Iterator.bothA))))) ; ones(size(Specificity.bothR(not(logical(Iterator.bothR)))))*2];
-y = [Specificity.bothA(not(logical(Iterator.bothA))) ; Specificity.bothR(not(logical(Iterator.bothR)))];
+subplot(132)
+x = [ones(size(Specificity.dHPCA)) ; ones(size(Specificity.dHPCR))*2];
+y = [Specificity.dHPCA ; Specificity.dHPCR];
 scatter(x,y,'filled','jitter',0.1), xlim([0 3]),ylim([0 3]),hold on
+scatter([1 2] , [nanmean(Specificity.dHPCA) nanmean(Specificity.dHPCR)],'filled')
 
-scatter([1 2] , [nanmean(Specificity.bothA) nanmean(Specificity.bothR)],'filled','k')
-
-figure
-x = [ones(size(Specificity.dHPCA(logical(Iterator.dHPCA)))) ; ones(size(Specificity.dHPCR(logical(Iterator.dHPCR))))*2];
-y = [Specificity.dHPCA(logical(Iterator.dHPCA)) ; Specificity.dHPCR(logical(Iterator.dHPCR))];
+subplot(133)
+x = [ones(size(Specificity.vHPCA)) ; ones(size(Specificity.vHPCR))*2];
+y = [Specificity.vHPCA ; Specificity.vHPCR];
 scatter(x,y,'filled','jitter',0.1), xlim([0 3]),ylim([0 3]),hold on
-
-x = [ones(size(Specificity.dHPCA(not(logical(Iterator.dHPCA))))) ; ones(size(Specificity.dHPCR(not(logical(Iterator.dHPCR)))))*2];
-y = [Specificity.dHPCA(not(logical(Iterator.dHPCA))) ; Specificity.dHPCR(not(logical(Iterator.dHPCR)))];
-scatter(x,y,'filled','jitter',0.1), xlim([0 3]),ylim([0 3]),hold on
-
-scatter([1 2] , [nanmean(Specificity.dHPCA) nanmean(Specificity.dHPCR)],'filled','k')
-
-figure
-x = [ones(size(Specificity.vHPCA(logical(Iterator.vHPCA)))) ; ones(size(Specificity.vHPCR(logical(Iterator.vHPCR))))*2];
-y = [Specificity.vHPCA(logical(Iterator.vHPCA)) ; Specificity.vHPCR(logical(Iterator.vHPCR))];
-scatter(x,y,'filled','jitter',0.1), xlim([0 3]),ylim([0 3]),hold on
-
-x = [ones(size(Specificity.vHPCA(not(logical(Iterator.vHPCA))))) ; ones(size(Specificity.vHPCR(not(logical(Iterator.vHPCR)))))*2];
-y = [Specificity.vHPCA(not(logical(Iterator.vHPCA))) ; Specificity.vHPCR(not(logical(Iterator.vHPCR)))];
-scatter(x,y,'filled','jitter',0.1), xlim([0 3]),ylim([0 3]),hold on
-
-scatter([1 2] , [nanmean(Specificity.vHPCA) nanmean(Specificity.vHPCR)],'filled','k')
+scatter([1 2] , [nanmean(Specificity.vHPCA) nanmean(Specificity.vHPCR)],'filled')
 
 
+% === Prepare data for two-way ANOVA ===
 
-%% Plot parameters
-% Spatial Correlation
-figure
-subplot(3,2,1)
-y = [Between.bothA(:,1) ; Within.bothA.reward(:,1) ; Within.bothA.aversive(:,1)];
-x = [ones(length(Between.bothA(:,1)),1) ; ones(length(Within.bothA.reward(:,1)),1)*2 ; ones(length(Within.bothA.aversive(:,1)),1)*3];
-scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
-scatter([1 2 3],[nanmedian(Between.bothA(:,1)) , nanmedian( Within.bothA.reward(:,1)), nanmedian( Within.bothA.aversive(:,1))],'filled')
-% boxplot(y,x),ylim([-0.55 1.05])
+% Dependent variable: Spatial Specificity
+y = [ ...
+    Specificity.bothA ; Specificity.bothR ; ...
+    Specificity.dHPCA ; Specificity.dHPCR ; ...
+    Specificity.vHPCA ; Specificity.vHPCR ];
 
-[p,tbl,stats] = kruskalwallis(y,x);
-c = multcompare(stats)
+% Factor 1: Region
+region = [ ...
+    repmat({'Joint'}, length(Specificity.bothA), 1); ...
+    repmat({'Joint'}, length(Specificity.bothR), 1); ...
+    repmat({'dHPC'}, length(Specificity.dHPCA), 1); ...
+    repmat({'dHPC'}, length(Specificity.dHPCR), 1); ...
+    repmat({'vHPC'}, length(Specificity.vHPCA), 1); ...
+    repmat({'vHPC'}, length(Specificity.vHPCR), 1) ];
 
+% Factor 2: Condition
+condition = [ ...
+    repmat({'Aversive'}, length(Specificity.bothA), 1); ...
+    repmat({'Reward'},   length(Specificity.bothR), 1); ...
+    repmat({'Aversive'}, length(Specificity.dHPCA), 1); ...
+    repmat({'Reward'},   length(Specificity.dHPCR), 1); ...
+    repmat({'Aversive'}, length(Specificity.vHPCA), 1); ...
+    repmat({'Reward'},   length(Specificity.vHPCR), 1) ];
 
-subplot(3,2,2)
-y = [Between.bothR(:,1) ; Within.bothR.reward(:,1) ; Within.bothR.aversive(:,1)];
-x = [ones(length(Between.bothR(:,1)),1) ; ones(length(Within.bothR.reward(:,1)),1)*2 ; ones(length(Within.bothR.aversive(:,1)),1)*3];
-scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
-scatter([1 2 3],[nanmedian(Between.bothR(:,1)) , nanmedian( Within.bothR.reward(:,1)), nanmedian( Within.bothR.aversive(:,1))],'filled')
-% boxplot(y,x),ylim([-0.55 1.05])
+% === Run two-way ANOVA with interaction ===
+[p, tbl, stats] = anovan(y, {region, condition}, ...
+    'model', 'interaction', ...
+    'varnames', {'Region', 'Condition'});
 
-[p,tbl,stats] = kruskalwallis(y,x);
-c = multcompare(stats)
+% === Post-hoc comparisons: Bonferroni correction ===
+[c, m, h, gnames] = multcompare(stats, ...
+    'dimension', [1 2], ...
+    'ctype', 'bonferroni');  % correct for multiple comparisons
 
+% === Print only Reward vs Aversive comparisons within each region ===
+comparisons = {
+    'Joint & Aversive', 'Joint & Reward';
+    'dHPC & Aversive',  'dHPC & Reward';
+    'vHPC & Aversive',  'vHPC & Reward';
+};
 
-subplot(3,2,3)
-y = [Between.dHPCA(:,1) ; Within.dHPCA.reward(:,1) ; Within.dHPCA.aversive(:,1)];
-x = [ones(length(Between.dHPCA(:,1)),1) ; ones(length(Within.dHPCA.reward(:,1)),1)*2 ; ones(length(Within.dHPCA.aversive(:,1)),1)*3];
-scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
-scatter([1 2 3],[nanmedian(Between.dHPCA(:,1)) , nanmedian( Within.dHPCA.reward(:,1)), nanmedian( Within.dHPCA.aversive(:,1))],'filled')
-% boxplot(y,x),ylim([-0.55 1.05])
-
-[p,tbl,stats] = kruskalwallis(y,x);
-c = multcompare(stats)
-
-subplot(3,2,4)
-y = [Between.dHPCR(:,1) ; Within.dHPCR.reward(:,1) ; Within.dHPCR.aversive(:,1)];
-x = [ones(length(Between.dHPCR(:,1)),1) ; ones(length(Within.dHPCR.reward(:,1)),1)*2 ; ones(length(Within.dHPCR.aversive(:,1)),1)*3];
-scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
-scatter([1 2 3],[nanmedian(Between.dHPCR(:,1)) , nanmedian( Within.dHPCR.reward(:,1)), nanmedian( Within.dHPCR.aversive(:,1))],'filled')
-% boxplot(y,x),ylim([-0.55 1.05])
-
-[p,tbl,stats] = kruskalwallis(y,x);
-c = multcompare(stats)
-
-subplot(3,2,5)
-y = [Between.vHPCA(:,1) ; Within.vHPCA.reward(:,1) ; Within.vHPCA.aversive(:,1)];
-x = [ones(length(Between.vHPCA(:,1)),1) ; ones(length(Within.vHPCA.reward(:,1)),1)*2 ; ones(length(Within.vHPCA.aversive(:,1)),1)*3];
-scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
-scatter([1 2 3],[nanmedian(Between.vHPCA(:,1)) , nanmedian( Within.vHPCA.reward(:,1)), nanmedian( Within.vHPCA.aversive(:,1))],'filled')
-% boxplot(y,x),ylim([-0.55 1.05])
-
-[p,tbl,stats] = kruskalwallis(y,x);
-c = multcompare(stats)
-
-subplot(3,2,6)
-y = [Between.vHPCR(:,1) ; Within.vHPCR.reward(:,1) ; Within.vHPCR.aversive(:,1)];
-x = [ones(length(Between.vHPCR(:,1)),1) ; ones(length(Within.vHPCR.reward(:,1)),1)*2 ; ones(length(Within.vHPCR.aversive(:,1)),1)*3];
-scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
-scatter([1 2 3],[nanmedian(Between.vHPCR(:,1)) , nanmedian( Within.vHPCR.reward(:,1)), nanmedian( Within.vHPCR.aversive(:,1))],'filled')
-% boxplot(y,x),ylim([-0.55 1.05])
-
-[p,tbl,stats] = kruskalwallis(y,x);
-c = multcompare(stats)
+fprintf('\nPost-hoc comparisons (Reward vs Aversive within each region):\n')
+for i = 1:size(comparisons,1)
+    g1 = find(strcmp(gnames, comparisons{i,1}));
+    g2 = find(strcmp(gnames, comparisons{i,2}));
+    row = find((c(:,1)==g1 & c(:,2)==g2) | (c(:,1)==g2 & c(:,2)==g1));
+    if ~isempty(row)
+        fprintf('%s vs %s:\tp = %.4f\n', ...
+            comparisons{i,1}, comparisons{i,2}, c(row,6));
+    end
+end
 
 
-%% Comparing Between groups across type of assemblies
-figure
-subplot(121)
-y = [Between.bothA(:,1) ; Between.dHPCA(:,1) ;  Between.vHPCA(:,1)];
-x = [ones(length(Between.bothA(:,1)),1) ; ones(length(Between.dHPCA(:,1)),1)*2 ; ones(length(Between.vHPCA(:,1)),1)*3];
-scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
-scatter([1 2 3],[nanmedian(Between.bothA(:,1)) , nanmedian(Between.dHPCA(:,1)), nanmedian(Between.vHPCA(:,1))],'filled')
-
-[p,tbl,stats] = kruskalwallis(y,x);
-c = multcompare(stats)
 
 
-subplot(122)
-y = [Between.bothR(:,1) ; Between.dHPCR(:,1) ;  Between.vHPCR(:,1)];
-x = [ones(length(Between.bothR(:,1)),1) ; ones(length(Between.dHPCR(:,1)),1)*2 ; ones(length(Between.vHPCR(:,1)),1)*3];
-scatter(x,y,'filled','jitter','on', 'jitterAmount',0.1),hold on,xlim([0 4]),ylim([-0.55 1.05])
-scatter([1 2 3],[nanmedian(Between.bothR(:,1)) , nanmedian(Between.dHPCR(:,1)), nanmedian(Between.vHPCR(:,1))],'filled')
 
-[p,tbl,stats] = kruskalwallis(y,x);
-c = multcompare(stats)
+
+
+% for plot the percentages
+figure,
+
+% Define las variables en una celda para automatizar
+fields = {'bothA', 'bothR', 'dHPCA', 'dHPCR', 'vHPCA', 'vHPCR'};
+
+for i = 1:length(fields)
+    data = Iterator.(fields{i});
+    nMod = sum(data == 1);
+    total = length(data); % asume que 0 es no modulado
+    nNonMod = total - nMod;
+
+    pMod = (nMod / total) * 100;
+    pNonMod = 100 - pMod;
+
+    % Crear etiquetas personalizadas
+    labels = {
+        sprintf('Modulated - %.0f%% (%d)', pMod, nMod), ...
+        sprintf('Non-Modulated - %.0f%% (%d)', pNonMod, nNonMod)
+    };
+
+    subplot(3,2,i)
+    pie([pMod, pNonMod], labels)
+    title(fields{i}, 'Interpreter', 'none')
+end

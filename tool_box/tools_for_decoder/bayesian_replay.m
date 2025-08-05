@@ -47,11 +47,11 @@ d = d/3;
 
 % Count Spks per time
 Cr = [];
-for i = 1:size(time,2)-1
-    p = count_spks(Spks, ids , time(i), time(i+1));
+for i = 1:size(time,2)
+    p = count_spks(Spks, ids , time(i)-dt, time(i));
     Cr = [Cr ; p'];
 end
-Cr = Cr.*dt; clear i
+Cr = Cr./dt; clear i
 
 [Pr, prMax] = placeBayes(Cr, RateMap, dt); 
 % [Pr, prMax] = placeBayesLogBuffered1(Cr, RateMap, dt); 

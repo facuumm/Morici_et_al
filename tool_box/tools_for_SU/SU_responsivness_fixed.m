@@ -137,12 +137,12 @@ for i = 1 : size(clusters,1)
                 
             end
                     
-            th =  quantile(shuffled_ccg,0.9);
+            th =  quantile(shuffled_ccg,[0.9 0.1]);
             
-            if mean(final(start:stop)) >=  th
+            if mean(final(start:stop)) >=  th(1)
                 responsive = [responsive , 1];
             
-            elseif mean(final(start:stop)) <= th
+            elseif mean(final(start:stop)) <= th(2)
                 responsive = [responsive , -1];
             
             else

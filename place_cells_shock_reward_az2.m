@@ -236,7 +236,7 @@ for tt = 1:length(path)
             dHPC_resp.id = group_dHPC(:,1); 
             dHPC_resp.curve_ave=curve'; 
             dHPC_resp.resp_ave=responsive'; 
-            save([cd,'\dHPC_responsivness_all_VF.mat'],'dHPC_resp'); 
+            save([cd,'\dHPC_Shock_VF.mat'],'dHPC_resp'); 
         end
         
         if ~isempty(group_vHPC)
@@ -251,7 +251,7 @@ for tt = 1:length(path)
             vHPC_resp.id = group_vHPC(:,1); 
             vHPC_resp.curve_ave=curve'; 
             vHPC_resp.resp_ave=responsive'; 
-            save([cd,'\vHPC_responsivness_all_VF.mat'],'vHPC_resp');
+            save([cd,'\vHPC_Shock_VF.mat'],'vHPC_resp');
                                   
         end 
         

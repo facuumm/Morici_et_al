@@ -1718,24 +1718,7 @@ plot(gain.both.aversive.post(:,criteria,:),'r'),
 
 
 %% %% Plot Correlations
-figure
-% scatter(reactivation.reward.dvHPC(:,12) , reactivation.reward.dvHPC(:,1),'filled','b'),hold on%,ylim([-0.5 0.5]),xlim([0 50]),ylim([-1 1])
-scatter(reactivation.aversive.dvHPC(:,12) , reactivation.aversive.dvHPC(:,1),'filled','b'),hold on%,ylim([-0.5 0.5]),xlim([0 50]),ylim([-1 1])
-xlim([800 2100])
-ylim([-0.6 0.6])
-ylabel('Peak Reactivation Srength'),
-xlabel('Total Time')
-
-figure
-% fitlm(reactivation.reward.dvHPC(:,12) , reactivation.reward.dvHPC(:,1))
-fitlm(reactivation.aversive.dvHPC(:,12) , reactivation.aversive.dvHPC(:,1))
-plot(ans),
-xlim([800 2010])
-ylim([-0.6 0.6])
-ylabel('Peak Reactivation Srength'),
-xlabel('Total Time')
-
-% Active / total
+% 
 figure
 scatter(reactivation.reward.dvHPC(:,13)./reactivation.reward.dvHPC(:,12) , reactivation.reward.dvHPC(:,1),'filled','b'),hold on%,ylim([-0.5 0.5]),xlim([0 50]),ylim([-1 1])
 % scatter(reactivation.aversive.dvHPC(:,13)./reactivation.aversive.dvHPC(:,12) , reactivation.aversive.dvHPC(:,1),'filled','b'),hold on%,ylim([-0.5 0.5]),xlim([0 50]),ylim([-1 1])

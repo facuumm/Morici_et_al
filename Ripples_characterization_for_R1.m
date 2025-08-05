@@ -281,7 +281,7 @@ for tt = 1:length(path)
                     [p,indice] = min(abs(r(2)-z(:,2)));
                     coordinatedD = [coordinatedD ; r];
 
-                    if z(indice,2) > r(2)
+                    if z(indice,2) < r(2)
                         DorsalVentral = [DorsalVentral ; r(2)];
                     else
                         VentralDorsal = [VentralDorsal ; z(indice,2)];
@@ -586,3 +586,31 @@ ylim([])
 yline(1,'--')
 
 
+
+%% Plot raw data
+% 1 and 3 are pre-sleep, 2 and 4 are post-sleep
+% 1 and 2 are dorsal-ventral events, while 3 and 4 are ventral-dorsal
+figure,
+% Aversive
+subplot(121)
+x = [ones(size(m1)) ; ones(size(m2))*2 ; ones(size(m7))*3 ; ones(size(m8))*4];
+y = [m1 ; m2 ; m7 ; m8];
+
+scatter(x , y , 'filled' , 'jitter' , 0.1),hold on
+scatter([1 2 3 4] , [nanmean(m1) nanmean(m2) nanmean(m7) nanmean(m8)] , 'filled')
+xlim([0 5]),
+ylim([0.30 0.70]), hold on
+ylabel('Proportions of events (%)')
+title('Aversive')
+
+% Reward
+subplot(122)
+x = [ones(size(m4)) ; ones(size(m5))*2 ; ones(size(m10))*3 ; ones(size(m11))*4];
+y = [m4 ; m5 ; m10 ; m11];
+
+scatter(x , y , 'filled' , 'jitter' , 0.1),hold on
+scatter([1 2 3 4] , [nanmean(m4) nanmean(m5) nanmean(m10) nanmean(m11)] , 'filled')
+xlim([0 5]),
+ylim([0.30 0.70]), hold on
+ylabel('Proportions of events (%)')
+title('Reward')
