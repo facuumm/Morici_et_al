@@ -550,7 +550,7 @@ tempA=dhpc_shock;
 figure(1);clf;hold on;
 imagesc([0:1:4],[1:1:size(dhpc_shock,1)],tempA(mm,:)), colormap 'gray';axis tight 
 title('dHPC Aversive');xline(2,'r'); xline(3,'r'); xlabel(['Shock',char(10),'Time(sec)', char(10),num2str(dhpc_prop_shock),'% resp']); 
-ylabel('Nuerons');
+ylabel('Neurons');
 
 figure(2);clf;hold on; 
 plot([1:1:size(dhpc_shock,2)],nanmean(tempA(dhpc_ave==1,:))); 

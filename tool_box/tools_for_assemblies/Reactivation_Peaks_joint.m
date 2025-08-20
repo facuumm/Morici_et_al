@@ -628,6 +628,19 @@ subplot(122)
 imagesc([1:40],[1:size(ReactA.post,2)],ReactA.post(:,ii)'),caxis([0 0.5]),xlim([1 40])
 
 
+figure,
+subplot(121)
+plot([1:40] , nanmean(ReactA.pre')),ylim([0.08 0.2])
+subplot(122)
+plot([1:40] , nanmean(ReactA.post')),ylim([0.08 0.2])
+
+figure,
+subplot(121)
+plot([1:40] , nanmean(ReactR.pre')),ylim([0.08 0.2])
+subplot(122)
+plot([1:40] , nanmean(ReactR.post')),ylim([0.08 0.2])
+
+
 % Construction of Reward
 cumR = [];    cumRP = [];
 cumR2 = [];  cumR2P = [];

@@ -1,4 +1,4 @@
-function [curve , bins , responsive] = SU_responsivness_fixed(spikes,clusters,events,limits,period,window,bin,smooth,normalization,th)
+function [curve , bins , responsive , shuffle] = SU_responsivness_fixed(spikes,clusters,events,limits,period,window,bin,smooth,normalization,th)
 % Fining rate tuning curve calculation.
 % This function construct a firing curve sourrounding an event and then, it
 % evaluates if the Single-Units (SU) increase or decrease their response.
@@ -52,10 +52,15 @@ function [curve , bins , responsive] = SU_responsivness_fixed(spikes,clusters,ev
 %             if 1, increased response.
 %             if 0, no changment in the response.
 %             if -1, decreased response.
+% 
+% shuffle: matrix containing mean (1st column) and SEM (second comumn) from
+%          the shuffle.
 %
 % Morici Juan Facundo, Azul Silva 06/2024
 % Other funtions: binspikes, CCG from FMAToolbox
 
+
+shuffle = [];
 curve = [];
 responsive = [];
 for i = 1 : size(clusters,1)
@@ -109,7 +114,7 @@ for i = 1 : size(clusters,1)
         if or(strcmp(normalization,'zscore') , strcmp(normalization,'gain'))
 
             shuffled_ccg = [];
-            
+            Shuff = [];
             for ii = 1 : 200 
                 yy = ShuffleSpks(y);
                 
@@ -134,9 +139,13 @@ for i = 1 : size(clusters,1)
                 [h start] = min(abs(bins-period(1)));
                 [h stop] = min(abs(bins-period(2)));
                 shuffled_ccg = [shuffled_ccg; mean(shuff(start:stop))];
-                
+                Shuff = [Shuff , shuff]; clear shuff
             end
-                    
+            % save mean and SEM Neuron by Neuron
+            shuffle(:,:,i) = [nanmean(Shuff')' , nansem(Shuff')'];
+            
+            
+            
             th =  quantile(shuffled_ccg,[0.9 0.1]);
             
             if mean(final(start:stop)) >=  th(1)
@@ -158,5 +167,22 @@ for i = 1 : size(clusters,1)
     
     clear x y s ids groups ccg tttt is tmp b m st zscored h start stop ist
 end
+
+% For plotting and checking if shuffle works
+% for i = 1 : size(responsive,2)
+%     if responsive(i) == 1
+%         figure, plot(bins,curve(:,i),'LineWidth',2,'Color','r'),hold on
+%         plot(bins,shuffle(:,1,i),'LineWidth',2,'Color','k')
+%         ciplot(shuffle(:,1,i)-shuffle(:,2,i) , shuffle(:,1,i)+shuffle(:,2,i) , bins , 'k'),alpha 0.2
+%     elseif responsive(i) == -1
+%         figure, plot(bins,curve(:,i),'LineWidth',2,'Color','g'),hold on
+%         plot(bins,shuffle(:,1,i),'LineWidth',2,'Color','k')
+%         ciplot(shuffle(:,1,i)-shuffle(:,2,i) , shuffle(:,1,i)+shuffle(:,2,i) , bins , 'k'),alpha 0.2
+%     else
+%         figure, plot(bins,curve(:,i),'LineWidth',2,'Color','y'),hold on
+%         plot(bins,shuffle(:,1,i),'LineWidth',2,'Color','k')
+%         ciplot(shuffle(:,1,i)-shuffle(:,2,i) , shuffle(:,1,i)+shuffle(:,2,i) , bins , 'k'),alpha 0.2
+%     end
+% end
 
 end

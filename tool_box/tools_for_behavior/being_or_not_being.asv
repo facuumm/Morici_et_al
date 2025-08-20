@@ -1,0 +1,157 @@
+function [freezing , speed , metrics_before_shock] = being_or_not_being(path)
+% This function iterates in the given path to perform several behavioral
+% measurements.
+%
+% --- INPUTS ---
+% path: cell, inside each cell you should put the path of each session you
+%       want to analyze
+%
+% --- OUTPUTS ---
+% freezing: structure, contains the percentage of freezing for aversive and
+%           reward sessions.(speed < 2cm/sec during at least 2 sec)
+%
+% speed: structure, cotnains average speed before the first shock 
+%
+% metrics_before_shock:
+%
+% Requirements: FMA toolbox, QuietPeriods, Restrict
+% Morici Juan Facundo, 08-2025
+
+freezing.aversive = [];
+freezing.reward = [];
+
+speed.aversive = [];
+speed.reward = [];
+
+metrics_before_shock.aversive = [];
+metrics_before_shock.reward = [];
+
+
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+    
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd(session)
+        
+        % --- Load Variables ---
+        load('behavioral_dataVF')
+        load('session_organization.mat')
+        
+        % --- Freezing ---
+        % Aversive
+        f = QuietPeriods(behavior.speed.aversive , 2 , 2);
+        f = sum([f(:,2) - f(:,1)]);
+        f = f/(behavior.speed.aversive(end,1) - behavior.speed.aversive(1,1));
+        freezing.aversive = [freezing.aversive ; f]; clear f
+        % Reward
+        f = QuietPeriods(behavior.speed.reward , 2 , 2);
+        f = sum([f(:,2) - f(:,1)]);
+        f = f/(behavior.speed.reward(end,1) - behavior.speed.reward(1,1));
+        freezing.reward = [freezing.reward ; f]; clear f
+        
+        % --- Speed before first shock ---
+        [~ , i] = min(abs(behavior.speed.aversive(:,1)-Shocks_filt(1)));
+        speed.aversive = [speed.aversive ; nanmean(behavior.speed.aversive(1:i,2))];
+        speed.reward = [speed.reward ; nanmean(behavior.speed.reward(1:i,2))]; clear i
+        
+        % --- # Laps before first shock ---
+       % Aversive
+       pos = behavior.pos.aversive(:,1:2);
+       pos(:,2) = pos(:,2)-min(pos(:,2)); pos(:,2) = pos(:,2)/max(pos(:,2)); %normalization of position
+       in_maze = ToIntervals(pos(:,1),and(pos(:,2)>0.09 , pos(:,2)<1-0.09));% eliminating the extrems of the maze
+       %Check lenght of in_maze segments to define real laps
+       in_lap = []; % keeps only full laps (maybe too restrictive)
+       for ix=1:size(in_maze,1)
+           ini = in_maze(ix,1);
+           fin = in_maze(ix,2);
+           ini_pos = pos(pos(:,1)==ini,2);
+           fin_pos = pos(pos(:,1)==fin,2);
+           if abs(fin_pos-ini_pos)>0.6
+               in_lap = [in_lap;in_maze(ix,:)];
+           end
+       end
+         
+        f = Restrict(in_lap(:,1) , [behavior.pos.aversive(1,1) , Shocks_filt(1)]);
+        f = size(f,1);
+        metrics_before_shock.aversive = [metrics_before_shock.aversive ; f]; clear f in_lap pos in_maze ini
+        
+       % Reward
+       pos = behavior.pos.reward(:,1:2);
+       pos(:,2) = pos(:,2)-min(pos(:,2)); pos(:,2) = pos(:,2)/max(pos(:,2)); %normalization of position
+       in_maze = ToIntervals(pos(:,1),and(pos(:,2)>0.09 , pos(:,2)<1-0.09));% eliminating the extrems of the maze
+       %Check lenght of in_maze segments to define real laps
+       in_lap = []; % keeps only full laps (maybe too restrictive)
+       for ix=1:size(in_maze,1)
+           ini = in_maze(ix,1);
+           fin = in_maze(ix,2);
+           ini_pos = pos(pos(:,1)==ini,2);
+           fin_pos = pos(pos(:,1)==fin,2);
+           if abs(fin_pos-ini_pos)>0.6
+               in_lap = [in_lap;in_maze(ix,:)];
+           end
+       end
+        [~ , i] = min(abs(behavior.speed.aversive(:,1)-Shocks_filt(1)));      
+        f = Restrict(in_lap(:,1) , [behavior.pos.reward(1,1) , behavior.pos.reward(i,1)]);
+        f = size(f,1);
+        metrics_before_shock.reward = [metrics_before_shock.reward ; f]; clear f in_lap pos in_maze ini
+
+    end
+end
+
+
+% Figures
+figure
+subplot(131)
+x = [ones(size(freezing.aversive)) ; ones(size(freezing.reward))*2];
+y = [freezing.aversive ; freezing.reward].*100;
+scatter(x,y,'filled','jitter' , 0.1), hold on
+scatter([1 2] , [nanmean(freezing.aversive.*100) nanmean(freezing.reward.*100)], 'filled')
+xlim([0 3])
+ylabel('Freezing (%)')
+title('Freezing before first shock')
+disp('--- Freezing before first shockA ---')
+disp(['Aversive: ' , num2str(nanmean(freezing.aversive.*100)), ' +/-' ,  num2str(nansem(freezing.aversive.*100))])
+disp(['Reward: ' , num2str(nanmean(freezing.reward.*100)), ' +/-' ,  num2str(nansem(freezing.reward.*100))])
+[h p] = signrank(freezing.aversive , freezing.reward);
+disp(['Signrank test, p=' , num2str(h)])
+disp(' ')
+
+subplot(132)
+x = [ones(size(speed.aversive)) ; ones(size(speed.reward))*2];
+y = [speed.aversive ; speed.reward];
+scatter(x,y,'filled','jitter' , 0.1), hold on
+scatter([1 2] , [nanmean(speed.aversive) nanmean(speed.reward)], 'filled')
+xlim([0 3])
+ylabel('Velocity (cm/sec)')
+title('Velocity before first shock')
+disp('--- Velocity before first shock ---')
+disp(['Aversive: ' , num2str(nanmean(speed.aversive)), ' +/-' ,  num2str(nansem(speed.aversive))])
+disp(['Reward: ' , num2str(nanmean(speed.reward)), ' +/-' ,  num2str(nansem(speed.reward))])
+[h p] = signrank(speed.aversive , speed.reward);
+disp(['Signrank test, p=' , num2str(h)])
+disp(' ')
+
+subplot(133)
+x = [ones(size(metrics_before_shock.aversive)) ; ones(size(metrics_before_shock.reward))*2];
+y = [metrics_before_shock.aversive ; metrics_before_shock.reward];
+scatter(x,y,'filled','jitter' , 0.1), hold on
+scatter([1 2] , [nanmean(metrics_before_shock.aversive) nanmean(metrics_before_shock.reward)], 'filled')
+xlim([0 3])
+ylabel('Laps (counts)')
+title('Laps before first shock')
+disp('--- Laps before first shock ---')
+disp(['Aversive: ' , num2str(nanmean(metrics_before_shock.aversive)), ' +/-' ,  num2str(nansem(metrics_before_shock.aversive))])
+disp(['Reward: ' , num2str(nanmean(metrics_before_shock.reward)), ' +/-' ,  num2str(nansem(metrics_before_shock.reward))])
+[h p] = signrank(metrics_before_shock.aversive , metrics_before_shock.reward);
+disp(['Signrank test, p=' , num2str(h)])
+disp(' ')
+
+end

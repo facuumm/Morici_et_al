@@ -229,13 +229,14 @@ for tt = 1:length(path)
             %Aversive
             curve=[]; 
             limits=[behavior.speed.aversive(1,1),behavior.speed.aversive(end,1)];     
-            [curve , bins , responsive] = SU_responsivness_fixed(spks_dHPC,group_dHPC(:,1),Shocks_filt,...
+            [curve , bins , responsive , shuffle] = SU_responsivness_fixed(spks_dHPC,group_dHPC(:,1),Shocks_filt,...
                                       limits,[0 1],window,bin,smooth,'zscore',th); 
 
             %Save output
             dHPC_resp.id = group_dHPC(:,1); 
             dHPC_resp.curve_ave=curve'; 
             dHPC_resp.resp_ave=responsive'; 
+            dHPC_resp.shuffle = shuffle;
             save([cd,'\dHPC_Shock_VF.mat'],'dHPC_resp'); 
         end
         
@@ -244,13 +245,14 @@ for tt = 1:length(path)
             %Aversive
             curve=[]; 
             limits=[behavior.speed.aversive(1,1),behavior.speed.aversive(end,1)];           
-            [curve , bins , responsive] = SU_responsivness_fixed(spks_vHPC,group_vHPC(:,1),Shocks_filt,...
+            [curve , bins , responsive , shuffle] = SU_responsivness_fixed(spks_vHPC,group_vHPC(:,1),Shocks_filt,...
                                       limits,[0 1],window,bin,smooth,'zscore',th);                                  
            
             %Save output
             vHPC_resp.id = group_vHPC(:,1); 
             vHPC_resp.curve_ave=curve'; 
             vHPC_resp.resp_ave=responsive'; 
+            vHPC_resp.shuffle = shuffle;
             save([cd,'\vHPC_Shock_VF.mat'],'vHPC_resp');
                                   
         end 

@@ -1,4 +1,4 @@
-function [Pre , Post , T , I , curve] = Shock_responsive_ripples_for_R2(path) 
+function [Pre , Post , T , I , curve , shuffle] = Shock_responsive_ripples_for_R2_R3(path) 
 % This function calculates the Pre and Post sleep assemblies rate.
 %
 % INPUTS
@@ -16,7 +16,11 @@ function [Pre , Post , T , I , curve] = Shock_responsive_ripples_for_R2(path)
 % curve: Structure, it contains the response of the neuron sourrounding the
 %        shock. It is zscored.
 %
-% Morci Juan Facundo 08/2024
+% shffle: martrix size of NxMxF (rows, columns, slices) containing the mean
+%         and sem coming frol the shuffles of each cell.
+%         N --> time - M --> 1st-Mean 2nd-SEM - F --> Neuron
+%
+% Morci Juan Facundo 08/2024 - shuffle output added 08/2025
 
 % variables to use in the script
 criteria_fr = 0;
@@ -38,6 +42,9 @@ I.dHPC = [];                 I.vHPC = [];
 curve.dHPC = [];             curve.vHPC = [];
 curve.id.dHPC = [];          curve.id.vHPC = [];
 curve.speed.data = [];       curve.speed.id = [];
+
+
+shuffle.dHPC = [];          shuffle.vHPC = [];
 
 %% Main loop, to iterate across sessions
 for tt = 1:length(path)
@@ -205,7 +212,8 @@ for tt = 1:length(path)
             x = ones(size(dHPC_resp.id,1),1);
 %             curve.id.dHPC = [curve.id.dHPC ; dHPC_resp.id , dHPC_resp.resp_ave x*tt x*t dHPC_resp.Speedcorrelation.all(:,2)];
             curve.id.dHPC = [curve.id.dHPC ; dHPC_resp.id , dHPC_resp.resp_ave x*tt x*t];
-
+            shuffle.dHPC = cat(3, shuffle.dHPC, dHPC_resp.shuffle);
+            
             if RB
                 for i = 1 : 2
                     if i == 1
@@ -277,7 +285,8 @@ for tt = 1:length(path)
             x = ones(size(vHPC_resp.id,1),1);
 %             curve.id.vHPC = [curve.id.vHPC ; vHPC_resp.id , vHPC_resp.resp_ave x*tt x*t vHPC_resp.Speedcorrelation.all(:,2)];
             curve.id.vHPC = [curve.id.vHPC ; vHPC_resp.id , vHPC_resp.resp_ave x*tt x*t];
-
+            shuffle.vHPC = cat(3, shuffle.vHPC, vHPC_resp.shuffle);
+            
             if RB
                 for i = 1 : 2
                     if i == 1

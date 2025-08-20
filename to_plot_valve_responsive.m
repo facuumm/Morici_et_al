@@ -7,7 +7,7 @@ t = [-5:0.1:5];
 
 % --- dHPC ---
 % Separate the row with IDX == 1 from the rest of the matrix
-IDX = curve.id.dHPC(:,2)==1;
+IDX = curve.id.dHPC(:,2)==-1;
 row_to_move = curve.dHPC(:,IDX);  % Row where IDX == 1
 remaining_rows = curve.dHPC(:,not(IDX));  % The remaining rows where IDX == 0
 
@@ -45,7 +45,7 @@ zeros(1,length(sort_idx_remaining))
 
 % --- vHPC ---
 % indices to calculate the mean and sort
-IDX = curve.id.vHPC(:,2)==1;
+IDX = curve.id.vHPC(:,2)==-1;
 row_to_move = curve.vHPC(:,IDX);  % Row where IDX == 1
 remaining_rows = curve.vHPC(:,not(IDX));  % The remaining rows where IDX == 0
 

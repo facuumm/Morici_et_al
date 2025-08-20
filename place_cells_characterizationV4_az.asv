@@ -7795,7 +7795,7 @@ for tt = 1:length(path)
             for d=1:size(vHPC,2)
                 pc = vHPC{d}; 
                 within = nanmean([pc.within_ave;pc.within_rew]);
-                bet = pc.between./ within; 
+                bet = pc.subsampled.between./ within; 
                 vhpc_temp = [vhpc_temp;bet]; 
             end 
      
