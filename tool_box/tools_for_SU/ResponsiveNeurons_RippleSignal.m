@@ -11,7 +11,7 @@ function [dorsal , ventral] = ResponsiveNeurons_RippleSignal(path)
 % Morci Juan Facundo 08/2025
 
 % Variables to use in the script
-Sub = 10; % subsamplig of Ripples
+Sub = 1000; % subsamplig of Ripples
 criteria_fr = 0;
 criteria_type = 0; % criteria for celltype (0:pyr, 1:int, 2:all)
 
@@ -142,4 +142,103 @@ for tt = 1:length(path)
     clear cooridnated_eventDV cooridnated_eventVD segments movement RD RV RB
     clear dHPC vHPC1 vHPC2 vHPC3 vHPC4 vHPC5 distribution
 end
+
+
+%% Plots
+% --- Characterization of dorsal sessions ---
+tmp = unique(dorsal(:,3));
+dHPC_Table = table('Size',[length(tmp),4], ...
+    'VariableTypes',{'double','string','double','double'}, ...
+    'VariableNames',{'Session','Layer','#Cells','#Shock_Cells'});
+
+for i = 1:length(tmp)
+    x = dorsal(dorsal(:,3) == tmp(i), :);
+    
+    if tmp(i) > 0
+        layer = "Sup";
+    else
+        layer = "Deep";
+    end
+    
+    dHPC_Table.Session(i)          = i;
+    dHPC_Table.Layer(i)            = layer;
+    dHPC_Table.("#Cells")(i)       = size(x,1);
+    dHPC_Table.("#Shock_Cells")(i) = sum(x(:,2) == 1);
+end
+
+% --- Characterization of ventral sessions ---
+tmp = unique(ventral(:,3));
+vHPC_Table = table('Size',[length(tmp),4], ...
+    'VariableTypes',{'double','string','double','double'}, ...
+    'VariableNames',{'Session','Layer','#Cells','#Shock_Cells'});
+
+for i = 1:length(tmp)
+    x = ventral(ventral(:,3) == tmp(i), :);
+    
+    if tmp(i) > 0
+        layer = "Sup";
+    else
+        layer = "Deep";
+    end
+    
+    vHPC_Table.Session(i)          = i;
+    vHPC_Table.Layer(i)            = layer;
+    vHPC_Table.("#Cells")(i)       = size(x,1);
+    vHPC_Table.("#Shock_Cells")(i) = sum(x(:,2) == 1);
+end
+
+% Guardar en estructura
+Sessions.dHPC = dHPC_Table;
+Sessions.vHPC = vHPC_Table;
+
+% --- Mostrar tablas en consola ---
+disp('--- Dorsal HPC Sessions ---')
+disp(Sessions.dHPC)
+
+disp('--- Ventral HPC Sessions ---')
+disp(Sessions.vHPC)
+
+
+openvar('Sessions.dHPC')
+openvar('Sessions.vHPC')
+
+
+
+
+
+
+% Ratio Calculation
+Ratio1.dHPC = (Sessions.dHPC(Sessions.dHPC(:,2)==1,4) ./ Sessions.dHPC(Sessions.dHPC(:,2)==1,3));
+Ratio2.dHPC = (Sessions.dHPC(Sessions.dHPC(:,2)==2,4) ./ Sessions.dHPC(Sessions.dHPC(:,2)==2,3));
+
+Ratio1.vHPC = (Sessions.vHPC(Sessions.vHPC(:,2)==1,4) ./ Sessions.vHPC(Sessions.vHPC(:,2)==1,3));
+Ratio2.vHPC = (Sessions.vHPC(Sessions.vHPC(:,2)==2,4) ./ Sessions.vHPC(Sessions.vHPC(:,2)==2,3));
+
+
+
+% Boxplots
+x = [ones(length(Ratio1.dHPC),1) ; ones(length(Ratio2.dHPC),1)*2];
+y = [Ratio1.dHPC ; Ratio2.dHPC];
+
+boxplot(y,x)
+
+% vHPC
+x = [ones(length(Ratio1.vHPC),1) ; ones(length(Ratio2.vHPC),1)*2];
+y = [Ratio1.vHPC ; Ratio2.vHPC];
+
+boxplot(y,x)
+
+% percentage
+unique(dorsal(:,3))
+unique(ventral(:,3))
+
+
+p1 = ((sum(and(dorsal(:,2) == 1 , dorsal(:,3)>0)))/length(dorsal))*100;
+p2 = ((sum(and(dorsal(:,2) == 1 , dorsal(:,3)<0)))/length(dorsal))*100;
+p3 = 100 - p1 - p2;
+
+p4 = ((sum(and(ventral(:,2) == 1 , ventral(:,3)>0)))/length(ventral))*100;
+p5 = ((sum(and(ventral(:,2) == 1 , ventral(:,3)<0)))/length(ventral))*100;
+p6 = 100 - p4 - p5;
+
 end
