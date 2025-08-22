@@ -1,23 +1,25 @@
 function [dorsal , ventral] = ResponsiveNeurons_RippleSignal(path)
-% DESCRIPTION
+% This function iterates inside the path uploading the Neurons, their
+% responsivnes to shocks and the SWR polarity (in SWR_sign.csv).
 %
 % INPUTS
 % path: cell, inside each cell you should put the path of each session you
 %       want to analyze
 %
 % OUTPUT
-% description
+% dorsal, ventral: matrix, contains the id, shock_responsivnes, channel
+%                  where they was detected and the SWR polarity of that
+%                  channel.
 %
 % Morci Juan Facundo 08/2025
 
 % Variables to use in the script
-Sub = 1000; % subsamplig of Ripples
 criteria_fr = 0;
 criteria_type = 0; % criteria for celltype (0:pyr, 1:int, 2:all)
 
 % Storage variables
-dorsal = [];    ventral = [];
-
+dorsal.shock = [];    ventral.shock = [];
+dorsal.valve = [];    ventral.valve = [];
 %% Main loop, to iterate across sessions
 for tt = 1:length(path)
     %List of folders from the path
@@ -33,100 +35,189 @@ for tt = 1:length(path)
         session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
         cd(session)
         
+        %% Load Spiking Groups
+        disp('Loading Spiking Groups')
+        x = dir([cd,'\',subFolders(t+2).name,'.xml']);
+        SpkGrps = LoadXml([x.folder,'\',x.name]); clear x
+        SpkGrps = SpkGrps.SpkGrps;
+        
         %% Load Session organization
         disp('Loading TimeStamps Session Structure')
         load('session_organization.mat')
         
-        %% Load LFP
-        disp('Loading LFP')
-        if isfile('lfp.mat')
-            load('lfp.mat')
-        elseif isfile('lfp1.mat')
-            load('lfp1.mat')
-        end
+        %% Load Ripple Polarity
+        cd 'Spikesorting'
+        disp('Loading Ripples Polarity')
+        RipplePolarity = readmatrix([cd,'\SWR_sign.csv']);
         
-        %% Load ripples
-        disp('Loading Ripples')
-        if exist('ripplesD_customized2.csv')
-            % Filtering dLFP
-            disp('Filtering dLFP')
-            dHPC = FilterLFP(dHPC , 'passband' , 'delta');
-            
-            % Loading dRipples
-            disp('Loading dRipples')
-            ripplesD = table2array(readtable('ripplesD_customized2.csv'));
-            RD = true;
-            % Distribution dRipples
-            
-            % Ripples Subsampling
-            if length(ripplesD) > Sub
-                r = randperm(length(ripplesD));
-                ripplesD = ripplesD(r,2);
-                ripplesD = ripplesD(1:Sub);
-            end
-            
-            %detection of ripples
-            tmp = [];
-            for i = 1 : length(ripplesD)
-                [~ , x] = min(abs(dHPC(:,1) - ripplesD(i,1)));
-                x = dHPC(x,2);
-                tmp = [tmp ; x]; clear x
-            end
-            distribution.dHPC = tmp; clear tmp
-        else
-            RD = false;
-        end
+        %% Loading Channel Positions
+        disp('Loading Channel Positions')
+        x1 = dir([cd,'\channel_map.npy']);
+        x2 = dir([cd,'\channel_positions.npy']);
         
-        if exist('ripplesV_customized2.csv')
-            % Filtering vLFP
-            disp('Filtering vLFP')
-            vHPC = FilterLFP(vHPC1 , 'passband' , 'delta');         clear vHPC1 vHPC2 vHPC3 vHPC4 vHPC5
-            
-            % Loading vRipples
-            disp('Loading vRipples')
-            ripplesV = table2array(readtable('ripplesV_customized2.csv'));
-            RV = true;
-            
-            % Ripples Subsampling
-            if length(ripplesV) > Sub
-                r = randperm(length(ripplesV));
-                ripplesV = ripplesV(r,2);
-                ripplesV = ripplesV(1:Sub);
-            end
-            
-            % distribution vRipples
-            tmp = [];
-            for i = 1 : length(ripplesV)
-                [~ , x] = min(abs(vHPC(:,1) - ripplesV(i,1)));
-                x = vHPC(x,2);
-                tmp = [tmp ; x]; clear x
-            end
-            distribution.vHPC = tmp; clear tmp
-        else
-            RV = false;
-        end
+        x1 = readNPY([x1.folder,'\',x1.name]);
+        x2 = readNPY([x2.folder,'\',x2.name]);
+        
+        ChannelPositions = [x1' , x2]; clear x1 x2
+        
+        spike_clusters = readNPY([cd,'\spike_clusters.npy']);
+        spike_templates = readNPY([cd,'\spike_templates.npy']);
+        spike_templates = spike_templates + 1;
+        templates = readNPY([cd,'\templates.npy']);
+        
         
         %% Spikes
         % Load Units
-        disp('Uploading Spiking activity')
-        cd 'Spikesorting'
+        disp('Uploading Spiking activity')        
         [clusters , numberD , numberV , spks , spks_dHPC , spks_vHPC , cellulartype] = load_SU_FM(cd,criteria_type,criteria_fr,aversiveTS_run./1000,rewardTS_run./1000);
         
+        %% Shock
         if exist('dHPC_Shock_VF.mat')
             load('dHPC_Shock_VF.mat')
-            thD = quantile(distribution.dHPC,0.5);
             for i = 1 : size(dHPC_resp.id,1)
-                dorsal = [dorsal ; dHPC_resp.id(i) , dHPC_resp.resp_ave(i) , thD];
+                cluster = dHPC_resp.id(i);
+                tmp = cellulartype(:,1) == cluster;
+                ch = cellulartype(tmp,3);
+                Polarity = RipplePolarity(RipplePolarity(:,1) == ch , 2);
+                depth = ChannelPositions(ChannelPositions(:,1) == ch,3);
+                
+                % Detection of Spiking group
+                for ii = 1:length(SpkGrps)
+                    if any(SpkGrps(ii).Channels == ch)
+                        Channels = SpkGrps(ii).Channels;
+                        D = [];
+                        for iii = 1 : length(Channels)
+                            D = [D ; ChannelPositions(ChannelPositions(:,1) == Channels(iii),2:3)];
+                        end
+                        groupChannels = [Channels'+1 , D]; clear Channels D
+                        break
+                    end
+                end
+                
+                % Calculation of triangulization
+                idx = spike_clusters == cluster;
+                templatesClu = unique(spike_templates(idx)); clear idx
+                
+                FinalTemplate = templates(templatesClu , : , :); clear templatesClu
+                FinalTemplate = FinalTemplate(:,:,groupChannels(:,1));
+                
+                [depth_um, depth_norm] = getUnitDepth(FinalTemplate, groupChannels);
+                
+                dorsal.shock = [dorsal.shock ; double(dHPC_resp.id(i)) , double(dHPC_resp.resp_ave(i)) , double(ch) , double(Polarity) , double(depth) , double(depth_norm)];
+                clear tmp ch Polarity depth FinalTemplate groupChannels depth_um cluster
             end
         end
         
         if exist('vHPC_Shock_VF.mat')
             load('vHPC_Shock_VF.mat')
-            thV = quantile(distribution.vHPC,0.5);
             for i = 1 : size(vHPC_resp.id,1)
-                ventral = [ventral ; vHPC_resp.id(i) , vHPC_resp.resp_ave(i) , thV];
+                cluster = vHPC_resp.id(i);
+                tmp = cellulartype(:,1) == cluster;
+                ch = cellulartype(tmp,3);
+                Polarity = RipplePolarity(RipplePolarity(:,1) == ch , 2);
+                depth = ChannelPositions(ChannelPositions(:,1) == ch,3);
+                
+                % Detection of Spiking group
+                for ii = 1:length(SpkGrps)
+                    if any(SpkGrps(ii).Channels == ch)
+                        Channels = SpkGrps(ii).Channels;
+                        D = [];
+                        for iii = 1 : length(Channels)
+                            D = [D ; ChannelPositions(ChannelPositions(:,1) == Channels(iii),2:3)];
+                        end
+                        groupChannels = [Channels'+1 , D]; clear Channels D
+                        break
+                    end
+                end                
+                % Calculation of triangulization
+                idx = spike_clusters == cluster;
+                templatesClu = unique(spike_templates(idx)); clear idx
+                
+                FinalTemplate = templates(templatesClu , : , :); clear templatesClu
+                FinalTemplate = FinalTemplate(:,:,groupChannels(:,1));
+                
+                [depth_um, depth_norm] = getUnitDepth(FinalTemplate, groupChannels);                
+                
+                ventral.shock = [ventral.shock ; double(vHPC_resp.id(i)) , double(vHPC_resp.resp_ave(i)) , double(ch) , double(Polarity) , double(depth) , double(depth_norm)];
+                clear tmp ch Polarity depth depth_um depth_norm cluster
             end
         end
+        
+        
+        
+        %% Valve
+        if exist('dHPC_valve.mat')
+            load('dHPC_valve.mat')
+            for i = 1 : size(dHPC_valve.id,1)
+                cluster = dHPC_valve.id(i);
+                tmp = cellulartype(:,1) == cluster;
+                ch = cellulartype(tmp,3);
+                Polarity = RipplePolarity(RipplePolarity(:,1) == ch , 2);
+                depth = ChannelPositions(ChannelPositions(:,1) == ch,3);
+                
+                % Detection of Spiking group
+                for ii = 1:length(SpkGrps)
+                    if any(SpkGrps(ii).Channels == ch)
+                        Channels = SpkGrps(ii).Channels;
+                        D = [];
+                        for iii = 1 : length(Channels)
+                            D = [D ; ChannelPositions(ChannelPositions(:,1) == Channels(iii),2:3)];
+                        end
+                        groupChannels = [Channels'+1 , D]; clear Channels D
+                        break
+                    end
+                end
+                
+                % Calculation of triangulization
+                idx = spike_clusters == cluster;
+                templatesClu = unique(spike_templates(idx)); clear idx
+                
+                FinalTemplate = templates(templatesClu , : , :); clear templatesClu
+                FinalTemplate = FinalTemplate(:,:,groupChannels(:,1));
+                
+                [depth_um, depth_norm] = getUnitDepth(FinalTemplate, groupChannels);
+                
+                dorsal.valve = [dorsal.valve ; double(dHPC_valve.id(i)) , double(dHPC_valve.responssiveness(i)) , double(ch) , double(Polarity) , double(depth) , double(depth_norm)];
+                clear tmp ch Polarity depth FinalTemplate groupChannels depth_um cluster
+            end
+        end
+        
+        if exist('vHPC_valve.mat')
+            load('vHPC_valve.mat')
+            for i = 1 : size(vHPC_valve.id,1)
+                cluster = vHPC_valve.id(i);
+                tmp = cellulartype(:,1) == cluster;
+                ch = cellulartype(tmp,3);
+                Polarity = RipplePolarity(RipplePolarity(:,1) == ch , 2);
+                depth = ChannelPositions(ChannelPositions(:,1) == ch,3);
+                
+                % Detection of Spiking group
+                for ii = 1:length(SpkGrps)
+                    if any(SpkGrps(ii).Channels == ch)
+                        Channels = SpkGrps(ii).Channels;
+                        D = [];
+                        for iii = 1 : length(Channels)
+                            D = [D ; ChannelPositions(ChannelPositions(:,1) == Channels(iii),2:3)];
+                        end
+                        groupChannels = [Channels'+1 , D]; clear Channels D
+                        break
+                    end
+                end                
+                % Calculation of triangulization
+                idx = spike_clusters == cluster;
+                templatesClu = unique(spike_templates(idx)); clear idx
+                
+                FinalTemplate = templates(templatesClu , : , :); clear templatesClu
+                FinalTemplate = FinalTemplate(:,:,groupChannels(:,1));
+                
+                [depth_um, depth_norm] = getUnitDepth(FinalTemplate, groupChannels);                
+                
+                ventral.valve = [ventral.valve ; double(vHPC_valve.id(i)) , double(vHPC_valve.responssiveness(i)) , double(ch) , double(Polarity) , double(depth) , double(depth_norm)];
+                clear tmp ch Polarity depth depth_um depth_norm cluster
+            end
+        end        
+        
+        
         
     end
     disp(' ')
@@ -143,102 +234,261 @@ for tt = 1:length(path)
     clear dHPC vHPC1 vHPC2 vHPC3 vHPC4 vHPC5 distribution
 end
 
+%% ==========================
+%  Shock
+%  ==========================
 
-%% Plots
-% --- Characterization of dorsal sessions ---
-tmp = unique(dorsal(:,3));
-dHPC_Table = table('Size',[length(tmp),4], ...
-    'VariableTypes',{'double','string','double','double'}, ...
-    'VariableNames',{'Session','Layer','#Cells','#Shock_Cells'});
+% dHPC counts
+counts.dHPC.up.shock   = sum(dorsal.shock(:,4) == 1 & dorsal.shock(:,2) == 1);
+counts.dHPC.up.no      = sum(dorsal.shock(:,4) == 1 & dorsal.shock(:,2) ~= 1);
+counts.dHPC.down.shock = sum(dorsal.shock(:,4) == 2 & dorsal.shock(:,2) == 1);
+counts.dHPC.down.no    = sum(dorsal.shock(:,4) == 2 & dorsal.shock(:,2) ~= 1);
 
-for i = 1:length(tmp)
-    x = dorsal(dorsal(:,3) == tmp(i), :);
-    
-    if tmp(i) > 0
-        layer = "Sup";
-    else
-        layer = "Deep";
-    end
-    
-    dHPC_Table.Session(i)          = i;
-    dHPC_Table.Layer(i)            = layer;
-    dHPC_Table.("#Cells")(i)       = size(x,1);
-    dHPC_Table.("#Shock_Cells")(i) = sum(x(:,2) == 1);
+totalUp_d   = sum(dorsal.shock(:,4) == 1);
+totalDown_d = sum(dorsal.shock(:,4) == 2);
+
+percentage.dHPC.up.shock   = counts.dHPC.up.shock   / totalUp_d   * 100;
+percentage.dHPC.up.no      = counts.dHPC.up.no      / totalUp_d   * 100;
+percentage.dHPC.down.shock = counts.dHPC.down.shock / totalDown_d * 100;
+percentage.dHPC.down.no    = counts.dHPC.down.no    / totalDown_d * 100;
+
+% vHPC counts
+counts.vHPC.up.shock   = sum(ventral.shock(:,4) == 1 & ventral.shock(:,2) == 1);
+counts.vHPC.up.no      = sum(ventral.shock(:,4) == 1 & ventral.shock(:,2) ~= 1);
+counts.vHPC.down.shock = sum(ventral.shock(:,4) == 2 & ventral.shock(:,2) == 1);
+counts.vHPC.down.no    = sum(ventral.shock(:,4) == 2 & ventral.shock(:,2) ~= 1);
+
+totalUp_v   = sum(ventral.shock(:,4) == 1);
+totalDown_v = sum(ventral.shock(:,4) == 2);
+
+percentage.vHPC.up.shock   = counts.vHPC.up.shock   / totalUp_v   * 100;
+percentage.vHPC.up.no      = counts.vHPC.up.no      / totalUp_v   * 100;
+percentage.vHPC.down.shock = counts.vHPC.down.shock / totalDown_v * 100;
+percentage.vHPC.down.no    = counts.vHPC.down.no    / totalDown_v * 100;
+
+% Plot dHPC
+figure('Name','dHPC');
+
+% --- Up
+subplot(1,2,1);
+vals = [percentage.dHPC.up.shock, percentage.dHPC.up.no];
+nums = [counts.dHPC.up.shock, counts.dHPC.up.no];
+b = bar(vals);
+title('Up');
+ylim([0 100]);
+set(gca,'XTickLabel',{'Shock','No-Shock'});
+ylabel('%');
+for i = 1:numel(vals)
+    text(i, vals(i)+3, sprintf('%.1f%% (%d/%d)', vals(i), nums(i), sum(dorsal(:,4)==1)), ...
+        'HorizontalAlignment','center','FontSize',8);
 end
 
-% --- Characterization of ventral sessions ---
-tmp = unique(ventral(:,3));
-vHPC_Table = table('Size',[length(tmp),4], ...
-    'VariableTypes',{'double','string','double','double'}, ...
-    'VariableNames',{'Session','Layer','#Cells','#Shock_Cells'});
-
-for i = 1:length(tmp)
-    x = ventral(ventral(:,3) == tmp(i), :);
-    
-    if tmp(i) > 0
-        layer = "Sup";
-    else
-        layer = "Deep";
-    end
-    
-    vHPC_Table.Session(i)          = i;
-    vHPC_Table.Layer(i)            = layer;
-    vHPC_Table.("#Cells")(i)       = size(x,1);
-    vHPC_Table.("#Shock_Cells")(i) = sum(x(:,2) == 1);
+% --- Down
+subplot(1,2,2);
+vals = [percentage.dHPC.down.shock, percentage.dHPC.down.no];
+nums = [counts.dHPC.down.shock, counts.dHPC.down.no];
+b = bar(vals);
+title('Down');
+ylim([0 100]);
+set(gca,'XTickLabel',{'Shock','No-Shock'});
+ylabel('%');
+for i = 1:numel(vals)
+    text(i, vals(i)+3, sprintf('%.1f%% (%d/%d)', vals(i), nums(i), sum(dorsal(:,4)==2)), ...
+        'HorizontalAlignment','center','FontSize',8);
 end
 
-% Guardar en estructura
-Sessions.dHPC = dHPC_Table;
-Sessions.vHPC = vHPC_Table;
+% Plot vHPC
+figure('Name','vHPC');
 
-% --- Mostrar tablas en consola ---
-disp('--- Dorsal HPC Sessions ---')
-disp(Sessions.dHPC)
+% --- Up
+subplot(1,2,1);
+vals = [percentage.vHPC.up.shock, percentage.vHPC.up.no];
+nums = [counts.vHPC.up.shock, counts.vHPC.up.no];
+b = bar(vals);
+title('Up');
+ylim([0 100]);
+set(gca,'XTickLabel',{'Shock','No-Shock'});
+ylabel('%');
+for i = 1:numel(vals)
+    text(i, vals(i)+3, sprintf('%.1f%% (%d/%d)', vals(i), nums(i), sum(ventral(:,4)==1)), ...
+        'HorizontalAlignment','center','FontSize',8);
+end
 
-disp('--- Ventral HPC Sessions ---')
-disp(Sessions.vHPC)
+% --- Down
+subplot(1,2,2);
+vals = [percentage.vHPC.down.shock, percentage.vHPC.down.no];
+nums = [counts.vHPC.down.shock, counts.vHPC.down.no];
+b = bar(vals);
+title('Down');
+ylim([0 100]);
+set(gca,'XTickLabel',{'Shock','No-Shock'});
+ylabel('%');
+for i = 1:numel(vals)
+    text(i, vals(i)+3, sprintf('%.1f%% (%d/%d)', vals(i), nums(i), sum(ventral(:,4)==2)), ...
+        'HorizontalAlignment','center','FontSize',8);
+end
+
+% Calculation of deepness
+% dHPC ratio: -20 (deep) --> 1, -160 (superficial) --> 0
+sitesY_Shock = double.shock(dorsal.shock(:,6));
+
+ratioD.all = sitesY_Shock;
+ratioD.Shock = ratioD.all(dorsal.shock(:,2)==1);
+ratioD.noShock = ratioD.all(~(dorsal.shock(:,2)==1));
+
+% vHPC ratio: -160 (deep) --> 1, -20 (superficial) --> 0
+sitesY_Shock = 1-double(ventral.shock(:,6));% Invert so that deep = 1
+
+ratioV.all = sitesY_Shock;  % deep = 1
+ratioV.all = 1 - ratioV.all;
+ratioV.Shock = ratioV.all(ventral.shock(:,2)==1);
+ratioV.noShock = ratioV.all(~(ventral.shock(:,2)==1));
 
 
-openvar('Sessions.dHPC')
-openvar('Sessions.vHPC')
+x = [ones(size(ratioV.noShock)) ; ones(size(ratioV.Shock))*2];
+y = [ratioV.noShock ; ratioV.Shock];
+figure,
+cdfplot(ratioV.noShock),hold on
+cdfplot(ratioV.Shock),hold on
+% boxplot(y,x)
+[h p] = ranksum(ratioV.noShock , ratioV.Shock)
+
+
+x = [ones(size(ratioD.noShock)) ; ones(size(ratioD.Shock))*2];
+y = [ratioD.noShock ; ratioD.Shock];
+figure,
+cdfplot(ratioD.noShock),hold on
+cdfplot(ratioD.Shock),hold on
+% boxplot(y,x)
+[h p] = ranksum(ratioD.noShock , ratioD.Shock)
 
 
 
+%% ==========================
+%  Valve
+%  ==========================
+
+% dHPC counts
+counts.dHPC.up.valve   = sum(dorsal.valve(:,4) == 1 & dorsal.valve(:,2) == 1);
+counts.dHPC.up.no      = sum(dorsal.valve(:,4) == 1 & dorsal.valve(:,2) ~= 1);
+counts.dHPC.down.valve = sum(dorsal.valve(:,4) == 2 & dorsal.valve(:,2) == 1);
+counts.dHPC.down.no    = sum(dorsal.valve(:,4) == 2 & dorsal.valve(:,2) ~= 1);
+
+totalUp_d   = sum(dorsal.shock(:,4) == 1);
+totalDown_d = sum(dorsal.shock(:,4) == 2);
+
+percentage.dHPC.up.valve   = counts.dHPC.up.valve   / totalUp_d   * 100;
+percentage.dHPC.up.no      = counts.dHPC.up.no      / totalUp_d   * 100;
+percentage.dHPC.down.valve = counts.dHPC.down.valve / totalDown_d * 100;
+percentage.dHPC.down.no    = counts.dHPC.down.no    / totalDown_d * 100;
+
+% vHPC counts
+counts.vHPC.up.valve   = sum(ventral.valve(:,4) == 1 & ventral.valve(:,2) == 1);
+counts.vHPC.up.no      = sum(ventral.valve(:,4) == 1 & ventral.valve(:,2) ~= 1);
+counts.vHPC.down.valve = sum(ventral.valve(:,4) == 2 & ventral.valve(:,2) == 1);
+counts.vHPC.down.no    = sum(ventral.valve(:,4) == 2 & ventral.valve(:,2) ~= 1);
+
+totalUp_v   = sum(ventral.valve(:,4) == 1);
+totalDown_v = sum(ventral.valve(:,4) == 2);
+
+percentage.vHPC.up.valve   = counts.vHPC.up.valve   / totalUp_v   * 100;
+percentage.vHPC.up.no      = counts.vHPC.up.no      / totalUp_v   * 100;
+percentage.vHPC.down.valve = counts.vHPC.down.valve / totalDown_v * 100;
+percentage.vHPC.down.no    = counts.vHPC.down.no    / totalDown_v * 100;
+
+% Plot dHPC
+figure('Name','dHPC');
+
+% --- Up
+subplot(1,2,1);
+vals = [percentage.dHPC.up.valve, percentage.dHPC.up.no];
+nums = [counts.dHPC.up.valve, counts.dHPC.up.no];
+b = bar(vals);
+title('Up');
+ylim([0 100]);
+set(gca,'XTickLabel',{'valve','No-valve'});
+ylabel('%');
+for i = 1:numel(vals)
+    text(i, vals(i)+3, sprintf('%.1f%% (%d/%d)', vals(i), nums(i), sum(dorsal.valve(:,4)==1)), ...
+        'HorizontalAlignment','center','FontSize',8);
+end
+
+% --- Down
+subplot(1,2,2);
+vals = [percentage.dHPC.down.valve, percentage.dHPC.down.no];
+nums = [counts.dHPC.down.valve, counts.dHPC.down.no];
+b = bar(vals);
+title('Down');
+ylim([0 100]);
+set(gca,'XTickLabel',{'valve','No-valve'});
+ylabel('%');
+for i = 1:numel(vals)
+    text(i, vals(i)+3, sprintf('%.1f%% (%d/%d)', vals(i), nums(i), sum(dorsal.valve(:,4)==2)), ...
+        'HorizontalAlignment','center','FontSize',8);
+end
+
+% Plot vHPC
+figure('Name','vHPC');
+
+% --- Up
+subplot(1,2,1);
+vals = [percentage.vHPC.up.valve, percentage.vHPC.up.no];
+nums = [counts.vHPC.up.valve, counts.vHPC.up.no];
+b = bar(vals);
+title('Up');
+ylim([0 100]);
+set(gca,'XTickLabel',{'valve','No-valve'});
+ylabel('%');
+for i = 1:numel(vals)
+    text(i, vals(i)+3, sprintf('%.1f%% (%d/%d)', vals(i), nums(i), sum(ventral.valve(:,4)==1)), ...
+        'HorizontalAlignment','center','FontSize',8);
+end
+
+% --- Down
+subplot(1,2,2);
+vals = [percentage.vHPC.down.valve, percentage.vHPC.down.no];
+nums = [counts.vHPC.down.valve, counts.vHPC.down.no];
+b = bar(vals);
+title('Down');
+ylim([0 100]);
+set(gca,'XTickLabel',{'valve','No-valve'});
+ylabel('%');
+for i = 1:numel(vals)
+    text(i, vals(i)+3, sprintf('%.1f%% (%d/%d)', vals(i), nums(i), sum(ventral.valve(:,4)==2)), ...
+        'HorizontalAlignment','center','FontSize',8);
+end
+
+% Calculation of deepness
+% dHPC ratio: -20 (deep) --> 1, -160 (superficial) --> 0
+sitesY_valve = double(dorsal.valve(:,6));
+
+ratioD.all = sitesY_valve;
+ratioD.valve = ratioD.all(dorsal.valve(:,2)==1);
+ratioD.novalve = ratioD.all(~(dorsal.valve(:,2)==1));
+
+% vHPC ratio: -160 (deep) --> 1, -20 (superficial) --> 0
+sitesY_valve = 1-double(ventral.shock(:,6));% Invert so that deep = 1
+
+ratioV.all = sitesY_valve;  % deep = 1
+ratioV.all = 1 - ratioV.all;
+ratioV.valve = ratioV.all(ventral.valve(:,2)==1);
+ratioV.novalve = ratioV.all(~(ventral.valve(:,2)==1));
 
 
-
-% Ratio Calculation
-Ratio1.dHPC = (Sessions.dHPC(Sessions.dHPC(:,2)==1,4) ./ Sessions.dHPC(Sessions.dHPC(:,2)==1,3));
-Ratio2.dHPC = (Sessions.dHPC(Sessions.dHPC(:,2)==2,4) ./ Sessions.dHPC(Sessions.dHPC(:,2)==2,3));
-
-Ratio1.vHPC = (Sessions.vHPC(Sessions.vHPC(:,2)==1,4) ./ Sessions.vHPC(Sessions.vHPC(:,2)==1,3));
-Ratio2.vHPC = (Sessions.vHPC(Sessions.vHPC(:,2)==2,4) ./ Sessions.vHPC(Sessions.vHPC(:,2)==2,3));
-
-
-
-% Boxplots
-x = [ones(length(Ratio1.dHPC),1) ; ones(length(Ratio2.dHPC),1)*2];
-y = [Ratio1.dHPC ; Ratio2.dHPC];
-
-boxplot(y,x)
-
-% vHPC
-x = [ones(length(Ratio1.vHPC),1) ; ones(length(Ratio2.vHPC),1)*2];
-y = [Ratio1.vHPC ; Ratio2.vHPC];
-
-boxplot(y,x)
-
-% percentage
-unique(dorsal(:,3))
-unique(ventral(:,3))
+x = [ones(size(ratioV.novalve)) ; ones(size(ratioV.valve))*2];
+y = [ratioV.novalve ; ratioV.valve];
+figure,
+cdfplot(ratioV.novalve),hold on
+cdfplot(ratioV.valve),hold on
+% boxplot(y,x)
+[h p] = ranksum(ratioV.novalve , ratioV.valve)
 
 
-p1 = ((sum(and(dorsal(:,2) == 1 , dorsal(:,3)>0)))/length(dorsal))*100;
-p2 = ((sum(and(dorsal(:,2) == 1 , dorsal(:,3)<0)))/length(dorsal))*100;
-p3 = 100 - p1 - p2;
-
-p4 = ((sum(and(ventral(:,2) == 1 , ventral(:,3)>0)))/length(ventral))*100;
-p5 = ((sum(and(ventral(:,2) == 1 , ventral(:,3)<0)))/length(ventral))*100;
-p6 = 100 - p4 - p5;
-
+x = [ones(size(ratioD.novalve)) ; ones(size(ratioD.valve))*2];
+y = [ratioD.novalve ; ratioD.valve];
+figure,
+cdfplot(ratioD.novalve),hold on
+cdfplot(ratioD.valve),hold on
+% boxplot(y,x)
+[h p] = ranksum(ratioD.novalve , ratioD.valve)
 end

@@ -1,0 +1,244 @@
+function [dorsal , ventral] = ResponsiveNeurons_RippleSignal_using_OneChannel(path)
+% DESCRIPTION
+%
+% INPUTS
+% path: cell, inside each cell you should put the path of each session you
+%       want to analyze
+%
+% OUTPUT
+% description
+%
+% Morci Juan Facundo 08/2025
+
+% Variables to use in the script
+Sub = 1000; % subsamplig of Ripples
+criteria_fr = 0;
+criteria_type = 0; % criteria for celltype (0:pyr, 1:int, 2:all)
+
+% Storage variables
+dorsal = [];    ventral = [];
+
+%% Main loop, to iterate across sessions
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+    
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd(session)
+        
+        %% Load Session organization
+        disp('Loading TimeStamps Session Structure')
+        load('session_organization.mat')
+        
+        %% Load LFP
+        disp('Loading LFP')
+        if isfile('lfp.mat')
+            load('lfp.mat')
+        elseif isfile('lfp1.mat')
+            load('lfp1.mat')
+        end
+        
+        %% Load ripples
+        disp('Loading Ripples')
+        if exist('ripplesD_customized2.csv')
+            % Filtering dLFP
+            disp('Filtering dLFP')
+            dHPC = FilterLFP(dHPC , 'passband' , 'delta');
+            
+            % Loading dRipples
+            disp('Loading dRipples')
+            ripplesD = table2array(readtable('ripplesD_customized2.csv'));
+            RD = true;
+            % Distribution dRipples
+            
+            % Ripples Subsampling
+            if length(ripplesD) > Sub
+                r = randperm(length(ripplesD));
+                ripplesD = ripplesD(r,2);
+                ripplesD = ripplesD(1:Sub);
+            end
+            
+            %detection of ripples
+            tmp = [];
+            for i = 1 : length(ripplesD)
+                [~ , x] = min(abs(dHPC(:,1) - ripplesD(i,1)));
+                x = dHPC(x,2);
+                tmp = [tmp ; x]; clear x
+            end
+            distribution.dHPC = tmp; clear tmp
+        else
+            RD = false;
+        end
+        
+        if exist('ripplesV_customized2.csv')
+            % Filtering vLFP
+            disp('Filtering vLFP')
+            vHPC = FilterLFP(vHPC1 , 'passband' , 'delta');         clear vHPC1 vHPC2 vHPC3 vHPC4 vHPC5
+            
+            % Loading vRipples
+            disp('Loading vRipples')
+            ripplesV = table2array(readtable('ripplesV_customized2.csv'));
+            RV = true;
+            
+            % Ripples Subsampling
+            if length(ripplesV) > Sub
+                r = randperm(length(ripplesV));
+                ripplesV = ripplesV(r,2);
+                ripplesV = ripplesV(1:Sub);
+            end
+            
+            % distribution vRipples
+            tmp = [];
+            for i = 1 : length(ripplesV)
+                [~ , x] = min(abs(vHPC(:,1) - ripplesV(i,1)));
+                x = vHPC(x,2);
+                tmp = [tmp ; x]; clear x
+            end
+            distribution.vHPC = tmp; clear tmp
+        else
+            RV = false;
+        end
+        
+        %% Spikes
+        % Load Units
+        disp('Uploading Spiking activity')
+        cd 'Spikesorting'
+        [clusters , numberD , numberV , spks , spks_dHPC , spks_vHPC , cellulartype] = load_SU_FM(cd,criteria_type,criteria_fr,aversiveTS_run./1000,rewardTS_run./1000);
+        
+        if exist('dHPC_Shock_VF.mat')
+            load('dHPC_Shock_VF.mat')
+            thD = quantile(distribution.dHPC,0.5);
+            for i = 1 : size(dHPC_resp.id,1)
+                dorsal = [dorsal ; dHPC_resp.id(i) , dHPC_resp.resp_ave(i) , thD];
+            end
+        end
+        
+        if exist('vHPC_Shock_VF.mat')
+            load('vHPC_Shock_VF.mat')
+            thV = quantile(distribution.vHPC,0.5);
+            for i = 1 : size(vHPC_resp.id,1)
+                ventral = [ventral ; vHPC_resp.id(i) , vHPC_resp.resp_ave(i) , thV];
+            end
+        end
+        
+    end
+    disp(' ')
+    clear A aversiveTS aversiveTS_run baselineTS rewardTS rewardTS_run
+    clear is K Kinfo group_dHPC group_vHPC matrixC matrixD matrixV
+    clear spiketrains_dHPC spiketrains_vHPC opts MUA
+    clear patterns Thresholded i  ii numberD numberV movement cross crossN
+    clear Spikes bins Clusters Shocks_filt Rewards_filt config n_SU_D n_SU_V
+    clear clusters coordinated coordinated_ripple_bursts coordinatedV
+    clear cooridnated_event coordinatedV_refined coordinatedV_refined
+    clear ripple_bursts ripple_event ripplesD ripplesV
+    clear spks spks_dHPC spks_vHPC ripples cooridnated_event
+    clear cooridnated_eventDV cooridnated_eventVD segments movement RD RV RB
+    clear dHPC vHPC1 vHPC2 vHPC3 vHPC4 vHPC5 distribution
+end
+
+
+%% Plots
+% --- Characterization of dorsal sessions ---
+tmp = unique(dorsal(:,3));
+dHPC_Table = table('Size',[length(tmp),4], ...
+    'VariableTypes',{'double','string','double','double'}, ...
+    'VariableNames',{'Session','Layer','#Cells','#Shock_Cells'});
+
+for i = 1:length(tmp)
+    x = dorsal(dorsal(:,3) == tmp(i), :);
+    
+    if tmp(i) > 0
+        layer = "Sup";
+    else
+        layer = "Deep";
+    end
+    
+    dHPC_Table.Session(i)          = i;
+    dHPC_Table.Layer(i)            = layer;
+    dHPC_Table.("#Cells")(i)       = size(x,1);
+    dHPC_Table.("#Shock_Cells")(i) = sum(x(:,2) == 1);
+end
+
+% --- Characterization of ventral sessions ---
+tmp = unique(ventral(:,3));
+vHPC_Table = table('Size',[length(tmp),4], ...
+    'VariableTypes',{'double','string','double','double'}, ...
+    'VariableNames',{'Session','Layer','#Cells','#Shock_Cells'});
+
+for i = 1:length(tmp)
+    x = ventral(ventral(:,3) == tmp(i), :);
+    
+    if tmp(i) > 0
+        layer = "Sup";
+    else
+        layer = "Deep";
+    end
+    
+    vHPC_Table.Session(i)          = i;
+    vHPC_Table.Layer(i)            = layer;
+    vHPC_Table.("#Cells")(i)       = size(x,1);
+    vHPC_Table.("#Shock_Cells")(i) = sum(x(:,2) == 1);
+end
+
+% Guardar en estructura
+Sessions.dHPC = dHPC_Table;
+Sessions.vHPC = vHPC_Table;
+
+% --- Mostrar tablas en consola ---
+disp('--- Dorsal HPC Sessions ---')
+disp(Sessions.dHPC)
+
+disp('--- Ventral HPC Sessions ---')
+disp(Sessions.vHPC)
+
+
+openvar('Sessions.dHPC')
+openvar('Sessions.vHPC')
+
+
+
+
+
+
+% Ratio Calculation
+Ratio1.dHPC = (Sessions.dHPC(Sessions.dHPC(:,2)==1,4) ./ Sessions.dHPC(Sessions.dHPC(:,2)==1,3));
+Ratio2.dHPC = (Sessions.dHPC(Sessions.dHPC(:,2)==2,4) ./ Sessions.dHPC(Sessions.dHPC(:,2)==2,3));
+
+Ratio1.vHPC = (Sessions.vHPC(Sessions.vHPC(:,2)==1,4) ./ Sessions.vHPC(Sessions.vHPC(:,2)==1,3));
+Ratio2.vHPC = (Sessions.vHPC(Sessions.vHPC(:,2)==2,4) ./ Sessions.vHPC(Sessions.vHPC(:,2)==2,3));
+
+
+
+% Boxplots
+x = [ones(length(Ratio1.dHPC),1) ; ones(length(Ratio2.dHPC),1)*2];
+y = [Ratio1.dHPC ; Ratio2.dHPC];
+
+boxplot(y,x)
+
+% vHPC
+x = [ones(length(Ratio1.vHPC),1) ; ones(length(Ratio2.vHPC),1)*2];
+y = [Ratio1.vHPC ; Ratio2.vHPC];
+
+boxplot(y,x)
+
+% percentage
+unique(dorsal(:,3))
+unique(ventral(:,3))
+
+
+p1 = ((sum(and(dorsal(:,2) == 1 , dorsal(:,3)>0)))/length(dorsal))*100;
+p2 = ((sum(and(dorsal(:,2) == 1 , dorsal(:,3)<0)))/length(dorsal))*100;
+p3 = 100 - p1 - p2;
+
+p4 = ((sum(and(ventral(:,2) == 1 , ventral(:,3)>0)))/length(ventral))*100;
+p5 = ((sum(and(ventral(:,2) == 1 , ventral(:,3)<0)))/length(ventral))*100;
+p6 = 100 - p4 - p5;
+
+end

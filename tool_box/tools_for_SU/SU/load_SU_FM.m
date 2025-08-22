@@ -31,11 +31,11 @@ spks(:,2) = double(spks(:,2))./20000;
 
 % Selection of celltype to analyze
 if criteria_type == 0 %pyr
-    cellulartype = [K(:,1) , K(:,4)];
+    cellulartype = [K(:,1) , K(:,4) , K(:,2)];
 elseif criteria_type == 1 % int
-    cellulartype = [K(:,1) , not(K(:,4))];
+    cellulartype = [K(:,1) , not(K(:,4)) , K(:,2)];
 elseif criteria_type == 2 % all
-    cellulartype = [K(:,1) , ones(size(K,1),1)];
+    cellulartype = [K(:,1) , ones(size(K,1),1) , K(:,2)];
 end
 
 %% Counting the Number f SU
@@ -74,7 +74,7 @@ for ii=1:size(group_vHPC,1)
     clear tmp cluster Cellulartype fr1 fr2 fr3 fr4 fr5 r a
 end
 
-cellulartype = [K(:,1) , K(:,4)];
+cellulartype = [K(:,1) , K(:,4) , K(:,2)];
 
 clear freq limits
 clear camara shock rightvalve leftvalve
