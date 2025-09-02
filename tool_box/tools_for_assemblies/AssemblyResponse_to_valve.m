@@ -371,62 +371,144 @@ for tt = 1:length(path)
     end
 end
 
-% s = 0;
-% %% Joint
-% % aversive
-% figure,
-% x = Response.joint.aversive;
-% [~ , i] = min(abs(0-time)); [~ , ii] = min(abs(1-time));
-% [m] = nanmean(x(i:ii,:));
-% [i ii] = sort(m,'descend');
-% 
-% subplot(121),imagesc(time,[1:1:size(x,2)],x(:,ii)'),hold on,colormap 'jet'
-% xline(0,'--') , xline(1,'--'),caxis([-3 3])
-% 
-% % Reward
-% y = Response.joint.reward;
-% [~ , i] = min(abs(0-time)); [~ , ii] = min(abs(1-time));
-% [m] = nanmean(y(i:ii,:));
-% [i ii] = sort(m,'descend');
-% 
-% subplot(122),imagesc(time,[1:1:size(y,2)],y(:,ii)'),hold on,colormap 'jet'
-% xline(0,'--') , xline(1,'--'),caxis([-3 3])
-% 
-% % Mean Response Shock Increased response
-% figure
-% x = x(:,modulated.joint.aversive==1);
-% plot(time,nanmean(x,2),'r'),hold on
-% ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'r'),alpha 0.5
-% 
-% y = y(:,modulated.joint.reward==1);
-% plot(time,nanmean(y,2),'b')%,ylim([-0.2 1.2]), xlim([-2 4]),
-% ciplot(nanmean(y,2)-nansem(y')' , nanmean(y,2)+nansem(y')' , time,'b'),alpha 0.5
-% xline(0,'--') , xline(1,'--')
-% 
-% % Mean Response Shock Decreased response
-% figure
-% x = Response.joint.aversive(:,modulated.joint.aversive==-1);
-% plot(time,nanmean(x,2),'r'),hold on
-% ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'r'),alpha 0.5
-% 
-% y = Response.joint.reward(:,modulated.joint.reward==-1);
-% plot(time,nanmean(y,2),'b')%,ylim([-0.2 1.2]), xlim([-2 4]),
-% ciplot(nanmean(y,2)-nansem(y')' , nanmean(y,2)+nansem(y')' , time,'b'),alpha 0.5
-% xline(0,'--') , xline(1,'--')
-% 
-% % Percentages
-% figure,
-% p1 = (sum(modulated.joint.aversive==1)/length(modulated.joint.aversive))*100;
-% p2 = (sum(modulated.joint.aversive==-1)/length(modulated.joint.aversive))*100;
-% p3 = 100 - p1 - p2;
-% 
-% subplot(121),pie([p1 , p2 , p3] , {'increased' , 'decreased' , 'none'})
-% 
-% p1 = (sum(modulated.joint.reward==1)/length(modulated.joint.reward))*100;
-% p2 = (sum(modulated.joint.reward==-1)/length(modulated.joint.reward))*100;
-% p3 = 100 - p1 - p2;
-% 
-% subplot(122),pie([p1 , p2 , p3] , {'increased' , 'decreased' , 'none'})
+s = 0;
+%% Reward
+% Joint
+% Mean Response Reward Increased response
+% joint
+figure
+x = Response.joint.reward(:,modulated.joint.reward(:,1)==1);
+plot(time,nanmean(x,2),'r'),hold on
+ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'r'),alpha 0.5
+hold on
+
+x = Response.joint.reward(:,not(modulated.joint.reward(:,1)==1));
+plot(time,nanmean(x,2),'k'),hold on
+ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'k'),alpha 0.5
+
+xline(0)
+xline(1)
+
+ylim([-1 3])
+
+% dHPC
+figure
+x = Response.dHPC.reward(:,modulated.dHPC.reward(:,1)==1);
+plot(time,nanmean(x,2),'r'),hold on
+ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'r'),alpha 0.5
+hold on
+
+x = Response.dHPC.reward(:,not(modulated.dHPC.reward(:,1)==1));
+plot(time,nanmean(x,2),'k'),hold on
+ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'k'),alpha 0.5
+
+xline(0)
+xline(1)
+
+ylim([-1 3])
+
+% vHPC
+figure
+x = Response.vHPC.reward(:,modulated.vHPC.reward(:,1)==1);
+plot(time,nanmean(x,2),'r'),hold on
+ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'r'),alpha 0.5
+hold on
+
+x = Response.vHPC.reward(:,not(modulated.vHPC.reward(:,1)==1));
+plot(time,nanmean(x,2),'k'),hold on
+ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'k'),alpha 0.5
+
+xline(0)
+xline(1)
+
+ylim([-1 3])
+
+% Percentages
+figure,
+p1 = (sum(modulated.joint.reward(:,1)==1)/length(modulated.joint.reward(:,1)))*100;
+p2 = (sum(not(modulated.joint.reward(:,1)==1))/length(modulated.joint.reward(:,1)))*100;
+
+subplot(131),pie([p1 , p2] , {'Responsive' , 'none'})
+
+p1 = (sum(modulated.dHPC.reward(:,1)==1)/length(modulated.dHPC.reward(:,1)))*100;
+p2 = (sum(not(modulated.dHPC.reward(:,1)==1))/length(modulated.dHPC.reward(:,1)))*100;
+
+subplot(132),pie([p1 , p2] , {'increased' ,'none'})
+
+p1 = (sum(modulated.vHPC.reward(:,1)==1)/length(modulated.vHPC.reward(:,1)))*100;
+p2 = (sum(not(modulated.vHPC.reward(:,1)==1))/length(modulated.vHPC.reward(:,1)))*100;
+
+subplot(133),pie([p1 , p2] , {'increased' ,'none'})
+
+
+%% Aversive
+% Joint
+% Mean Response Shock Increased response
+% joint
+figure
+x = Response.joint.aversive(:,modulated.joint.aversive(:,1)==1);
+plot(time,nanmean(x,2),'r'),hold on
+ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'r'),alpha 0.5
+hold on
+
+x = Response.joint.aversive(:,not(modulated.joint.aversive(:,1)==1));
+plot(time,nanmean(x,2),'k'),hold on
+ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'k'),alpha 0.5
+
+xline(0)
+xline(1)
+
+ylim([-1 3])
+
+% dHPC
+figure
+x = Response.dHPC.aversive(:,modulated.dHPC.aversive(:,1)==1);
+plot(time,nanmean(x,2),'r'),hold on
+ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'r'),alpha 0.5
+hold on
+
+x = Response.dHPC.aversive(:,not(modulated.dHPC.aversive(:,1)==1));
+plot(time,nanmean(x,2),'k'),hold on
+ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'k'),alpha 0.5
+
+xline(0)
+xline(1)
+
+ylim([-1 3])
+
+% vHPC
+figure
+x = Response.vHPC.aversive(:,modulated.vHPC.aversive(:,1)==1);
+plot(time,nanmean(x,2),'r'),hold on
+ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'r'),alpha 0.5
+hold on
+
+x = Response.vHPC.aversive(:,not(modulated.vHPC.aversive(:,1)==1));
+plot(time,nanmean(x,2),'k'),hold on
+ciplot(nanmean(x,2)-nansem(x')' , nanmean(x,2)+nansem(x')' , time,'k'),alpha 0.5
+
+xline(0)
+xline(1)
+
+ylim([-1 3])
+
+% Percentages
+figure,
+p1 = (sum(modulated.joint.aversive(:,1)==1)/length(modulated.joint.aversive(:,1)))*100;
+p2 = (sum(not(modulated.joint.aversive(:,1)==1))/length(modulated.joint.aversive(:,1)))*100;
+
+subplot(131),pie([p1 , p2] , {'Responsive' , 'none'})
+
+p1 = (sum(modulated.dHPC.aversive(:,1)==1)/length(modulated.dHPC.aversive(:,1)))*100;
+p2 = (sum(not(modulated.dHPC.aversive(:,1)==1))/length(modulated.dHPC.aversive(:,1)))*100;
+
+subplot(132),pie([p1 , p2] , {'increased' ,'none'})
+
+p1 = (sum(modulated.vHPC.aversive(:,1)==1)/length(modulated.vHPC.aversive(:,1)))*100;
+p2 = (sum(not(modulated.vHPC.aversive(:,1)==1))/length(modulated.vHPC.aversive(:,1)))*100;
+
+subplot(133),pie([p1 , p2] , {'increased' ,'none'})
+
 
 
 end

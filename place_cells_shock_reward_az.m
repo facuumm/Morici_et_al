@@ -347,6 +347,7 @@ for tt = 1:length(path)
 end
 
 %% SHOCK RESPONSE PROP SHOCK/PC %%%%%%%
+
 %Output matrix 
 dHPC_pc = 0;dHPC_shock = 0;dHPC_reward=0;
 vHPC_pc = 0;vHPC_shock = 0;vHPC_reward=0;
@@ -2338,3 +2339,112 @@ ylabel('skaggs');xticks([1 2]);xticklabels({'Shock and PC', 'PC ave'});
 
 [p,h] = ranksum(skaggs_ave_shock_dhpc,skaggs_ave_pc_dhpc)
 [p,h] = ranksum(skaggs_ave_shock_vhpc,skaggs_ave_pc_vhpc)
+
+%% % OF shock/noshock in pc ave  
+shock_pc_ave_dhpc=0;shock_pc_ave_vhpc=0;
+noshock_pc_ave_dhpc=0;noshock_pc_ave_vhpc=0;
+
+shock_nopc_ave_dhpc=0;shock_nopc_ave_vhpc=0;
+noshock_nopc_ave_dhpc=0;noshock_nopc_ave_vhpc=0;
+
+%%%%%%Main loop%%%%%%%
+for tt = 1:length(path)
+    %List of folders from the path
+    files = dir(path{tt});
+    % Get a logical vector that tells which is a directory.
+    dirFlags = [files.isdir];
+    % Extract only those that are directories.
+    subFolders = files(dirFlags);
+    clear files dirFlags
+    
+    for t = 1 : length(subFolders)-2
+        disp(['-- Initiating analysis of folder #' , num2str(t) , ' from rat #',num2str(tt) , ' --'])
+        session = [subFolders(t+2).folder,'\',subFolders(t+2).name];
+        cd(session)
+        cd 'Spikesorting'
+        
+        %% Shock computations 
+        %%%%% dHPC %%%%%%%
+        if isfile('dHPC_pc_by_condition.mat')
+            load('dHPC_pc_by_condition.mat');
+            id_ave = dhpc_pc.ave;
+        end
+        
+        if isfile('dHPC_responsivness_all.mat')
+            load ('dHPC_responsivness_all.mat');
+            filter = dHPC_resp.resp_ave>0;
+            shock_cells = dHPC_resp.id(filter);
+            nopc=dHPC_resp.id(~ismember(dHPC_resp.id,id_ave));
+        end
+        
+        if and(isfile('dHPC_pc_by_condition.mat'),isfile('dHPC_responsivness_all.mat'))
+            %pc_ave_shock
+            c=ismember(id_ave, shock_cells);
+            shock_pc_ave_dhpc = shock_pc_ave_dhpc+sum(c);
+            noshock_pc_ave_dhpc = noshock_pc_ave_dhpc+sum(c==0);
+            
+            c=ismember(nopc, shock_cells);
+            shock_nopc_ave_dhpc = shock_nopc_ave_dhpc+sum(c);
+            noshock_nopc_ave_dhpc = noshock_nopc_ave_dhpc+sum(c==0);
+        end 
+        
+        clear id_shockandpc i dHPC dhpc_pc dHPC_resp id_ave id_rew filter shock_cells
+        
+        %%%%% vHPC %%%%%%%
+       
+        if isfile('vHPC_pc_by_condition.mat')
+            load('vHPC_pc_by_condition.mat');
+            id_ave = vhpc_pc.ave;
+        end
+        
+        if isfile('vHPC_responsivness_all.mat')
+            load ('vHPC_responsivness_all.mat');
+            filter = vHPC_resp.resp_ave>0;
+            shock_cells = vHPC_resp.id(filter);
+            nopc=vHPC_resp.id(~ismember(vHPC_resp.id,id_ave));
+        end
+        
+        if and(isfile('vHPC_pc_by_condition.mat'),isfile('vHPC_responsivness_all.mat'))
+            %shock/pc_ave 
+            c=ismember(id_ave, shock_cells);
+            shock_pc_ave_vhpc = shock_pc_ave_vhpc+sum(c);
+            noshock_pc_ave_vhpc = noshock_pc_ave_vhpc+sum(c==0);
+            
+            c=ismember(nopc, shock_cells);
+            shock_nopc_ave_vhpc = shock_nopc_ave_vhpc+sum(c);
+            noshock_nopc_ave_vhpc = noshock_nopc_ave_vhpc+sum(c==0);
+
+        end 
+        
+        clear id_shockanvpc i vHPC vhpc_pc vHPC_resp id_ave id_rew filter shock_cells
+       
+        %%
+        disp(['-- Finished folder #' , num2str(t) , ' from rat #' , num2str(tt) , ' ---'])
+        disp('  ')
+    end
+    disp(['-------- Finished rat#' , num2str(tt) , ' --------'])
+    disp(' ')
+end
+%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%% Plots %%%%%%%%
+%----Pie chart ------
+%----Shock ------
+
+
+labels = {'Shock responsive','Non shock responsive'};
+figure();hold on; subplot(1,2,1); pie([shock_pc_ave_dhpc;noshock_pc_ave_dhpc], labels)
+title('Place cells')
+
+labels = {'Shock responsive','Non shock responsive'};
+subplot(1,2,2); pie([shock_nopc_ave_dhpc;noshock_nopc_ave_dhpc], labels);title('No place cells');
+sgtitle('dHPC');
+%
+
+labels = {'Shock responsive','Non shock responsive'};
+figure();hold on; subplot(1,2,1); pie([shock_pc_ave_vhpc;noshock_pc_ave_vhpc], labels)
+title('Place cells')
+
+labels = {'Shock responsive','Non shock responsive'};
+subplot(1,2,2); pie([shock_nopc_ave_vhpc;noshock_nopc_ave_vhpc], labels);title('No place cells');
+sgtitle('vHPC');

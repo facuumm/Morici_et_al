@@ -7753,8 +7753,8 @@ c = multcompare(STATS)
 tbl = array2table(c,"VariableNames", ...
     ["Group A","Group B","Lower Limit","A-B","Upper Limit","P-value"])
 
-[p,h] = ranksum(between_mean_dhpc(:,p),between_mean_vhpc(:,p))
-text(1.2, 1.5, ['p = ', num2str(p)]);
+[p,h] = ranksum(acc_all_dhpc,acc_all_vhpc)
+text(1.2, 0.999975, ['p = ', num2str(p)]);
 %%%%%%%%% Dividing each neuron by its mean 
 
 %Output matrix 

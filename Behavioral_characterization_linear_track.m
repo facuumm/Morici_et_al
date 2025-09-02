@@ -13,7 +13,7 @@ meanSpeed = [];
 curveA = []; curveR = [];
 quietA = []; quietR = [];
 speedA = []; speedR = [];
-
+Rew = [];
 N = 0;
 %% Main loop, to iterate across sessions
 for tt = 1:length(path)
@@ -102,6 +102,8 @@ for tt = 1:length(path)
         Rewards_filt = Restrict([leftvalve ; rightvalve],rewardTS_run ./1000);
         disp('Uploading DLC outputs')
         camara = ((camara(:,2)-camara(:,1))/2)+camara(:,1);
+        
+        Rew = [Rew ; size(Rewards_filt,1)];
         
         % periods of movment during eacj condition
         if rewardTS_run(1) < aversiveTS_run(1)
